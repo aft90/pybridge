@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<biddingSystem>
+	<title>Standard English Acol</title>
+	<description>
+		Standard English is an ACOL-like system for beginners, popularised by
+		the English Bridge Union. It uses a weak no-trump opening and a minimum
+		number of conventions; namely Stayman and Blackwood.
+	</description>
+	<definitions>
+		<context name='openings'>
+			<rule name='open-1suit'>
+				<conditions>
+				</conditions>
+				<ownCalls>
+					<call type='bid' level='1' denomination='clubs' />
+					<call type='bid' level='1' denomination='diamonds' />
+					<call type='bid' level='1' denomination='hearts' />
+					<call type='bid' level='1' denomination='spades' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='hand-card-points' valueMin='12' valueMax='19' />
+					<register player='me' property='suit-card-count' valueMin='4' />
+				</implies>
+				<responses>
+				
+				</responses>
+			</rule>
+			<rule name='open-1nt'>
+				<conditions>
+				</conditions>
+				<ownCalls>
+					<call type='bid' level='1' denomination='no-trumps' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='hand-card-points' valueMin='12' valueMax='14' />
+					<register player='me' property='club-card-count' valueMin='2' valueMax='5' />
+					<register player='me' property='diamond-card-count' valueMin='2' valueMax='5' />
+					<register player='me' property='heart-card-count' valueMin='2' valueMax='4' />
+					<register player='me' property='spade-card-count' valueMin='2' valueMax='4' />
+				</implies>
+				<responses>
+					<scope name='' />
+				</responses>
+			</rule>
+			<rule name='open-2club'>
+				<conditions>
+				</conditions>
+				<ownCalls>
+					<call type='bid' level='2' denomination='clubs' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' desc='hand' property='card-points' valueMin='23' />
+				</implies>
+				<responses>
+				</responses>
+			</rule>
+			<rule name='open-2suit'>
+				<conditions>
+				</conditions>
+				<ownCalls>
+					<call type='bid' level='2' denomination='diamonds' />
+					<call type='bid' level='2' denomination='hearts' />
+					<call type='bid' level='2' denomination='spades' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='hand-card-points' valueMin='20' valueMax='22' />
+					<register player='me' property='suit-card-count' valueMin='5' />
+				</implies>
+				<responses>
+				</responses>
+			</rule>
+			<rule name='open-2nt'>
+				<conditions>
+				</conditions>
+				<ownCalls>
+					<call type='bid' level='2' denomination='no-trumps' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='hand-card-points' valueMin='20' valueMax='22' />
+					<register player='me' property='club-card-count' valueMin='2' valueMax='5' />
+					<register player='me' property='diamond-card-count' valueMin='2' valueMax='5' />
+					<register player='me' property='heart-card-count' valueMin='2' valueMax='4' />
+					<register player='me' property='spade-card-count' valueMin='2' valueMax='4' />
+				</implies>
+				<responses>
+					<scope name='' />
+				</responses>
+			</rule>
+		</context>
+		<context name='overcalls'>
+			<rule name='takeOutDouble'>
+				<ownCalls>
+					<call type='double' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='bid' level='1' denomination='clubs' />
+					<call type='bid' level='1' denomination='diamonds' />
+					<call type='bid' level='1' denomination='hearts' />
+					<call type='bid' level='1' denomination='spades' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='hand-card-points' valueMin='12' />
+				</implies>
+			</rule>
+			<rule name='penaltyDouble'>
+				<ownCalls>
+					<call type='double' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='bid' levelMin='3' />
+				</opponentCalls>
+			</rule>
+		</context>
+		<context name='convention-stayman'>
+			<rule name='stayman-init'>
+				<ownCalls>
+					<call type='bid' level='2' denomination='clubs' />
+					<call type='bid' level='3' denomination='clubs' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<or>
+						<register player='me' property='heart-card-count' valueMin='4' />
+						<register player='me' property='spade-card-count' valueMin='4' />
+					</or>
+				</implies>
+				<responses>
+					<scope name='convention-stayman' />
+				</responses>
+			</rule>
+			<rule name='stayman-response-diamonds'>
+				<ownCalls>
+					<call type='bid' level='2' denomination='diamonds' />
+					<call type='bid' level='3' denomination='diamonds' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='heart-card-count' valueMax='3' />
+					<register player='me' property='spade-card-count' valueMax='3' />
+				</implies>
+			</rule>
+			<rule name='stayman-response-hearts'>
+				<ownCalls>
+					<call type='bid' level='2' denomination='hearts' />
+					<call type='bid' level='3' denomination='hearts' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='heart-card-count' valueMin='4' />
+				</implies>
+			</rule>
+			<rule name='stayman-response-spades'>
+				<ownCalls>
+					<call type='bid' level='2' denomination='spades' />
+					<call type='bid' level='3' denomination='spades' />
+				</ownCalls>
+				<opponentCalls>
+					<call type='pass' />
+				</opponentCalls>
+				<implies>
+					<register player='me' property='heart-card-count' valueMax='3' />
+					<register player='me' property='spade-card-count' valueMin='4' />
+				</implies>
+			</rule>
+		</context>
+	</definitions>
+</biddingSystem>
