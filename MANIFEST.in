@@ -1,4 +1,4 @@
-include MANIFEST MANIFEST.in README
+include MANIFEST MANIFEST.in README 
 recursive-include pybridge *.py
 recursive-include tests *.py
 recursive-include scripts *

@@ -1,5 +1,9 @@
 import encodings
 
+#
+# GENERAL SETTINGS
+#
+
 # Copyright mark
 coded=encodings.codecs.latin_1_decode('\xA9')
 cmark=coded[0]
@@ -15,5 +19,11 @@ AUTHORS_EMAIL=('umgangee@users.sourceforge.net, smandal@users.sourceforge.net')
 DOCUMENTERS=()
 TRANSLATOR_CREDITS="(No translations yet)"
 
-# Internal settings
+#
+# INTERNAL SETTINGS
+#
+
+# Unassigned according to Network Service Query
+# Also, == factorial(7) :)
+TCP_PORT=5040
 
