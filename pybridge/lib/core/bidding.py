@@ -38,7 +38,8 @@ class Call:
 			return 1
 	
 	def __str__(self):
-		if self.isBid: return str(self.bidOddTricks) + ' ' + self.denomNames[self.bidDenom]
+		if self.isBid:
+			return str(self.bidOddTricks) + ' ' + self.denomNames[self.bidDenom]
 		elif self.isDouble: return 'Double'
 		elif self.isPass: return 'Pass'
 
@@ -50,16 +51,38 @@ class Bidding:
 
 	def __init__(self, dealer):
 		self.calls = []
-		if dealer in self.playerOrder: self.dealer = dealer
-		else: raise 'Bad specification of dealer'
+		self.contract = False
+		self.dealer = dealer
 	
-	def isClosed(self):
+	def isPassedOut(self):
 		if len(self.calls) >= 4:
 			return self.calls[-1].isPass and self.calls[-2].isPass and self.calls[-3].isPass
 		else: return False
 	
 	def isOpen(self):
-		return not self.isClosed()
+		return not self.isPassedOut()
+	
+	def currentBid(self):
+		if self.calls:
+			for pastCall in self.calls:
+				if pastCall.isBid: return pastCall
+		return False
+	
+	def currentDoubleLevel(self):
+		"""
+		Returns:
+			0, if current bid is not doubled.
+			1, if current bid is doubled.
+			2, if current bid is redoubled.
+		"""
+		doubleCount = 0
+		if self.calls:
+			for pastCall in self.calls:
+				if pastCall.isDouble:
+					doubleCount += 1
+				elif pastCall.isBid:
+					return doubleCount
+		return doubleCount
 	
 	def addCall(self, call):
 		"""
@@ -73,44 +96,46 @@ class Bidding:
 	
 	def validCall(self, call):
 		"""
-		A call is valid if all of the following:
-			the bidding is open.
-			the call is greater than the present contract.
-			the call is not a double, or the call is a double and the contract is not redoubled.
+		Check a call for validity against the previous calls.
 		"""
+		# The bidding must not be passed out.
 		if self.isOpen():
-			contract = self.contract()
-			if contract:
-				# Contract established.
-				return (call > contract['bid'] and not (contract['isRedoubled'] and call.isDouble))
-			else:
-				# No contract established, so do not allow double.
-				return not call.isDouble
+			if call.isBid:
+				# A bid must be greater than the current bid.
+				return call > self.currentBid()
+			elif call.isDouble:
+				# A double must be on an existing bid.
+				# The existing bid must not be already redoubled.
+				return self.currentBid() and self.currentDoubleLevel() < 2
+			elif call.isPass:
+				# A pass is always valid.
+				return True
 		else: return False
-	
-	def contract(self):
-		"""
-		Iterate through the calls list backwards.
-		If no contract established, return False.
-		"""
-		if self.calls:
-			doubles = 0
-			for call in self.calls[::-1]:
-				if call.isDouble:
-					doubles += 1
-				elif call.isBid:
-					return {'bid' : call,
-					        'declarer' : self.whoMade(call),
-					        'isDoubled' : doubles == 1,
-					        'isRedoubled' : doubles == 2}
-		return False
-	
+		
 	def whoseTurn(self):
 		if self.isOpen():
 			return self.playerOrder[(len(self.calls) + self.playerOrder.index(self.dealer)) % 4]
 		else: return False
 	
-	def whoMade(self, call):
+	def whoseCall(self, call):
 		if call in self.calls:
 			return self.playerOrder[(self.calls.index(call) + self.playerOrder.index(self.dealer)) % 4]
 		else: return False
+
+class Contract:
+	"""
+	A contract is an overlay for a bidding object.
+	It only returns content pertaining to a contract.
+	"""
+	
+	def __init__(self, bidding):
+		self.bidding = bidding
+	
+	def isMade(self):
+		return self.bidding.isPassedOut()
+	
+	def current(self):
+		return {'bid' : self.bidding.currentBid(),
+		        'declarer' : self.bidding.whoseCall(self.bidding.currentBid()),
+		        'isDoubled' : self.bidding.currentDoubleLevel() == 1,
+		        'isRedoubled' : self.bidding.currentDoubleLevel() == 2}
