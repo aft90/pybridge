@@ -1,0 +1,5 @@
+include MANIFEST MANIFEST.in README
+recursive-include pybridge *.py
+recursive-include tests *.py
+recursive-include scripts *
+recursive-include pack *
