@@ -1,90 +1,82 @@
-
+from enumeration import Rank, Suit, Seat
 
 class Card:
-	"""
-	Initialises a card object with rank, suit and available flag.
-	"""
-	rankNames = {2 : 'Two', 3 : 'Three', 4 : 'Four', 5 : 'Five', 6 : 'Six',
-	             7 : 'Seven', 8 : 'Eight', 9 : 'Nine', 10 : 'Ten',
-	             11 : 'Jack', 12 : 'Queen', 13 : 'King', 14 : 'Ace'}
-	suitNames = {'c' : 'Club', 'd' : 'Diamond', 'h' : 'Heart', 's' : 'Spade'}
 	
 	def __init__(self, rank, suit):
-		if rank in range(2, 15): self.rank = rank
-		else: raise 'Bad specification of rank'
-		if suit in self.suitNames: self.suit = suit
-		else: raise 'Bad specification of suit'
-		self.isAvailable = True
+		""" Initialises a card object with rank, suit and played flag. """
+		if rank in Rank.Ranks: self.rank = rank
+		else: raise 'Bad specification of rank.'
+		if suit in Suit.Suits: self.suit = suit
+		else: raise 'Bad specification of suit.'
+		self.isPlayed = False  # ugh, required by play class (for now)
 	
-	def __str__(self):
-		return self.rankNames[self.rank] + " of " + self.suitNames[self.suit] + "s"
-
+	def __eq__(self, other):
+		""" Two cards are equivalent if they have the same rank and suit. """
+		return (self.suit == other.suit) and (self.rank == other.rank)
+	
+	def __cmp__(self, other):
+		""" Compare cards for hand sorting. """
+		selfStrength = (Suit.Suits.index(self.suit) * 13) + Rank.Ranks.index(self.rank)
+		otherStrength = (Suit.Suits.index(other.suit) * 13) + Rank.Ranks.index(other.rank)
+		return cmp(selfStrength, otherStrength)
+	
 class Hand:
-	"""
-	Initialises a hand object with an empty card list.
-	"""
 	
 	def __init__(self):
+		""" Initialises a hand object with an empty card list. """
 		self.cards = []
 	
+	def isValid(self):
+		""" Is the hand valid? """
+		return self.countCards() == 13
+
 	def addCard(self, card):
+		""" Adds a specified card to the hand. """
 		if card not in self.cards:
 			self.cards.append(card)
 			return True
 		else: return False
 	
 	def removeCard(self, card):
+		""" Removes a specified card from the hand. """
 		if card in self.cards:
 			self.cards.remove(card)
 			return True
 		else: return False
 	
-	def numCards(self):
+	def countCards(self):
+		""" Returns a count of card elements in hand. """
 		return len(self.cards)
 	
-	def isValid(self):
-		"""Is the hand valid?"""
-		if numCards == 13: return True
-		else: return False
-	
-	def evaluate(self):
-		# This procedure should be moved to the ACOL player class!
-		evaluation = 0
-		suitcount = {'c' : 0, 'd' : 0, 'h' : 0, 's' : 0}
+	def countSuits(self):
+		""" Returns a dictionary of suits with their respective card counts. """
+		suitCount = {Suit.Club : 0, Suit.Diamond : 0, Suit.Heart : 0, Suit.Spade : 0}
 		for card in self.cards:
-			if card.rank > 10:
-				evaluation += card.rank - 10
-			suitcount[card.suit] += 1
-		for suit in suitcount:
-			if suitcount[suit] < 3:
-				evaluation += 2 - suitcount[suit]
-		return evaluation
-
+			suitCount[card.suit] += 1
+		return suitCount
+	
 class Deck:
-	"""
-	Initialises a deck object with 52 card objects and 4 hand objects.
-	"""
-	suitOrder = ['c', 'd', 'h', 's']
 	
 	def __init__(self):
+		""" Initialises a deck object with 52 card objects. """
 		self.cards = []
-		for suit in self.suitOrder:
-			for rank in range(2,15):
+		for suit in Suit.Suits:
+			for rank in Rank.Ranks:
 				self.cards.append(Card(rank, suit))
-		self.hands = {'n' : Hand(), 's' : Hand(), 'w' : Hand(), 'e' : Hand()}
+	
+	def reset(self):
+		self.hands = {Seat.North : Hand(), Seat.South : Hand(), Seat.East : Hand(), Seat.West : Hand()}
 	
 	def deal(self):
-		"""
-		Shuffles the card object elements in the deck card list.
-		Deals 13 cards to each of the 4 hands.
-		"""
-		if self.cards:
-			for handid, hand in self.hands.items():
-				for i in range(13):
-					hand.addCard(self.cards.pop())
-			return True
-		else: return False
+		""" Deals 13 cards to each of the 4 hands. """
+		self.reset()
+		card = 0
+		for hand in self.hands.values():
+			while not hand.isValid():
+				hand.addCard(self.cards[card])
+				card += 1
 	
 	def shuffle(self):
+		""" Shuffles the card object elements in the deck card list. """
 		import random
 		random.shuffle(self.cards)
