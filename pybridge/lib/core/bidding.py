@@ -1,66 +1,67 @@
+from enumeration import Denomination, Seat
+
 class Call:
 	"""
 	A call is a bid, a pass or a (re)double.
-	A bid is a denomination and a number of odd tricks.
+	A bid is a level and a denomination.
 	"""
-	denomOrder = ['c', 'd', 'h', 's', 'n']
-	denomNames = {'c' : 'Club', 'd' : 'Diamond', 'h' : 'Heart', 'n' : 'No Trump', 's' : 'Spade'}
 	
-	def __init__(self, call, bidOddTricks = False, bidDenom = False):
-		"""
-		Initialise a call.
-		"""
-		if call in ['bid', 'dbl', 'pass']:
-			self.isBid = call == 'bid'
-			self.isDouble = call == 'dbl'
-			self.isPass = call == 'pass'
+	denominationStrength = {Denomination.Club : 0, Denomination.Diamond : 1,
+	                        Denomination.Heart : 2, Denomination.Spade : 3,
+	                        Denomination.NoTrump : 4}	
+	
+	def __init__(self, callType, bidLevel = False, bidDenomination = False):
+		""" Initialise a call. """
+		if callType in ['bid', 'double', 'pass']:
+			self.isBid = callType == 'bid'
+			self.isDouble = callType == 'double'
+			self.isPass = callType == 'pass'
 			if self.isBid:
-				if bidOddTricks in range(1,8): self.bidOddTricks = bidOddTricks
-				else: raise 'Bad specification of bid odd tricks'
-				if bidDenom in self.denomOrder: self.bidDenom = bidDenom
-				else: raise 'Bad specification of bid denomination'
-		else: raise 'Bad specification of call type'
+				if bidLevel in range(1,8):
+					self.bidLevel = bidLevel
+				else: raise 'Bad specification of bid level.'
+				if bidDenomination in Denomination.Denominations:
+					self.bidDenomination = bidDenomination
+				else: raise 'Bad specification of bid denomination.'
+		else: raise 'Bad specification of call type.'
 	
 	def __cmp__(self, other):
 		"""
 		Compare two calls and return:
-		1, if self call is greater than other call.
-		0, if self call is same as other call.
-		-1, if self call is less than other call.
+			1, if self call is greater than other call.
+			0, if self call is same as other call.
+			-1, if self call is less than other call.
 		"""
+
 		if self.isBid and other.isBid:
-			# Compare bid calls by their trick count, then their trump count.
-			selfStrength = self.bidOddTricks * 5 + self.denomOrder.index(self.bidDenom)
-			otherStrength = other.bidOddTricks * 5 + self.denomOrder.index(other.bidDenom)
+			# Compare bid calls by their trick count, then their denomination strength.
+			selfStrength = self.bidLevel * 5 + denominationStrength[self.bidDenomination]
+			otherStrength = other.bidLevel * 5 + denominationStrength[other.bidDenomination]
 			return cmp(selfStrength, otherStrength)
 		else:
-			# Comparing non-bid call(s) returns true.
+			# Comparing non-bid call returns true.
 			return 1
 	
-	def __str__(self):
-		if self.isBid:
-			return str(self.bidOddTricks) + ' ' + self.denomNames[self.bidDenom]
-		elif self.isDouble: return 'Double'
-		elif self.isPass: return 'Pass'
+	#def __str__(self):
+	#	if self.isBid:
+	#		return str(self.bidLevel) + ' ' + self.denomNames[self.bidDenom]
+	#	elif self.isDouble: return 'Double'
+	#	elif self.isPass: return 'Pass'
 
 class Bidding:
-	"""
-	A bidding session is a list of Call objects and the dealer.
-	"""
-	playerOrder = ['n', 'e', 's', 'w']
-
+	""" A bidding session is a list of Call objects and the dealer. """
+	
+	seatOrder = [Seat.North, Seat.East, Seat.South, Seat.West]
+	
 	def __init__(self, dealer):
 		self.calls = []
-		self.contract = False
 		self.dealer = dealer
 	
 	def isPassedOut(self):
+		""" If at least 4 calls made and last 3 are passes, closes bidding. """
 		if len(self.calls) >= 4:
 			return self.calls[-1].isPass and self.calls[-2].isPass and self.calls[-3].isPass
 		else: return False
-	
-	def isOpen(self):
-		return not self.isPassedOut()
 	
 	def currentBid(self):
 		if self.calls:
@@ -85,21 +86,16 @@ class Bidding:
 		return doubleCount
 	
 	def addCall(self, call):
-		"""
-		If call is valid, add to the calls list.
-		If at least 4 calls made and last 3 are passes, closes bidding.
-		"""
+		""" If call is valid, add to the calls list. """
 		if self.validCall(call):
 			self.calls.append(call)
 			return True
 		else: return False
 	
 	def validCall(self, call):
-		"""
-		Check a call for validity against the previous calls.
-		"""
+		""" Check a call for validity against the previous calls. """
 		# The bidding must not be passed out.
-		if self.isOpen():
+		if not self.isPassedOut():
 			if call.isBid:
 				# A bid must be greater than the current bid.
 				return call > self.currentBid()
@@ -113,13 +109,13 @@ class Bidding:
 		else: return False
 		
 	def whoseTurn(self):
-		if self.isOpen():
-			return self.playerOrder[(len(self.calls) + self.playerOrder.index(self.dealer)) % 4]
+		if not self.isPassedOut():
+			return self.seatOrder[(len(self.calls) + self.seatOrder.index(self.dealer)) % 4]
 		else: return False
 	
 	def whoseCall(self, call):
 		if call in self.calls:
-			return self.playerOrder[(self.calls.index(call) + self.playerOrder.index(self.dealer)) % 4]
+			return self.seatOrder[(self.calls.index(call) + self.seatOrder.index(self.dealer)) % 4]
 		else: return False
 
 class Contract:
