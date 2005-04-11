@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-
 import os, sys
 import gtk, gtk.glade
 
 glade_file = "pybridge.glade"
-glade_dir = ""
+glade_dir = "/home/michael/projects/pybridge/pybridge/lib/ui/GtkGlade/"
+
+pixmaps_dir = "/home/michael/projects/pybridge/pybridge/lib/ui/GtkGlade/pixmaps/"
 
 class Window(dict):
 	def __init__(self):
@@ -40,61 +40,117 @@ class Window(dict):
 
 	def run(self): gtk.main()
 
-## START CUSTOM DEFINITIONS ##
-
 class WindowMain(Window):
 	window_name = 'window_main'
 
 	def new(self):
+		# Initialise child windows and dialogs.
+		self.window_bidbox = WindowBidbox()
+		self.window_bidding = WindowBidding()
+		self.window_rooms = WindowRooms()
+		self.dialog_about = DialogAbout()
+		self.dialog_serverconnect = DialogServerconnect()
 		# Set up card table.
-		self.card_table.set_size_request(width = 600, height = 300)
+		self.card_table.set_size_request(width = 600, height = 400)
 		self.card_table.connect("configure_event", self.configure_event)
 		self.card_table.connect("expose_event", self.expose_event)
 		# Set up card table background.
-		self.background_color = gtk.gdk.color_parse("#393")
-		self.background = 0
-		# Load card faces into a pixbuf. We expect 13 x 5 unit cards.
-		self.cards = gtk.gdk.pixbuf_new_from_file("pixmaps/bonded.png")
-		self.window_auction = WindowAuction()
-		self.window_bidbox = WindowBidbox()
+		background_color = gtk.gdk.color_parse("#015A01")
+		self.card_table.modify_bg(gtk.STATE_NORMAL, background_color)
+		# Load card mask into a pixbuf. We expect 13 x 5 unit cards.
+		card_mask_path = os.path.join(pixmaps_dir, "bonded.png")
+		self.card_mask = gtk.gdk.pixbuf_new_from_file(card_mask_path)
+	
+	def set_state(self, state):
+		if state == 'bidding':
+			self.window_bidbox.window.show()
+			self.window_bidding.window.show()
+		elif state == 'play':
+			pass
+	
+	def server_connect(self):
+		""" """
+		pass
+
+	def server_disconnect(self):
+		""" """
+		# if currently in game, ask.
+		pass
 
 	def configure_event(self, widget, event):
-		""" . """
+		""" Creates backing pixmap of the appropriate size. """
 		x, y, width, height = widget.get_allocation()
 		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
-		self.backing.draw_rectangle(widget.get_style().white_gc, True, 0, 0, width, height)
-		self.draw_card(self.backing, 50, 50, rank = 14, suit = 'club')
+		self.backing.draw_rectangle(widget.get_style().bg_gc[gtk.STATE_NORMAL],
+		                            True, 0, 0, width, height)
+		self.draw_hand(self.backing, range(1,14), 100, 20, 24, False)
+		self.draw_hand(self.backing, range(1,14), 100, 300, 24, False)
+		self.draw_hand(self.backing, range(1,14), 20, 20, 24, True)
+		self.draw_hand(self.backing, range(1,14), 500, 20, 24, True)
 		return True
 
 	def expose_event(self, widget, event):
-		""" """
+		""" Redraws the screen from the backing pixmap. """
 		x, y, width, height = event.area
-		widget.window.draw_drawable(widget.get_style().fg_gc[gtk.STATE_NORMAL], self.backing, x, y, x, y, width, height)
+		widget.window.draw_drawable(widget.get_style().bg_gc[gtk.STATE_NORMAL],
+		                            self.backing, x, y, x, y, width, height)
 		return False
-
-	def draw_card(self, widget, destX, destY, rank = None, suit = None, rotate = False):
+	
+	def draw_card(self, widget, card, destX, destY, rotate = False):
 		ranks = [14, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 		suits = ['club', 'diamond', 'heart', 'spade']
 		# Get width and height of card from pixbuf.
-		width = self.cards.get_width() / 13
-		height = self.cards.get_height() / 5
+		width = self.card_mask.get_width() / 13
+		height = self.card_mask.get_height() / 5
 		# Can we render a known card?
-		if rank in ranks and suit in suits:
-			# Calculate co-ordinates for front of card.
-			srcX = ranks.index(rank) * width
-			srcY = suits.index(suit) * height
-		else:
+		#if card.rank in ranks and card.suit in suits:
+		#	# Calculate co-ordinates for front of card.
+		#	srcX = ranks.index(card.rank) * width
+		##	srcY = suits.index(card.suit) * height
+		#else:
 			# Specify co-ordinates for back of card.
-			srcX = width * 2
-			srcY = height * 4
+		srcX = width * 2
+		srcY = height * 4
 		# Now draw card to widget.
-		widget.draw_pixbuf(None, self.cards, srcX, srcY, destX, destY, width, height)
+		widget.draw_pixbuf(None, self.card_mask, srcX, srcY, destX, destY, width, height)
 
-	def draw_hands(self, widget, hands):
-		pass
+	def draw_hand(self, widget, hand, destX, destY, offset, rotate = False):
+		for card in hand:
+			self.draw_card(widget, card, destX, destY, rotate)
+			if rotate: destY += offset
+			else: destX += offset
 
-class WindowAuction(Window):
-	window_name = 'window_auction'
+	## START SIGNAL HANDLERS
+
+	def on_window_main_destroy(self, widget, *args):
+		gtk.main_quit()
+
+	def on_quit_activate(self, widget, *args):
+		# Must check that we can quit here.
+		self.on_window_main_destroy(widget, *args)
+
+	def on_toolbar_activate(self, widget, *args):
+		if self.toolbar_main.get_property('visible'):
+			self.toolbar_main.hide()
+		else: self.toolbar_main.show()
+
+	def on_statusbar_activate(self, widgets, *args):
+		if self.statusbar_main.get_property('visible'):
+			self.statusbar_main.hide()
+		else: self.statusbar_main.show()
+
+	def on_pybridge_home_activate(self, widget, *args):
+		import webbrowser
+		webbrowser.open('http://pybridge.sourceforge.net/')
+
+	def on_about_activate(self, widget, *args):
+		self.dialog_about.window.show()
+
+	def on_serverconnect_activate(self, widget, *args):
+		self.dialog_serverconnect.window.show()
+	
+class WindowBidding(Window):
+	window_name = 'window_bidding'
 
 	def new(self):
 		self.call_tree_model = gtk.TreeStore(str, str, str, str)
@@ -118,9 +174,16 @@ class WindowAuction(Window):
 		self.call_tree_model.set_value(self.model_iter, self.column, value = data)
 		self.column += 1
 
-
 class WindowBidbox(Window):
 	window_name = 'window_bidbox'
+
+class WindowRooms(Window):
+	window_name = 'window_rooms'
+
+	def new(self):
+		self.room_tree_model = gtk.TreeStore(str, str, str)
+		self.room_tree.set_model(self.room_tree_model)
+		self.model_iter = self.room_tree_model.insert_after(parent = None, sibling = None)
 
 class DialogAbout(Window):
 	window_name = 'dialog_about'
@@ -134,8 +197,8 @@ class DialogAbout(Window):
 		self.dialog_about.set_authors(['Michael Banks <michaelbanks@dsl.pipex.com>', 'Sourav K Mandal <sourav@sourav.net>'])
 		self.dialog_about.set_artists(['Stephen Banks <djbanksie@dsl.pipex.com>'])
 
-## END CUSTOM DEFINITIONS ##
+class DialogServerconnect(Window):
+	window_name = 'dialog_serverconnect'
 
-if __name__ == '__main__':
-	interface = WindowMain()
-	interface.run()
+	def new(self):
+		pass
