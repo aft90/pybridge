@@ -2,13 +2,10 @@ from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
 class BiddingSystem:
-	"""
-	The bidding system class provides an interface between the XML bidding
-	system descriptions and higher-order classes.
-	"""
+	"""An interface between XML bidding system files and player classes."""
 	
 	def __init__(self, filePath):
-		""" Run the XML parser and load in bidding system data. """
+		"""Run the XML parser and load in bidding system data."""
 		parser = make_parser()
 		systemHandler = BiddingSystemHandler()
 		parser.setContentHandler(systemHandler)
@@ -17,47 +14,54 @@ class BiddingSystem:
 		self.description = systemHandler.description
 		self.definitions = systemHandler.definitions
 	
-	#def interpretCall(self, call, bidding, startScope = None):
-	#	""" Returns implications of call. """
-	#	if call in bidding:
-	#		pass
-	#	else: return False
-
 class BiddingSystemHandler(ContentHandler):
+	"""XML Bidding System handler class.
+	
+	Note that this class does NOT validate the XML data as being conformant
+	to the PyBridge bidding system specification; any error, therefore,
+	will produce weird (and wonderful) results.
+	"""
 
 	title = ''
 	description = ''
-	definitions = {}
-	_elementStack = []  # Keeps track of current position in definitions.
+	_elementStack = []     # Names of current elements.
+
+	definitions = {}       # Tree structure of nested dictionaries and lists.
+	_definitionStack = []  # Pointers to track current position in definitions.
 	
 	def startElement(self, name, attrs):
-		# Determine the key to use in definitions and element stack.
-		if name in ['context', 'rule']: key = attrs.getValue('name')
-		else: key = name
-		if 'definitions' in self._elementStack:
-			# Build dictionary for attributes of the element.
-			attributes = {}
-			for attrName in attrs.getNames():
-				attributes[attrName] = attrs.getValue(attrName)
-			# Loop through definitions to find current block.
-			block = self.definitions
-			for chunk in self._elementStack[2:]:
-				block = block[chunk]
-			# Insert element in definitions, through block.
-			if key in ['ownCalls', 'opponentCalls', 'implies', 'responses']:
-				# These container elements take the attributes of their children.
-				block[key] = []
-			elif key in ['call', 'register', 'scope']:
-				# The only useful data in these elements are the attributes.
-				block.append(attributes)
-			else:
-				# Store the attributes as a dictionary.
-				block[key] = attributes
-		# Push element to the current position stack.
-		self._elementStack.append(key)
+		self._elementStack.append(name)  # Push name to stack.
+		if self._definitionStack:
+			element, key = None, None
+			# Determine the content and key.
+			if name in ['context', 'rule']:
+				element, key = {}, attrs.getValue('name')
+			elif name in ['own-calls', 'opponent-calls', 'implies', 'responses']:
+				element, key = [], name
+			elif name in ['call', 'register']:
+				element = {}
+				for attrName in attrs.getNames():
+					value = attrs.getValue(attrName)
+					if attrName in ['level', 'value', 'value-min', 'value-max']:
+						value = int(value)
+					element[attrName] = value
+			elif name == 'scope':
+				element = attrs.getValue('name')
+			# Insert element in definitions by means of its parent...
+			parent = self._definitionStack[-1]
+			if key: parent[key] = element
+			else: parent.append(element)
+			# ... and add to the element stack.
+			self._definitionStack.append(element)
+		
+		# Nasty "kickstart definitions" hack.
+		if name == 'definitions':
+			self._definitionStack.append(self.definitions)
 
 	def endElement(self, name):
-		# Pop this element from the stack.
+		# Pop definition pointer from the stack if necessary.
+		if self._definitionStack:
+			self._definitionStack.pop()
 		self._elementStack.pop()
 	
 	def characters(self, content):
