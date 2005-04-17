@@ -1,46 +1,14 @@
-import os, sys
-import gtk, gtk.glade
+import os, sys, gc
+import gtk
 
-glade_file = "pybridge.glade"
-glade_dir = "/home/michael/projects/pybridge/pybridge/lib/ui/GtkGlade/"
+from lib.core.enumeration import Rank, Seat, Suit
+from lib.core.deck import Card, Deck
 
-pixmaps_dir = "/home/michael/projects/pybridge/pybridge/lib/ui/GtkGlade/pixmaps/"
+from wrapper import WindowWrapper
 
-class Window(dict):
-	def __init__(self):
-		glade_path = os.path.join(glade_dir, glade_file)
-		self.glade = gtk.glade.XML(glade_path, self.window_name, None)
-		self.window = self.glade.get_widget(self.window_name)
-		self.signal_autoconnect()
-		self.new()
-	
-	def __getattr__(self, name):
-		""" Allows referencing of Glade widgets as class attributes. """
-		if name in self: return self[name]
-		else:
-			widget = self.glade.get_widget(name)
-			if widget != None:
-				self[name] = widget
-				return widget
-			else: raise AttributeError, name
-	
-	def __setattr__(self, name, value):
-		self[name] = value
-	
-	def signal_autoconnect(self):
-		""" Sets up class methods as named signal handlers. """
-		signals = {}
-		for attribute_name in dir(self):
-			attribute = getattr(self, attribute_name)
-			if callable(attribute):
-				signals[attribute_name] = attribute
-		self.glade.signal_autoconnect(signals)
+pixmaps_dir = "/usr/share/pixmaps/gnome-games-common/cards/"
 
-	def new(self): pass
-
-	def run(self): gtk.main()
-
-class WindowMain(Window):
+class WindowMain(WindowWrapper):
 	window_name = 'window_main'
 
 	def new(self):
@@ -50,24 +18,105 @@ class WindowMain(Window):
 		self.window_rooms = WindowRooms()
 		self.dialog_about = DialogAbout()
 		self.dialog_serverconnect = DialogServerconnect()
+		# Load card mask into a pixbuf. We expect 13 x 5 unit cards.
+		card_mask_path = os.path.join(pixmaps_dir, "paris.svg")
+		self.card_mask = gtk.gdk.pixbuf_new_from_file(card_mask_path)
 		# Set up card table.
-		self.card_table.set_size_request(width = 600, height = 400)
+	
+		# TEMP
+		self.deck = Deck()
+		self.deck.shuffle()
+		self.deck.deal()
+
+		self.card_table.set_size_request(width = 720, height = 560)
 		self.card_table.connect("configure_event", self.configure_event)
 		self.card_table.connect("expose_event", self.expose_event)
 		# Set up card table background.
-		background_color = gtk.gdk.color_parse("#015A01")
+		background_color = gtk.gdk.color_parse("#376014")
 		self.card_table.modify_bg(gtk.STATE_NORMAL, background_color)
-		# Load card mask into a pixbuf. We expect 13 x 5 unit cards.
-		card_mask_path = os.path.join(pixmaps_dir, "bonded.png")
-		self.card_mask = gtk.gdk.pixbuf_new_from_file(card_mask_path)
+
+	def configure_event(self, widget, event):
+		"""Creates backing pixmap of the appropriate size."""
+		x, y, width, height = widget.get_allocation()
+		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
+		self.backing.draw_rectangle(widget.get_style().bg_gc[gtk.STATE_NORMAL],
+		                            True, 0, 0, width, height)
+		self.draw_table(self.backing)
+		# Manual garbage collection. See the PyGTK FAQ, section 8.4.
+		gc.collect()
+		# A configure event is expected to return true.
+		return True
+
+	def expose_event(self, widget, event):
+		""" Redraws the screen from the backing pixmap. """
+		x, y, width, height = event.area
+		widget.window.draw_drawable(widget.get_style().bg_gc[gtk.STATE_NORMAL],
+		                            self.backing, x, y, x, y, width, height)
+		# An expose event is expect to return false.
+		return False
 	
-	def set_state(self, state):
-		if state == 'bidding':
-			self.window_bidbox.window.show()
-			self.window_bidding.window.show()
-		elif state == 'play':
-			pass
-	
+	def draw_card(self, widget, card, pos_x, pos_y):
+		"""Draws a single card to widget at specified position."""
+		# The elements of these lists correspond to card images in pixbuf.
+		ranks = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
+		         Rank.Six, Rank.Seven, Rank.Eight, Rank.Nine, Rank.Ten,
+		         Rank.Jack, Rank.Queen, Rank.King]
+		suits = [Suit.Club, Suit.Diamond, Suit.Heart, Suit.Spade]
+		# Get card dimensions from pixbuf.
+		card_width = self.card_mask.get_width() / 13
+		card_height = self.card_mask.get_height() / 5
+		# Calculate co-ordinates of card in mask pixbuf.
+		if card.rank in ranks and card.suit in suits:
+			src_x = ranks.index(card.rank) * card_width
+			src_y = suits.index(card.suit) * card_height
+		else:
+			# An unknown card is shown as the face down card.
+			src_x, src_y = card_width * 2, card_height * 4
+		widget.draw_pixbuf(None, self.card_mask, src_x, src_y, pos_x, pos_y,
+		                   card_width, card_height)
+
+	def draw_cards(self, widget, cards, start, spacing, factor, dummy=False):
+		"""Draw a sequence of cards to widget."""
+		if dummy:
+			# Dummy Mode. No BOFH in sight...
+			for index, suit in enumerate(Suit.Suits):
+				# Recurse for each suit!
+				suit_split = filter(lambda card: card.suit == suit, cards)
+				self.draw_cards(widget, suit_split, start, spacing, factor)
+		else:
+			for index, card in filter(lambda x: x[1], enumerate(cards)):
+				pos_x = start[0] + spacing[0] * (index % factor)
+				pos_y = start[1] + spacing[1] * (index / factor)
+				self.draw_card(widget, card, pos_x, pos_y)
+
+	def draw_table(self, widget):
+		margin_x = margin_y = 16
+		table_width, table_height = widget.get_size()
+		card_width = self.card_mask.get_width() / 13
+		card_height = self.card_mask.get_height() / 5
+		spacing = (card_width/2, card_height/4)
+			
+		def build_args(position):
+			args = {}
+			if position in [Seat.North, Seat.South]: args['factor'] = 13
+			else: args['factor'] = 12
+			width = card_width + (args['factor'] - 1)*spacing[0]
+			height = card_height + (13/args['factor'] - 1)*spacing[1]
+			if position == Seat.North:
+				args['start'] = ((table_width - width)/2, margin_y)
+			elif position == Seat.South:
+				args['start'] = ((table_width - width)/2, table_height-height-margin_y)
+			elif position == Seat.East:
+				args['start'] = (table_width-width-margin_x, (table_height - height)/2)
+			elif position == Seat.West:
+				args['start'] = (margin_x, (table_height - height)/2)
+			return args
+
+		for seat, hand in self.deck.hands.items():
+			hand.sort()
+			args = build_args(seat)
+			self.draw_cards(widget, hand.cards, args['start'], spacing, args['factor'], False)
+
 	def server_connect(self):
 		""" """
 		pass
@@ -76,49 +125,6 @@ class WindowMain(Window):
 		""" """
 		# if currently in game, ask.
 		pass
-
-	def configure_event(self, widget, event):
-		""" Creates backing pixmap of the appropriate size. """
-		x, y, width, height = widget.get_allocation()
-		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
-		self.backing.draw_rectangle(widget.get_style().bg_gc[gtk.STATE_NORMAL],
-		                            True, 0, 0, width, height)
-		self.draw_hand(self.backing, range(1,14), 100, 20, 24, False)
-		self.draw_hand(self.backing, range(1,14), 100, 300, 24, False)
-		self.draw_hand(self.backing, range(1,14), 20, 20, 24, True)
-		self.draw_hand(self.backing, range(1,14), 500, 20, 24, True)
-		return True
-
-	def expose_event(self, widget, event):
-		""" Redraws the screen from the backing pixmap. """
-		x, y, width, height = event.area
-		widget.window.draw_drawable(widget.get_style().bg_gc[gtk.STATE_NORMAL],
-		                            self.backing, x, y, x, y, width, height)
-		return False
-	
-	def draw_card(self, widget, card, destX, destY, rotate = False):
-		ranks = [14, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-		suits = ['club', 'diamond', 'heart', 'spade']
-		# Get width and height of card from pixbuf.
-		width = self.card_mask.get_width() / 13
-		height = self.card_mask.get_height() / 5
-		# Can we render a known card?
-		#if card.rank in ranks and card.suit in suits:
-		#	# Calculate co-ordinates for front of card.
-		#	srcX = ranks.index(card.rank) * width
-		##	srcY = suits.index(card.suit) * height
-		#else:
-			# Specify co-ordinates for back of card.
-		srcX = width * 2
-		srcY = height * 4
-		# Now draw card to widget.
-		widget.draw_pixbuf(None, self.card_mask, srcX, srcY, destX, destY, width, height)
-
-	def draw_hand(self, widget, hand, destX, destY, offset, rotate = False):
-		for card in hand:
-			self.draw_card(widget, card, destX, destY, rotate)
-			if rotate: destY += offset
-			else: destX += offset
 
 	## START SIGNAL HANDLERS
 
@@ -149,7 +155,7 @@ class WindowMain(Window):
 	def on_serverconnect_activate(self, widget, *args):
 		self.dialog_serverconnect.window.show()
 	
-class WindowBidding(Window):
+class WindowBidding(WindowWrapper):
 	window_name = 'window_bidding'
 
 	def new(self):
@@ -174,10 +180,10 @@ class WindowBidding(Window):
 		self.call_tree_model.set_value(self.model_iter, self.column, value = data)
 		self.column += 1
 
-class WindowBidbox(Window):
+class WindowBidbox(WindowWrapper):
 	window_name = 'window_bidbox'
 
-class WindowRooms(Window):
+class WindowRooms(WindowWrapper):
 	window_name = 'window_rooms'
 
 	def new(self):
@@ -185,7 +191,7 @@ class WindowRooms(Window):
 		self.room_tree.set_model(self.room_tree_model)
 		self.model_iter = self.room_tree_model.insert_after(parent = None, sibling = None)
 
-class DialogAbout(Window):
+class DialogAbout(WindowWrapper):
 	window_name = 'dialog_about'
 
 	def new(self):
@@ -197,7 +203,7 @@ class DialogAbout(Window):
 		self.dialog_about.set_authors(['Michael Banks <michaelbanks@dsl.pipex.com>', 'Sourav K Mandal <sourav@sourav.net>'])
 		self.dialog_about.set_artists(['Stephen Banks <djbanksie@dsl.pipex.com>'])
 
-class DialogServerconnect(Window):
+class DialogServerconnect(WindowWrapper):
 	window_name = 'dialog_serverconnect'
 
 	def new(self):
