@@ -1,22 +1,25 @@
+from enumeration import Denomination, Seat
+
+
 class Scoring:
-	"""
-	Base scoring class.
-	"""
-	
+	"""Base scoring class."""
+		
 	def __init__(self):
 		self.contractLevel = 0
-		self.trumpSuit = 'c'
+		self.trumpSuit = Denomination.Club
 		self.tricksMade = 0
-		self.declarer = 'n'
+		self.declarer = Seat.North
 		self.doubled = False
 		self.redoubled = False
 		self.vulnerable = False
 
-class ScoreDuplicate(Scoring):
-	"""
-	Scoring algorithm for duplicate bridge.
-	"""
 
+class ScoreDuplicate(Scoring):
+	"""Scoring algorithm for duplicate bridge."""
+
+	# There are undoubtedly many minor variations of the score values.
+	# In the future, score values may be stored in separate XML format files.
+	
 	def score(self):
 		theScore = 0
 		if self.tricksMade >= self.contractLevel + 6:
@@ -127,13 +130,14 @@ class ScoreDuplicate(Scoring):
 				else:
 					theScore -= 50 + (underTricks - 1) * 50
 				
-		# Return score
 		return theScore
-			
-class ScoreRubber(Scoring):
-	"""
-	Scoring algorithm for rubber bridge.
-	"""
 
-	def ScoreRubber(self):
-		pass
+
+class ScoreRubber(Scoring):
+	"""Scoring algorithm for rubber bridge."""
+
+
+	# Not implemented.
+
+	def score(self):
+		return 0
