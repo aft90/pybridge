@@ -449,6 +449,7 @@
 </widget>
 
 <widget class="GtkWindow" id="window_bidbox">
+  <property name="visible">True</property>
   <property name="title" translatable="yes">Bid Box</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
@@ -467,6 +468,22 @@
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
       <property name="spacing">0</property>
+
+      <child>
+	<widget class="GtkButton" id="btnCallPass">
+	  <property name="visible">True</property>
+	  <property name="can_focus">True</property>
+	  <property name="label" translatable="yes">Pass</property>
+	  <property name="use_underline">True</property>
+	  <property name="relief">GTK_RELIEF_NONE</property>
+	  <property name="focus_on_click">True</property>
+	</widget>
+	<packing>
+	  <property name="padding">0</property>
+	  <property name="expand">False</property>
+	  <property name="fill">False</property>
+	</packing>
+      </child>
 
       <child>
 	<widget class="GtkTable" id="table1">
@@ -1018,24 +1035,6 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid3s">
-	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">3♠</property>
-	      <property name="use_underline">True</property>
-	      <property name="relief">GTK_RELIEF_NONE</property>
-	      <property name="focus_on_click">True</property>
-	    </widget>
-	    <packing>
-	      <property name="left_attach">3</property>
-	      <property name="right_attach">4</property>
-	      <property name="top_attach">2</property>
-	      <property name="bottom_attach">3</property>
-	      <property name="y_options"></property>
-	    </packing>
-	  </child>
-
-	  <child>
 	    <widget class="GtkButton" id="btnCallBid3h">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
@@ -1106,10 +1105,29 @@
 	      <property name="y_options"></property>
 	    </packing>
 	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="btnCallBid3s">
+	      <property name="visible">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label" translatable="yes">3♠</property>
+	      <property name="use_underline">True</property>
+	      <property name="relief">GTK_RELIEF_NONE</property>
+	      <property name="focus_on_click">True</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">3</property>
+	      <property name="right_attach">4</property>
+	      <property name="top_attach">2</property>
+	      <property name="bottom_attach">3</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
 	</widget>
 	<packing>
 	  <property name="padding">0</property>
-	  <property name="expand">False</property>
+	  <property name="expand">True</property>
 	  <property name="fill">True</property>
 	</packing>
       </child>
@@ -1154,22 +1172,6 @@
 	</widget>
 	<packing>
 	  <property name="padding">0</property>
-	  <property name="expand">True</property>
-	  <property name="fill">True</property>
-	</packing>
-      </child>
-
-      <child>
-	<widget class="GtkButton" id="btnCallPass">
-	  <property name="visible">True</property>
-	  <property name="can_focus">True</property>
-	  <property name="label" translatable="yes">Pass</property>
-	  <property name="use_underline">True</property>
-	  <property name="relief">GTK_RELIEF_NONE</property>
-	  <property name="focus_on_click">True</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
 	  <property name="expand">False</property>
 	  <property name="fill">False</property>
 	</packing>
@@ -1179,6 +1181,7 @@
 </widget>
 
 <widget class="GtkWindow" id="window_bidding">
+  <property name="visible">True</property>
   <property name="title" translatable="yes">Bidding</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
@@ -1208,6 +1211,7 @@
 </widget>
 
 <widget class="GtkDialog" id="dialog_serverconnect">
+  <property name="visible">True</property>
   <property name="title" translatable="yes">Connect to Server</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
@@ -1671,13 +1675,8 @@
   </child>
 </widget>
 
-<widget class="GtkAboutDialog" id="dialog_about">
-  <property name="destroy_with_parent">False</property>
-  <property name="name" translatable="yes">Application Name</property>
-  <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
-</widget>
-
 <widget class="GtkWindow" id="window_rooms">
+  <property name="visible">True</property>
   <property name="title" translatable="yes">Rooms and Tables</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
