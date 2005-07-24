@@ -1,4 +1,4 @@
-import os, sys, gc, webbrowser
+import os.path, gc, webbrowser
 import gtk
 from wrapper import WindowWrapper
 
@@ -36,6 +36,7 @@ class WindowMain(WindowWrapper):
 		d = Deck()
 		d.shuffle()
 		self.deck = d.deal()
+		self.dummy = Seat.North
 
 
 	def configure_event(self, widget, event):
@@ -59,52 +60,35 @@ class WindowMain(WindowWrapper):
 			                   pos_y, self.card_width, self.card_height)
 
 
-		def build_cards_pixmap(cards, spacing, wibble, dummy=0):
-			"""Return a pixmap of card images.
+		def build_cards_pixmap(cards, spacing, wraparound, transpose=False, dummy=False):
+			"""Returns a pixmap of card images. Assumes cards are sorted by suit.
 
 			spacing: (x,y) vector to offset cards.
-			wibble: 
-			dummy: """
-			
+			wraparound: number of cards to draw in row.
+			transpose: if True, draw cards in columns.
+			dummy: if True, wraparound for each suit. Ignores wraparound."""
 			spacing_x, spacing_y = spacing
-
-			if dummy:
-				# Split the cards into suits.
-				suit_split = {Suit.Club : [], Suit.Diamond : [], Suit.Heart : [], Suit.Spade : []}
+			if dummy:  # Calculate values for wraparound.
+				wraparound = [0, 0, 0, 0]
 				for card in cards:
-					suit_split[card.suit].append(card)
-				# We need to know the longest suit.
-				maxlength = max([len(suit) for suit in suit_split.values()])
-
-				#if dummy == 1:
-				#	width = self.card_width + 3*spacing_x
-				#	height = self.card_height + (maxlength-1)*spacing_y
-				#else:
-				width = self.card_width + (maxlength-1)*spacing_x
-				height = self.card_height + 3*spacing_y
-					
-				# Setup pixmap with appropriate dimensions.
-				cards_pixmap = gtk.gdk.Pixmap(widget.window, width, height)
-
-				for factor_y, suit in enumerate(Suit.Suits):
-					pos_y = factor_y * spacing_y
-					for factor_x, card in enumerate(suit_split[suit]):
-						pos_x = factor_x * spacing_x
-						#if dummy == 1: pos_x, pos_y = pos_y, pos_x
-						draw_card(cards_pixmap, card, pos_x, pos_y)
-
-			else:
-				# Setup pixmap with appropriate dimensions.
-				width = self.card_width + (wibble-1)*spacing_x
-				height = self.card_height + ((13/wibble + (13%wibble>0))-1)*spacing_y  # Crude rounding. Fix.
-				cards_pixmap = gtk.gdk.Pixmap(widget.window, width, height)
-				for index, card in [pair for pair in enumerate(cards) if pair!=None]:
-					factor_x = index % wibble  # index mod wibble
-					factor_y = index / wibble  # floor(index div wibble)
-					pos_x = spacing_x * (index % wibble)
-					pos_y = spacing_y * (index / wibble)
-					draw_card(cards_pixmap, card, pos_x, pos_y)
-			return cards_pixmap
+					wraparound[Suit.Suits.index(card.suit)] += 1
+			# Setup pixmap with appropriate dimensions.
+			alpha, beta = max(wraparound)-1, len(wraparound)-1
+			width = self.card_width + spacing_x*(transpose*beta + (not transpose)*alpha)
+			height = self.card_height + spacing_y*(transpose*alpha + (not transpose)*beta)
+			cards_pixmap = gtk.gdk.Pixmap(widget.window, width, height)
+			card_coords = []
+			# Draw cards to pixmap.
+			for index, card in [pair for pair in enumerate(cards) if pair!=None]:
+				factor_y = 0
+				while sum(wraparound[0:factor_y+1]) <= index:
+					factor_y += 1
+				factor_x = index - sum(wraparound[0:factor_y])
+				pos_x = spacing_x * (transpose*factor_y + (not transpose)*factor_x)
+				pos_y = spacing_y * (transpose*factor_x + (not transpose)*factor_y)
+				draw_card(cards_pixmap, card, pos_x, pos_y)
+				card_coords.append((card, pos_x, pos_y))
+			return [cards_pixmap, card_coords]
 
 
 		margin_x = margin_y = 16
@@ -112,35 +96,28 @@ class WindowMain(WindowWrapper):
 		
 		x, y, width, height = widget.get_allocation()
 		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
-		backgroundGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)
-
+		backgroundGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)#, clip_mask=)
 		self.backing.draw_rectangle(backgroundGC, True, 0, 0, width, height)
 
+		rowfactors = {Seat.North : (13,), Seat.South : (13,), Seat.West : (4,3,3,3), Seat.East : (4,3,3,3)}
 		coords = {Seat.North : lambda w, h: ((width-w)/2, margin_y),
 		          Seat.South : lambda w, h: ((width-w)/2, height-h-margin_y),
 		          Seat.East : lambda w, h: (width-w-margin_x, (height-h)/2),
 		          Seat.West : lambda w, h: (margin_x, (height-h)/2)}
 
-		self.card_coords = []
-		self.hand_coords = []
-		rowfactors = {Seat.North : 13, Seat.South : 13, Seat.West : 4, Seat.East : 4}
-
 		for seat, hand in self.deck.items():
-			# Render each hand separately.
+			# Render each hand mask separately.
 			if not self.hand_masks[seat]:
-				# We need to create and store the hand mask.
-				hand.sort()
-				self.hand_masks[seat] = build_cards_pixmap(hand, spacing, rowfactors[seat], seat==Seat.North)
-			# Now determine coords on table.
-			hand_width, hand_height = self.hand_masks[seat].get_size()
+				transpose, dummy = False, False
+				self.hand_masks[seat] = build_cards_pixmap(hand, spacing, rowfactors[seat], transpose, dummy)
+			# Determine co-ordinates to draw hand mask on table.
+			hand_width, hand_height = self.hand_masks[seat][0].get_size()
 			pos_x, pos_y = coords[seat](hand_width, hand_height)
-			self.hand_coords.append(((pos_x, pos_y), (pos_x+hand_width, pos_y+hand_height)))
-			self.backing.draw_drawable(backgroundGC,
-			#self.card_table.get_style().bg_gc[gtk.STATE_NORMAL],
-			                           self.hand_masks[seat], 0, 0, pos_x, pos_y, -1, -1)
+			self.backing.draw_drawable(backgroundGC, self.hand_masks[seat][0], 0, 0, pos_x, pos_y, -1, -1)
+			self.hand_masks[seat].append((pos_x, pos_y, pos_x+hand_width, pos_y+hand_height))
 	
-		gc.collect()  # Manual garbage collection. PyGTK FAQ, section 8.4.
-		return True  # Configure event is expected to return true.
+		gc.collect()  # Manual garbage collection. See PyGTK FAQ, section 8.4.
+		return True   # Configure event is expected to return true.
 
 
 	def expose_event(self, widget, event):
@@ -155,18 +132,14 @@ class WindowMain(WindowWrapper):
 
 
 	def button_press_event(self, widget, event):
-
 		if event.button == 1 and self.backing != None:
-			# Iterate over co-ordinates backwards, as items at back of list
-			# may be drawn over items at front of list.
-			for hand, (hand_start, hand_finish) in self.hand_coords[::-1]:
-				if (hand_start[0] <= event.x <= hand_finish[0]) and \
-				   (hand_start[1] <= event.y <= hand_finish[1]):
-					for card in self.hands[hand].cards[::-1]:
-						# Note that we are working from separate lists here.
-						card_start, card_finish = self.card_coords[card]
-						if (card_start[0] <= event.x <= card_finish[0]) and \
-						   (card_start[1] <= event.y <= card_finish[1]):
+			# Determine if button press event lies in a hand.
+			for hand in self.hand_masks.values():
+				start_x, start_y, finish_x, finish_y = hand[-1]
+				if (start_x <= event.x <= finish_x) and (start_y <= event.y <= finish_y):
+					pos_x, pos_y = event.x-start_x, event.y-start_y
+					for card, x, y in hand[1][::-1]:  # Iterate backwards.
+						if (x <= pos_x <= x+self.card_width) and (y <= pos_y <= y+self.card_height):
 							status_context = self.statusbar_main.get_context_id("card")
 							self.statusbar_main.push(status_context, str(card))
 							return True
