@@ -43,8 +43,8 @@ class WindowMain(WindowWrapper):
 		"""Creates backing pixmap of the appropriate size."""
 
 
-		def draw_card(widget, card, pos_x, pos_y):
-			"""Draw card image to widget at specified position."""
+		def draw_card(card, dest_pixbuf, pos_x, pos_y):
+			"""Draw card to destination pixbuf at specified position."""
 			# Index of each element corresponds to card image in card_mask.
 			ranks = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
 			         Rank.Six, Rank.Seven, Rank.Eight, Rank.Nine, Rank.Ten,
@@ -56,12 +56,12 @@ class WindowMain(WindowWrapper):
 				src_y = suits.index(card.suit) * self.card_height
 			else:  # An unknown card is shown as the face down card.
 				src_x, src_y = self.card_width * 2, self.card_height * 4
-			widget.draw_pixbuf(None, self.card_mask, src_x, src_y, pos_x,
-			                   pos_y, self.card_width, self.card_height)
+			self.card_mask.copy_area(src_x, src_y, self.card_width, self.card_height,
+			                         dest_pixbuf, pos_x, pos_y)
 
 
-		def build_cards_pixmap(cards, spacing, wraparound, transpose=False, dummy=False):
-			"""Returns a pixmap of card images. Assumes cards are sorted by suit.
+		def build_cards_pixbuf(cards, spacing, wraparound, transpose=False, dummy=False):
+			"""Returns a pixbuf of card images. Assumes cards are sorted by suit.
 
 			spacing: (x,y) vector to offset cards.
 			wraparound: number of cards to draw in row.
@@ -76,7 +76,7 @@ class WindowMain(WindowWrapper):
 			alpha, beta = max(wraparound)-1, len(wraparound)-1
 			width = self.card_width + spacing_x*(transpose*beta + (not transpose)*alpha)
 			height = self.card_height + spacing_y*(transpose*alpha + (not transpose)*beta)
-			cards_pixmap = gtk.gdk.Pixmap(widget.window, width, height)
+			cards_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
 			card_coords = []
 			# Draw cards to pixmap.
 			for index, card in [pair for pair in enumerate(cards) if pair!=None]:
@@ -86,9 +86,9 @@ class WindowMain(WindowWrapper):
 				factor_x = index - sum(wraparound[0:factor_y])
 				pos_x = spacing_x * (transpose*factor_y + (not transpose)*factor_x)
 				pos_y = spacing_y * (transpose*factor_x + (not transpose)*factor_y)
-				draw_card(cards_pixmap, card, pos_x, pos_y)
+				draw_card(card, cards_pixbuf, pos_x, pos_y)
 				card_coords.append((card, pos_x, pos_y))
-			return [cards_pixmap, card_coords]
+			return [cards_pixbuf, card_coords]
 
 
 		margin_x = margin_y = 16
@@ -96,7 +96,7 @@ class WindowMain(WindowWrapper):
 		
 		x, y, width, height = widget.get_allocation()
 		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
-		backgroundGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)#, clip_mask=)
+		backgroundGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)
 		self.backing.draw_rectangle(backgroundGC, True, 0, 0, width, height)
 
 		rowfactors = {Seat.North : (13,), Seat.South : (13,), Seat.West : (4,3,3,3), Seat.East : (4,3,3,3)}
@@ -109,11 +109,12 @@ class WindowMain(WindowWrapper):
 			# Render each hand mask separately.
 			if not self.hand_masks[seat]:
 				transpose, dummy = False, False
-				self.hand_masks[seat] = build_cards_pixmap(hand, spacing, rowfactors[seat], transpose, dummy)
+				self.hand_masks[seat] = build_cards_pixbuf(hand, spacing, rowfactors[seat], transpose, dummy)
 			# Determine co-ordinates to draw hand mask on table.
-			hand_width, hand_height = self.hand_masks[seat][0].get_size()
+			hand_width = self.hand_masks[seat][0].get_width()
+			hand_height = self.hand_masks[seat][0].get_height()
 			pos_x, pos_y = coords[seat](hand_width, hand_height)
-			self.backing.draw_drawable(backgroundGC, self.hand_masks[seat][0], 0, 0, pos_x, pos_y, -1, -1)
+			self.backing.draw_pixbuf(backgroundGC, self.hand_masks[seat][0], 0, 0, pos_x, pos_y)
 			self.hand_masks[seat].append((pos_x, pos_y, pos_x+hand_width, pos_y+hand_height))
 	
 		gc.collect()  # Manual garbage collection. See PyGTK FAQ, section 8.4.
