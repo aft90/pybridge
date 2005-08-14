@@ -24,12 +24,12 @@ class Card:
 		return cmp(selfIndex, otherIndex)
 
 
+	def __str__(self):
+		"""Returns the English name for the card."""
+		return self.rank + " of " + self.suit + "s"
+
+
 class Hand(list):
-
-
-	def isValid(self):
-		"""Is the hand valid?"""
-		return len(self) == 13
 
 
 	def addCard(self, card):
@@ -50,15 +50,10 @@ class Hand(list):
 			return False
 
 
-	def countSuits(self):
-		"""Returns a dictionary of suits with a count of cards in each suit."""
-		suitCount = dict.fromkeys(Suit.Suits, 0)
-		for card in self:
-			suitCount[card.suit] += 1
-		return suitCount
-
-
 class Deck:
+
+
+	import random
 
 
 	def __init__(self):
@@ -69,21 +64,24 @@ class Deck:
 				self._cards.append(Card(rank, suit))
 
 
-	def reset(self):
-		self._deal = {Seat.North : Hand(), Seat.South : Hand(), Seat.East : Hand(), Seat.West : Hand()}
+	def _build(self):
+		"""Returns a dictionary of hands."""
+		return {Seat.North : Hand(), Seat.South : Hand(), Seat.East : Hand(), Seat.West : Hand()}
 
 
-	def deal(self):
-		"""Deals 13 cards to each of the 4 hands."""
-		self.reset()
-		index = 0
-		for hand in self._deal.values():
-			while not hand.isValid():
-				hand.addCard(self._cards[index])
-				index += 1
-			hand.sort()
-		return self._deal
+	def generateOrdered(self, combination):
+		"""Returns a deal, determined by combination."""
+		pass  # NOT IMPLEMENTED YET.
+	
 
+	def generateRandom(self):
+		"""Returns a deal, from a shuffled deck."""
+		self.shuffle()
+		hands = self._build()
+		for index, card in enumerate(self._cards):
+			hands[Seat.Seats[index/13]].addCard(card)
+		return hands
+		
 
 	def shuffle(self):
 		"""Shuffles the cards."""
