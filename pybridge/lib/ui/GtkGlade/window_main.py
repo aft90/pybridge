@@ -6,7 +6,7 @@ from lib.core.enumeration import Rank, Seat, Suit
 from lib.core.deck import Card, Deck
 
 
-pixbufs_dir = "/usr/share/pixmaps/gnome-games-common/cards/"
+pixbufs_dir = os.path.abspath('lib/graphics/')
 
 
 class WindowMain(WindowWrapper):
@@ -28,14 +28,14 @@ class WindowMain(WindowWrapper):
 		self.card_table.connect("expose_event", self.expose_event)
 		self.card_table.connect("button_press_event", self.button_press_event)
 		self.card_table.add_events(gtk.gdk.BUTTON_PRESS_MASK)
-		bkg = gtk.gdk.pixbuf_new_from_file("/usr/share/pixmaps/cards/baize.png")
+		bkg_path = os.path.join(pixbufs_dir, "baize.png")
+		bkg = gtk.gdk.pixbuf_new_from_file(bkg_path)
 		self.background = bkg.render_pixmap_and_mask()[0]
 		del bkg  # We won't need it any more.
 		
-		# TEMPORARY STUFF TO REMOVE LATER.
+		# TODO: TEMPORARY CARD GENERATOR.
 		d = Deck()
-		d.shuffle()
-		self.deck = d.deal()
+		self.deck = d.generateRandom()
 		self.dummy = Seat.North
 
 
