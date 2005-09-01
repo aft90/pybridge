@@ -34,8 +34,16 @@ class Call:
 			return 1  # Comparing non-bid call types returns true.
 
 
+	def __str__(self):
+		if self.callType is CallType.Bid:
+			return "%s %s" % (self.bidLevel, self.bidDenom)
+		else:
+			return self.callType
+		
+
+
 class Bidding:
-	""" A bidding session is a list of Call objects and the dealer. """
+	"""A bidding session is a list of Call objects and the dealer."""
 
 
 	def __init__(self, dealer):
@@ -44,20 +52,28 @@ class Bidding:
 
 
 	def isComplete(self):
-		"""Bidding is complete (passed out) if:
+		"""Bidding is complete if:
 		
 		- at least 4 calls made.
 		- last 3 calls are passes.
 		"""
 		if len(self.calls) >= 4:
-			return self.calls[-1].callType == self.calls[-2].callType == self.calls[-3].callType == CallType.Pass
+			return len([call for call in self.calls[-3:] if call.callType==CallType.Pass]) == 3
+		else:
+			return False
+
+
+	def isPassedOut(self):
+		"""Bidding is passed out if each player has passed on their first turn. This implies no contract."""
+		if len(self.calls) == 4:
+			return len([call for call in self.calls if call.callType==CallType.Pass]) == 4
 		else:
 			return False
 
 
 	def contract(self):
-		"""A contract is the state of the bidding."""
-		if self.currentBid():
+		"""A contract is the final state of the bidding."""
+		if self.isComplete() and self.currentBid():
 			return {'bidDenom'    : self.currentBid().bidDenom,
 			        'bidLevel'    : self.currentBid().bidLevel,
 			        'declarer'    : self.whoseCall(self.currentBid()),
@@ -92,7 +108,7 @@ class Bidding:
 
 	def addCall(self, call):
 		"""Add call to the calls list."""
-		if validCall(call):
+		if self.validCall(call):
 			self.calls.append(call)
 
 
