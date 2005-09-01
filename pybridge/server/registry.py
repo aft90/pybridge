@@ -77,12 +77,15 @@ class Registry:
 
 	def getUser(self, identifier):
 		"""Returns user object associated with identifier."""
-		return self._users[identifier]
+		if identifier in self._users:
+			return self._users[identifier]
 
 
 	def getTable(self, identifier):
 		"""Returns table object associated with identifier."""
-		return self._tables[identifier]
+		if identifier in self._tables:
+			return self._tables[identifier]
+			
 
 
 	def getVariable(self, identifier, name):
