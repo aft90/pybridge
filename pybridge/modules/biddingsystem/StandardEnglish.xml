@@ -1,90 +1,87 @@
-<?xml version='1.0' encoding='iso-8859-1'?>
+<?xml version='1.0' encoding='utf-8'?>
 <biddingSystem>
 	<title>Standard English Acol</title>
-	<description>Standard English is an ACOL-like system for beginners, popularised by the English Bridge Union. It uses a weak no-trump opening and a minimum number of conventions; namely Stayman and Blackwood.</description>
+	<description>Standard English is an ACOL-like system for beginners, popularised by the English Bridge Union. It uses a weak notrump opening and a minimum number of conventions; namely Stayman and Blackwood.</description>
 	<definitions>
 		<context name='openings' >
 			<rule name='open-1-suit' >
-				<conditions/>
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='club' level='1' />
 					<call type='bid' denomination='diamond' level='1' />
 					<call type='bid' denomination='heart' level='1' />
 					<call type='bid' denomination='spade' level='1' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='hand-card-points' valueMin='12' valueMax='19' />
-					<register player='me' property='suit-card-count' valueMin='4' />
+					<register player='me' property='hand-points-all' value-min='12' value-max='19' />
+					<register player='me' property='suit-count' value-min='4' />
 				</implies>
 				<responses>
-					<scope name='' />
+					<scope name='respond-1-suit' />
 				</responses>
 			</rule>
-			<rule name='open-1-nt' >
-				<conditions/>
-				<ownCalls>
-					<call type='bid' denomination='no-trump' level='1' />
-				</ownCalls>
-				<opponentCalls>
+			<rule name='open-1-notrump' >
+				<own-calls>
+					<call type='bid' denomination='notrump' level='1' />
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='hand-card-points' valueMin='12' valueMax='14' />
-					<register player='me' property='club-card-count' valueMin='2' valueMax='5' />
-					<register player='me' property='diamond-card-count' valueMin='2' valueMax='5' />
-					<register player='me' property='heart-card-count' valueMin='2' valueMax='4' />
-					<register player='me' property='spade-card-count' valueMin='2' valueMax='4' />
+					<register player='me' property='hand-points-card' value-min='12' value-max='14' />
+					<register player='me' property='club-count' value-min='2' value-max='5' />
+					<register player='me' property='diamond-count' value-min='2' value-max='5' />
+					<register player='me' property='heart-count' value-min='2' value-max='4' />
+					<register player='me' property='spade-count' value-min='2' value-max='4' />
 				</implies>
 				<responses>
-					<scope name='' />
+					<scope name='respond-1-notrump' />
 				</responses>
 			</rule>
 			<rule name='open-2-club' >
-				<conditions/>
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='club' level='2' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='hand-card-points' valueMin='23' />
+					<register player='me' property='hand-points-card' value-min='23' />
 				</implies>
 				<responses/>
 			</rule>
 			<rule name='open-2-suit' >
-				<conditions/>
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='diamond' level='2' />
 					<call type='bid' denomination='heart' level='2' />
 					<call type='bid' denomination='spade' level='2' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='hand-card-points' valueMin='20' valueMax='22'/>
-					<register player='me' property='suit-card-count' valueMin='5' />
+					<register player='me' property='hand-points-card' value-min='20' value-max='22'/>
+					<register player='me' property='suit-count' value-min='5' />
 				</implies>
-				<responses/>
+				<responses>
+					<scope name='' />
+				</responses>
 			</rule>
 			<rule name='open-2-nt' >
-				<conditions/>
-				<ownCalls>
-					<call type='bid' denomination='no-trump' level='2' />
-				</ownCalls>
-				<opponentCalls>
+				<own-calls>
+					<call type='bid' denomination='notrump' level='2' />
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='hand-card-points' valueMin='20' valueMax='22' />
-					<register player='me' property='club-card-count' valueMin='2' valueMax='5' />
-					<register player='me' property='diamond-card-count' valueMin='2' valueMax='5' />
-					<register player='me' property='heart-card-count' valueMin='2' valueMax='4' />
-					<register player='me' property='spade-card-count' valueMin='2'  valueMax='4' />
+					<register player='me' property='hand-points-card' value-min='20' value-max='22' />
+					<register player='me' property='club-count' value-min='2' value-max='5' />
+					<register player='me' property='diamond-count' value-min='2' value-max='5' />
+					<register player='me' property='heart-count' value-min='2' value-max='4' />
+					<register player='me' property='spade-count' value-min='2'  value-max='4' />
 				</implies>
 				<responses>
 					<scope name='' />
@@ -93,133 +90,227 @@
 		</context>
 		<context name='overcalls' >
 			<rule name='double-takeout' >
-				<ownCalls>
+				<own-calls>
 					<call type='double' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='bid' denomination='club' level='1' />
 					<call type='bid' denomination='diamond' level='1' />
 					<call type='bid' denomination='heart' level='1' />
 					<call type='bid' denomination='spade' level='1' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='hand-card-points' valueMin='12' />
+					<register player='me' property='hand-points-card' value-min='12' />
 				</implies>
 			</rule>
 			<rule name='double-penalty' >
-				<ownCalls>
+				<own-calls>
 					<call type='double' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='bid' levelMin='3' />
-				</opponentCalls>
-				<implies/>
+				</opponent-calls>
+				<implies>
+					<register partnership='them' property='hand-points-card' value-max='15' />
+					<register partnership='them' property='suit-count' value-max='8' />
+				</implies>
 			</rule>
 		</context>
-		<context name='responses' />
+		<context name='respond-1-suit'>
+			<rule name='single-raise'>
+				<own-calls>
+					<call type='bid' denomination='club' level='2' />
+					<call type='bid' denomination='diamond' level='2' />
+					<call type='bid' denomination='heart' level='2' />
+					<call type='bid' denomination='spade' level='2' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='hand-points-card' value-min='6' value-max='9' />
+					<register player='me' property='suit-count' value-min='4' />
+				</implies>
+			</rule>
+			<rule name='double-raise'>
+				<own-calls>
+					<call type='bid' denomination='club' level='3' />
+					<call type='bid' denomination='diamond' level='3' />
+					<call type='bid' denomination='heart' level='3' />
+					<call type='bid' denomination='spade' level='3' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='hand-points-card' value-min='10' value-max='12' />
+					<register player='me' property='suit-count' value-min='4' />
+				</implies>
+			</rule>
+			<rule name='triple-raise'>
+				<own-calls>
+					<call type='bid' denomination='club' level='4' />
+					<call type='bid' denomination='diamond' level='4' />
+					<call type='bid' denomination='heart' level='4' />
+					<call type='bid' denomination='spade' level='4' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='hand-points-card' value-min='13' value-max='15' />
+					<register player='me' property='suit-count' value-min='4' />
+				</implies>
+			</rule>
+			<rule name='reply-1-notrump'>
+				<own-calls>
+					<call type='bid' denomination='notrump' level='1' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='hand-points-card' value-min='6' value-max='9' />
+				</implies>
+			</rule>
+			<rule name='reply-2-notrump'>
+				<own-calls>
+					<call type='bid' denomination='notrump' level='2' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='hand-points-card' value-min='10' value-max='12' />
+				</implies>
+			</rule>
+			<rule name='reply-3-notrump'>
+				<own-calls>
+					<call type='bid' denomination='notrump' level='3' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='hand-points-card' value-min='13' value-max='15' />
+				</implies>
+			</rule>
+
+
+				
+
+		</context>
 		<context name='convention-stayman' >
 			<rule name='stayman-init' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='club' level='2' />
 					<call type='bid' denomination='club' level='3' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<or>
-						<register player='me' property='heart-card-count' valueMin='4' />
-						<register player='me' property='spade-card-count' valueMin='4' />
-					</or>
+					<register player='me' property='heart-count' value-min='4' />
+					<register player='me' property='spade-count' value-min='4' />
 				</implies>
 				<responses>
 					<scope name='convention-stayman' />
 				</responses>
 			</rule>
 			<rule name='stayman-response-diamond' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='diamond' level='2' />
 					<call type='bid' denomination='diamond' level='3' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='heart-card-count' valueMax='3' />
-					<register player='me' property='spade-card-count' valueMax='3' />
+					<register player='me' property='heart-count' value-max='3' />
+					<register player='me' property='spade-count' value-max='3' />
 				</implies>
 			</rule>
 			<rule name='stayman-response-heart' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='heart' level='2' />
 					<call type='bid' denomination='heart' level='3' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='heart-card-count' valueMin='4' />
+					<register player='me' property='heart-count' value-min='4' />
 				</implies>
 			</rule>
 			<rule name='stayman-response-spade' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='spade' level='2' />
 					<call type='bid' denomination='spade' level='3' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<register player='me' property='heart-card-count' valueMax='3' />
-					<register player='me' property='spade-card-count' valueMin='4' />
+					<register player='me' property='heart-count' value-max='3' />
+					<register player='me' property='spade-count' value-min='4' />
 				</implies>
 			</rule>
 		</context>
 		<context name='convention-blackwood-ace' >
-			<rule name='blackwood-init' />
-			<rule name='blackwood-response-club' >
-				<ownCalls>
-					<call type='bid' denomination='club' level='5' />
-				</ownCalls>
-				<opponentCalls>
+			<rule name='blackwood-init'>
+				<own-calls>
+					<call type='bid' denomination='notrump' level='4' />
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<or>
-						<register player='me' property='ace-count' value='0' />
-						<register player='me' property='ace-count' value='4' />
-					</or>
+				</implies>
+				<responses>
+					<scope name='convention-blackwood-ace' />
+				</responses>
+			</rule>
+			<rule name='blackwood-response-club' >
+				<own-calls>
+					<call type='bid' denomination='club' level='5' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+					<register player='me' property='ace-count' value='0' />
+					<register player='me' property='ace-count' value='4' />
 				</implies>
 			</rule>
 			<rule name='blackwood-response-diamond' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='diamond' level='5' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
 					<register player='me' property='ace-count' value='1' />
 				</implies>
 			</rule>
 			<rule name='blackwood-response-heart' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='heart' level='5' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
 					<register player='me' property='ace-count' value='2' />
 				</implies>
 			</rule>
 			<rule name='blackwood-response-spade' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='spade' level='5' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
 					<register player='me' property='ace-count' value='3' />
 				</implies>
@@ -227,50 +318,59 @@
 		</context>
 		<context name='convention-blackwood-king' >
 			<rule name='blackwood-init'>
+				<own-calls>
+					<call type='bid' denomination='notrump' level='5' />
+				</own-calls>
+				<opponent-calls>
+					<call type='pass' />
+				</opponent-calls>
+				<implies>
+				</implies>
+				<responses>
+					<scope name='convention-blackwood-king' />
+				</responses>
 			</rule>
 			<rule name='blackwood-response-club' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='club' level='6' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
-					<or>
-						<register player='me' property='king-count' value='0' />
-						<register player='me' property='king-count' value='4'  />
-					</or>
+					<register player='me' property='king-count' value='0' />
+					<register player='me' property='king-count' value='4' />
 				</implies>
 			</rule>
 			<rule name='blackwood-response-diamond' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='diamond' level='6' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
 					<register player='me' property='king-count' value='1' />
 				</implies>
 			</rule>
 			<rule name='blackwood-response-heart' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='heart' level='6' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
 					<register player='me' property='king-count' value='2' />
 				</implies>
 			</rule>
 			<rule name='blackwood-response-spade' >
-				<ownCalls>
+				<own-calls>
 					<call type='bid' denomination='spade' level='6' />
-				</ownCalls>
-				<opponentCalls>
+				</own-calls>
+				<opponent-calls>
 					<call type='pass' />
-				</opponentCalls>
+				</opponent-calls>
 				<implies>
 					<register player='me' property='king-count' value='3' />
 				</implies>
