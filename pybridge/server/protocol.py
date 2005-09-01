@@ -21,20 +21,23 @@ import re, shlex
 from twisted.internet import protocol, reactor
 from twisted.protocols import basic
 
-from lib.core.enumeration import CallType, Denomination, Rank, Suit
+from lib.core.bidding import Call
+from lib.core.enumeration import CallType, Denomination, Rank, Seat, Suit
+from lib.core.deck import Card
 
-from table import ITableListener
+from table import TableError, ITableListener
 
 import registry
 registry = registry.getHandle()
 
 
-SUPPORTED_PROTOCOLS = ('0.0.0', '0.0.1')
+SUPPORTED_PROTOCOLS = ('pybridge-0.1',)
 
 
 class Acknowledgement(Exception): pass
 class DeniedCommand(Exception): pass
 class IllegalCommand(Exception): pass
+class Response(Exception): pass
 
 
 class ClientProtocol(basic.LineOnlyReceiver):
@@ -61,19 +64,15 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		'unsilence' : 'cmdUnsilence',
 		
 		# Non-table commands.
-		'host'    : 'cmdTableHost',
-		'join'    : 'cmdTableJoin',
+		'create'  : 'cmdTableCreate',
 		'observe' : 'cmdTableObserve',
+		'sit'     : 'cmdTableSit',
+		'stand'   : 'cmdTableStand',
 
 		# Table commands.
 		'chat'   : 'cmdTalkChat',
 		'kibitz' : 'cmdTalkKibitz',
 		'leave'  : 'cmdTableLeave',
-
-		# Table host commands.
-		'invite' : 'cmdTableHostInvite',
-		'kick'   : 'cmdTableHostKick',
-		'start'  : 'cmdTableHostStartGame',
 
 		# Game commands.
 		'history'   : 'cmdGameHistory',
@@ -83,10 +82,10 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		'accept'   : 'cmdGameClaimAccept',
 		'alert'    : 'cmdGameAlert',
 		'call'     : 'cmdGameCall',
-		'cards'    : 'cmdGameCards',
 		'claim'    : 'cmdGameClaimClaim',
 		'concede'  : 'cmdGameClaimConcede',
 		'decline'  : 'cmdGameClaimDecline',
+		'hand'     : 'cmdGameHand',
 		'play'     : 'cmdGamePlay',
 		'retract'  : 'cmdGameClaimRetract'
 
@@ -94,7 +93,7 @@ class ClientProtocol(basic.LineOnlyReceiver):
 
 
 	def __init__(self):
-		self.session = dict.fromkeys(('protocol', 'username', 'table'), None)  # Required for state tracking.
+		self.session = dict.fromkeys(('protocol', 'username', 'table'), None)
 
 
 	def connectionLost(self, reason):
@@ -104,6 +103,11 @@ class ClientProtocol(basic.LineOnlyReceiver):
 
 	def getIdentifier(self):
 		return self.session['username']
+
+
+	def getTableListener(self):
+		"""Builds table listener object."""
+		return ProtocolTableListener(self)
 
 
 	def lineReceived(self, line):
@@ -132,7 +136,11 @@ class ClientProtocol(basic.LineOnlyReceiver):
 			argsMin = argsMax - len(dispatcher.func_defaults or [])
 
 			if argsMin <= len(arguments) <= argsMax:
-				dispatcher(*arguments)  # Execution.
+				try:
+					dispatcher(*arguments)  # Execution.
+					raise Acknowledgement   # If we get this far.
+				except TableError, error:
+					raise DeniedCommand(error)
 			else:
 				raise IllegalCommand("invalid number of arguments")
 		
@@ -142,11 +150,13 @@ class ClientProtocol(basic.LineOnlyReceiver):
 			self.sendTokens(tag, "no", error)
 		except IllegalCommand, error:  # Command is ill-formatted.
 			self.sendTokens(tag, "bad", error)
+		except Response, data:
+			self.sendTokens(tag, data)
 
 
-	def sendStatus(self, subject, action=None, object=None):
-		"""Sends status message to client. Note SUBJECT performs ACTION on OBJECT."""
-		self.sendTokens("*", subject, action, object)
+	def sendStatus(self, name, value):
+		"""Sends status message to client."""
+		self.sendTokens("*", name, ":", value)
 
 
 	def sendTokens(self, *tokens):
@@ -159,20 +169,37 @@ class ClientProtocol(basic.LineOnlyReceiver):
 
 	def cmdGameCall(self, callType, bidLevel=None, bidDenom=None):
 		self._checkStates(required=['player', 'game'])
-		if callType not in CallType.CallTypes:
-			raise IllegalCommand("invalid calltype")
-		elif callType is CallType.Bid:
-			if bidLevel not in ["1234567"]:
+		if callType == CallType.Bid:
+			if bidLevel not in ('1', '2', '3', '4', '5', '6', '7'):
 				raise IllegalCommand("invalid bid level")
 			elif bidDenom not in Denomination.Denominations:
 				raise IllegalCommand("invalid bid denomination")
 			call = Call(CallType.Bid, int(bidLevel), bidDenom)
-		else:
+		elif callType in (CallType.Double, CallType.Pass):
 			call = Call(callType)  # Double or pass.
-		try:
-			self.session['table'].gameMakeCall(self.session['username'], call)
-		except Table.GameError, error:
-			raise IllegalCommand(error)
+		else:
+			raise IllegalCommand("invalid calltype")
+		self.session['table'].gameMakeCall(self.session['username'], call)
+
+
+	def cmdGameHand(self, seat=None):
+		self._checkStates(required=['game'])
+		if seat is None:
+			self._checkStates(required=['player'], error="invalid seat")
+			seat, position = self.session['table'].getSeat(self.session['username']), None
+		elif seat in Seat.Seats and 'player' in self._getStates():
+			position = self.session['table'].getSeat(self.session['username'])
+		elif seat in Seat.Seats:
+			position = None
+		else:
+			raise IllegalCommand("invalid seat")
+		cards = [str(card) for card in self.session['table'].gameHand(seat, position)]
+		raise Response(str.join(", ", cards))
+
+
+	def cmdGameHistory(self):
+		self._checkStates(required=['game'])
+		# TODO: something.
 
 
 	def cmdGamePlay(self, rank, suit):
@@ -181,11 +208,14 @@ class ClientProtocol(basic.LineOnlyReceiver):
 			raise IllegalCommand("invalid rank")
 		elif suit not in Suit.Suits:
 			raise IllegalCommand("invalid suit")
-		try:
-			card = Card(rank, suit)
-			self.session['table'].gamePlayCard(self.session['username'], card)
-		except Table.GameError, error:
-			raise IllegalCommand(error)
+		card = Card(rank, suit)
+		self.session['table'].gamePlayCard(self.session['username'], card)
+
+
+	def cmdGameTurn(self):
+		self._checkStates(required=['game'])
+		turn = self.session['table']._game.whoseTurn()
+		raise Response(turn)
 
 
 	def cmdLogin(self, username, password):
@@ -193,7 +223,6 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		if registry.userAuth(username, password):
 			registry.userLogin(username, password, self)
 			self.session['username'] = username
-			raise Acknowledgement
 		else:
 			raise DeniedCommand("unrecognised username or bad password")
 
@@ -203,7 +232,6 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		self._checkStates(forbidden=['game'], error="game in progress")
 		registry.userLogout(self.session['username'])
 		self.session['username'], self.session['table'] = None, None
-		raise Acknowledgement
 
 
 	def cmdProtocol(self, version):
@@ -212,7 +240,6 @@ class ClientProtocol(basic.LineOnlyReceiver):
 			raise DeniedCommand("unsupported protocol")
 		else:
 			self.session['protocol'] = version
-			raise Acknowledgement
 
 
 	def cmdQuit(self):
@@ -222,58 +249,66 @@ class ClientProtocol(basic.LineOnlyReceiver):
 	def cmdRegister(self, username, password):
 		self._checkStates(required=['loggedout'])  # Must not be logged in.
 		if registry.userRegister(username, password):
-			raise Acknowledgement
+			pass
 		else:
 			raise DeniedCommand("username taken")
 
 
-	def cmdTableHost(self, identifier):
+	def cmdTableCreate(self, identifier):
 		self._checkStates(required=['loggedin'], forbidden=['table'])
 		table = registry.tableCreate(identifier)
-		self.session['table'] = table
-
-
-	def cmdTableHostStartGame(self):
-		self._checkStates(required=['table'])  # and host
-		try:
-			self.session['table'].gameStart()
-		except TableError, error:
-			raise DeniedCommand(error)
-
-
-	def cmdTableJoin(self, identifier, seat):
-		self._checkStates(required=['loggedin'], forbidden=['table'])
-		if seat not in Seat.Seats:
-			raise InvalidCommand("invalid seat")
-		table = registry.getTable(identifier)
-		if table:
-			try:
-#				table.addObserver(self.session['username'])
-				table.addPlayer(self.session['username'], seat)
-				self.session['table'] = table
-			except TableError, error:
-				raise DeniedCommand(error)
+		self.cmdTableObserve(identifier)  # We can branch like this, for now.
 
 
 	def cmdTableLeave(self):
 		self._checkStates(required=['loggedin', 'table'])
+		self.session['table'].removeObserver(self.session['username'])
+		self.session['table'] = None
+
+
+	def cmdTableObserve(self, identifier):
+		self._checkStates(required=['loggedin'], forbidden=['table'])
+		table = registry.getTable(identifier)
+		if table:
+			table.addListener(self.session['username'], self.getTableListener())
+			self.session['table'] = table
+		else:
+			raise DeniedCommand("unknown table")
+
+
+	def cmdTableSit(self, identifier, seat):
+		self._checkStates(required=['loggedin'], forbidden=['player'])
+		if seat not in Seat.Seats:
+			raise IllegalCommand("invalid seat")
+		table = registry.getTable(identifier)
+		if not table:
+			raise DeniedCommand("unknown table")
+		if self.session['table']:
+			# Already watching table. Must not be playing.
+			if table is not self.session['table']:
+				raise DeniedCommand("already at table")
+			if self.session['table'].isPlayer(self.session['username']):
+				raise DeniedCommand("already playing")  # TODO: shouldn't get here.
+		else:
+			# Not watching table, so add listener.
+			table.addListener(self.session['username'], self.getTableListener())
 		try:
-			self.session['table'].removePlayer(self.session['username'])
-			self.session['table'] = None
+			table.addPlayer(self.session['username'], seat)
+			self.session['table'] = table
 		except TableError, error:
 			raise DeniedCommand(error)
 
 
-	def cmdTableObserve(self, table):
-		pass
+	def cmdTableStand(self):
+		self._checkStates(required=['loggedin', 'player'])
+		self.session['table'].removePlayer(self.session['username'])
 
 
 	def cmdUserFinger(self, user):
 		self._checkStates(required=['loggedin'])
 		fields = registry.getFinger(identifier)
 		if fields:
-			[self.sendStatus(name, ":", value) for name, value in fields]
-			raise Acknowledgement
+			[self.sendStatus(name, value) for name, value in fields]
 		else:
 			raise DeniedCommand("invalid user")
 
@@ -282,7 +317,7 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		self._checkStates(required=['loggedin'])
 		value = registry.getVariable(self.session['username'], name)
 		if value:
-			self.sendStatus(name, ":", value)
+			self.sendStatus(name, value)
 		else:
 			raise DeniedCommand("unknown variable")
 
@@ -314,9 +349,9 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		states = []
 		if self.session['table']:
 			states.append('table')
-			if self.session['username'] in self.session['table']._players.values():  # TODO: This is stupid. Fix.
+			if self.session['table'].isPlayer(self.session['username']):
 				states.append('player')
-			else:
+			if self.session['table'].isObserver(self.session['username']):
 				states.append('observer')
 			if self.session['table'].inProgress():
 				states.append('game')
@@ -338,25 +373,27 @@ class ProtocolTableListener:
 		self._client = client
 
 	def gameCallMade(self, player, call):
-		self._client.sendStatus(player, "calls", call)
+		self._client.sendStatus("call_made", "%s by %s" % (call, player))
 
 	def gameCardPlayed(self, player, card):
-		self._client.sendStatus(player, "plays", card)
+		self._client.sendStatus("card_played", "%s by %s" % (card, player))
 
-	def gameStarted(self):
-		pass
+	def gameContract(self, contract):
+		doubles = {0 : "", 1 : "doubled", 2 : "redoubled"}
+		format = (contract['bidLevel'], contract['bidDenom'], doubles[contract['doubleLevel']], contract['declarer'])
+		self._client.sendStatus("contract", "%s %s %s by %s" % format)
 
 	def gameResult(self, result):
 		self._client.sendStatus("result", result)
 
 	def observerJoin(self, observer):
-		self._client.sendStatus("observer", "joins", observer)
+		self._client.sendStatus("observer_joins", observer)
 
 	def observerLeave(self, observer):
-		self._client.sendStatus("observer", "leaves", observer)
+		self._client.sendStatus("observer_leaves", observer)
 
 	def playerJoin(self, player):
-		self._client.sendStatus("player", "joins", player)
+		self._client.sendStatus("player_joins", player)
 
 	def playerLeave(self, player):
-		self._client.sendStatus("player", "leaves", player)
+		self._client.sendStatus("player_leaves", player)

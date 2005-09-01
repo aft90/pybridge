@@ -19,8 +19,9 @@
 from twisted.python import components
 
 from lib.core.deck import Deck
-from lib.core.game import Game
 from lib.core.enumeration import Seat
+from lib.core.game import Game, GameError
+from lib.core.scoring import scoreDuplicate
 
 
 class TableError(Exception): pass
@@ -37,21 +38,45 @@ class Table:
 		self._identity  = identifier
 		self._listeners = {}  # Listener interfaces, keyed by user identifier.
 		self._players   = dict.fromkeys(Seat.Seats, None)
+		self._scoring   = scoreDuplicate  # A function!
 
 
 	def inProgress(self):
 		"""Returns True if game in progress."""
-		return self._game is not None
+		if self._game and len([player for player in self._players.values() if player is not None]) == 4:
+			return not self._game.isComplete()
 
 
-	def addListener(self, observer):
+	def isObserver(self, identifier):
+		"""Returns True if user is observing this table."""
+		return identifier in self._listeners and identifier not in self._players.values()
+
+
+	def isPlayer(self, identifier):
+		"""Returns True if user is playing this table."""
+		return identifier in self._players.values()
+
+
+	def getPlayer(self, seat):
+		"""Returns player at seat."""
+		return self._players[seat] or None
+
+
+	def getSeat(self, player):
+		"""Returns seat of player"""
+		if player in self._players.values():
+			return [seat for seat, occupant in self._players.items() if occupant is player][0]
+		else:
+			raise TableError("player not at table")
+
+
+	def addListener(self, identifier, observer):
 		"""Adds listener object as table observer."""
-		identity = observer.getIdentifier()
-		if identity in self._listeners:
+		if identifier in self._listeners:
 			raise TableError("already at table")
 		else:
-			self._listeners[identity] = observer
-			[listener.observerJoin(identity) for listener in self._listeners.values()]
+			self._listeners[identifier] = observer
+			[listener.observerJoin(identifier) for listener in self._listeners.values()]
 			
 
 	def addPlayer(self, player, seat):
@@ -67,41 +92,75 @@ class Table:
 			raise TableError("already seated")
 		elif self._players[seat]:
 			raise TableError("seat occupied")
-		else:
-			self._players[seat] = player
-			[listener.tablePlayerJoin(player) for listener in self._listeners.values()]
+		self._players[seat] = player
+		[listener.playerJoin(player) for listener in self._listeners.values()]
+		if not self.inProgress():
+			self._gameDeal()
+
+
+	def gameHand(self, seat, position=None):
+		"""Returns the hand of the player occupying seat::Seat.
+
+		If position::Seat is specified, and the player at position may not view
+		the hand of the player at seat, then an error will be raised.
+		"""
+		if not self.inProgress():
+			raise TableError("unavailable")
+		# Check for peeking at other players' hands.
+		if position not in (seat, None):
+			stage = self._game._getStage()
+			if stage is 'bidding':
+				raise TableError("hand not visible")
+			elif stage is 'play':
+				# Note that, as dummy does not take part in play, he may view all hands.
+				declarer = self._game.play.declarer
+				dummy = Seat.Seats[(Seat.Seats.index(declarer) + 2) % 4]
+				if position is declarer:
+					# Declarer can only see his and dummy's hands.
+					if seat not in (declarer, dummy):
+						raise TableError("hand not visible")
+				elif position is not dummy:  # (defender)
+					if seat is not dummy:
+						raise TableError("hand not visible")
+					# Defenders can see dummy's hand, only after the first card is played.
+					elif self._game.play.tricks[0].cardsPlayed() == 0:  # (seat is dummy)
+						raise TableError("hand not visible")
+		# If we get this far, return the requested hand.
+		return self._game.deal[seat]
 
 
 	def gameMakeCall(self, player, call):
 		"""Make call."""
 		if player not in self._players.values() or self._game is None:
 			raise TableError("unavailable")
-		else:
-			seat = [seat for seat, occupant in self._players.items() if occupant==player][0]
+		seat = self.getSeat(player)
+		try:
 			self._game.makeCall(seat, call)
 			[listener.gameCallMade(seat, call) for listener in self._listeners.values()]
+			self._checkContract()
+			self._checkResult()
+		except GameError, error:
+			raise TableError(error)
 
 
 	def gamePlayCard(self, player, card):
 		"""Play card."""
-		if identity not in self._players.values() or self._game is None:
+		if player not in self._players.values() or self._game is None:
 			raise TableError("unavailable")
-		else:
-			seat = [seat for seat, occupant in self._players.items() if occupant==player][0]
+		seat = self.getSeat(player)
+		try:
 			self._game.playCard(seat, card)
 			[listener.gameCardPlayed(seat, card) for listener in self._listeners.values()]
+			self._checkResult()
+		except GameError, error:
+			raise TableError(error)
 
 
-	def gameStart(self):
-		"""Instantiates game object."""
-		if self._game is not None:
-			raise TableError("game in progress")
-		elif len([occupant for occupant in self.players.values() if occupant is not None]) < 4:
-			raise TableError("seat vacant")
-		else:
-			deal = self._deck.generateRandom()
-			self._game = Game(self._dealer, deal, vulnNS=False, vulnEW=False)
-			[listener.gameStarted() for listener in self._listeners.values()]
+	def gameTurn(self):
+		"""Return the seat that is next to play."""
+		if not self.inProgress():
+			raise TableError("unavailable")
+		return self._game.whoseTurn()
 
 
 	def removeObserver(self, identity):
@@ -111,7 +170,7 @@ class Table:
 		if identity in self._listeners:
 			del self._listeners[identity]
 			[listener.observerLeave(player) for listener in self._listeners.values()]
-
+			# TODO: Check if the table should be closed down. Can't use registry.
 		else:
 			raise TableError("not at table")
 
@@ -120,12 +179,30 @@ class Table:
 		"""Removes player from seat."""
 		if player not in self._players.values():
 			raise TableError("not at table")
-		elif self.inProgress():
-			raise TableError("game in progress")
 		else:
-			seat = [seat for seat, occupant in self._players.items() if occupant==player][0]
+			seat = self.getSeat(player)
 			self._players[seat] = None
 			[listener.playerLeave(player) for listener in self._listeners.values()]
+
+
+	def _checkContract(self):
+		"""Checks for game contract. Informs listeners."""
+		contract = self._game.bidding.contract()
+		if contract:
+			[listener.gameContract(contract) for listener in self._listeners.values()]
+
+
+	def _checkResult(self):
+		"""Checks for game result. Informs listeners."""
+		if self._game.isComplete():
+			result = self._game.score()
+			[listener.gameResult(result) for listener in self._listeners.values()]
+
+
+	def _gameDeal(self):
+		"""Instantiates game object."""
+		deal = self._deck.generateRandom()
+		self._game = Game(self._dealer, deal, self._scoring, vulnNS=False, vulnEW=False)
 
 
 class ITableListener(components.Interface):
@@ -137,8 +214,8 @@ class ITableListener(components.Interface):
 	def gameCardPlayed(self, player, card):
 		"""Called when player plays a card in this game."""
 
-	def gameStarted(self):
-		"""Called when game starts."""
+	def gameContract(self):
+		"""Called when game contract is known."""
 
 	def gameResult(self, result):
 		"""Called when game result is known."""
