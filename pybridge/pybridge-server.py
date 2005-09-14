@@ -20,9 +20,9 @@
 
 from twisted.internet import protocol, reactor
 
-from server.protocol import ClientProtocol
+from server.protocol import ServerProtocol
 BridgeFactory = protocol.ServerFactory()
-BridgeFactory.protocol = ClientProtocol
+BridgeFactory.protocol = ServerProtocol
 
 import server.registry
 registry = server.registry.getHandle()
