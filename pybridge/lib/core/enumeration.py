@@ -1,9 +1,9 @@
-# Arranged by relative value.
+# Enumeration lists are arranged by relative value.
 
 
 class CallType:
-	Pass = 'pass'; Bid = 'bid'; Double = 'double'
-	CallTypes = [Pass, Bid, Double]
+	Pass = 'pass'; Bid = 'bid'; Double = 'double'; Redouble = 'redouble'
+	CallTypes = [Pass, Bid, Double, Redouble]
 
 
 class Denomination:
