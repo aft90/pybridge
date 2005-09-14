@@ -18,8 +18,7 @@
 
 import re, shlex
 
-from twisted.internet import protocol, reactor
-from twisted.protocols import basic
+from twisted.protocols.basic import LineOnlyReceiver
 
 from lib.core.bidding import Call
 from lib.core.enumeration import CallType, Denomination, Rank, Seat, Suit
@@ -40,7 +39,7 @@ class IllegalCommand(Exception): pass
 class Response(Exception): pass
 
 
-class ClientProtocol(basic.LineOnlyReceiver):
+class ServerProtocol(LineOnlyReceiver):
 
 
 	# Mapping between command names and their executor functions.
@@ -147,9 +146,9 @@ class ClientProtocol(basic.LineOnlyReceiver):
 		except Acknowledgement:
 			self.sendTokens(tag, "ok")
 		except DeniedCommand, error:  # Command is irrelevant.
-			self.sendTokens(tag, "no", error)
+			self.sendTokens(tag, "no", "'%s'" % error)
 		except IllegalCommand, error:  # Command is ill-formatted.
-			self.sendTokens(tag, "bad", error)
+			self.sendTokens(tag, "bad", "'%s'" % error)
 		except Response, data:
 			self.sendTokens(tag, data)
 
@@ -169,14 +168,14 @@ class ClientProtocol(basic.LineOnlyReceiver):
 
 	def cmdGameCall(self, callType, bidLevel=None, bidDenom=None):
 		self._checkStates(required=['player', 'game'])
-		if callType == CallType.Bid:
+		if callType is CallType.Bid:
 			if bidLevel not in ('1', '2', '3', '4', '5', '6', '7'):
 				raise IllegalCommand("invalid bid level")
 			elif bidDenom not in Denomination.Denominations:
 				raise IllegalCommand("invalid bid denomination")
 			call = Call(CallType.Bid, int(bidLevel), bidDenom)
-		elif callType in (CallType.Double, CallType.Pass):
-			call = Call(callType)  # Double or pass.
+		elif callType in CallType.CallTypes:
+			call = Call(callType)  # Double, redouble or pass.
 		else:
 			raise IllegalCommand("invalid calltype")
 		self.session['table'].gameMakeCall(self.session['username'], call)
@@ -372,11 +371,11 @@ class ProtocolTableListener:
 	def __init__(self, client):
 		self._client = client
 
-	def gameCallMade(self, player, call):
-		self._client.sendStatus("call_made", "%s by %s" % (call, player))
+	def gameCallMade(self, seat, call):
+		self._client.sendStatus("call_made", "%s by %s" % (call, seat))
 
-	def gameCardPlayed(self, player, card):
-		self._client.sendStatus("card_played", "%s by %s" % (card, player))
+	def gameCardPlayed(self, seat, card):
+		self._client.sendStatus("card_played", "%s by %s" % (card, seat))
 
 	def gameContract(self, contract):
 		doubles = {0 : "", 1 : "doubled", 2 : "redoubled"}
