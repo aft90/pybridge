@@ -6,7 +6,6 @@ class Call:
 
 
 	def __init__(self, type, bidLevel=False, bidDenom=False):
-		self.callType = type
 		if type not in CallType.CallTypes:
 			raise "Invalid specification of call."
 		elif type == CallType.Bid:
@@ -15,6 +14,7 @@ class Call:
 				self.bidDenom = bidDenom
 			else:
 				raise "Invalid specification of bid."
+		self.callType = type
 
 
 	def __cmp__(self, other):
@@ -32,6 +32,10 @@ class Call:
 			return cmp(selfIndex, otherIndex)
 		else:
 			return 1  # Comparing non-bid call types returns true.
+
+
+	def __eq__(self, other):
+		return repr(self) == repr(other)
 
 
 	def __str__(self):
@@ -98,12 +102,14 @@ class Bidding:
 		- 1, if current bid is doubled.
 		- 2, if current bid is redoubled.
 		"""
-		doubles = 0
 		for call in self.calls[::-1]:
-			doubles += (call.callType == CallType.Double)
 			if call.callType is CallType.Bid:
 				break
-		return doubles
+			elif call.callType is CallType.Double:
+				return 1
+			elif call.callType is CallType.Redouble:
+				return 2
+		return 0
 
 
 	def addCall(self, call):
@@ -124,18 +130,23 @@ class Bidding:
 			return (not self.currentBid()) or call > self.currentBid()
 
 		elif call.callType == CallType.Double:
-			# If opposition's bid, must be single double.
-			# If partnership's bid, must be redouble.
-			bidder = self.whoseCall(self.currentBid())
-			if bidder in (self.whoseTurn(), self.whoseTurn(2)):  # partnership
-				return self.currentDoubleLevel() == 1  # opponent double
-			elif bidder in (self.whoseTurn(1), self.whoseTurn(3)):  # opposition
-				return self.currentDoubleLevel() == 0  # no double
-			else:  # No bid, so double is invalid.
-				return False
+			if self.currentBid():
+				# If opposition's bid, must be single double.
+				bidder = self.whoseCall(self.currentBid())
+				if bidder in (self.whoseTurn(1), self.whoseTurn(3)):  # opposition
+					return self.currentDoubleLevel() == 0  # no double
+			return False
+
+		elif call.callType == CallType.Redouble:
+			if self.currentBid():
+				# If partnership's bid, must be redouble.
+				bidder = self.whoseCall(self.currentBid())
+				if bidder in (self.whoseTurn(), self.whoseTurn(2)):  # partnership
+					return self.currentDoubleLevel() == 1  # opponent double
+			return False
 
 		else:  # call.callType == CallType.Pass
-			# Bidding is not complete, so pass is valid.
+			# Bidding is not complete; a pass is valid.
 			return True
 
 
