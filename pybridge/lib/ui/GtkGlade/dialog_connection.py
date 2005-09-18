@@ -24,8 +24,22 @@ class DialogConnection(WidgetWrapper):
 
 	widget_name = 'dialog_connection'
 
+
 	def new(self):
 		pass
+
+
+	def get_connection_parameters(self):
+		"""Returns parameters for connection to server."""
+		return {'host'     : self.hostname.get_active_text(),
+		        'port'     : 5040,
+		        'username' : self.username.get_text(),
+		        'password' : self.password.get_text()}
+
+
+	def connection_failure(self, message):
+		print message
+		self.okbutton.set_property('sensitive', True)
 
 
 	# Signal handlers.
@@ -49,6 +63,5 @@ class DialogConnection(WidgetWrapper):
 
 
 	def on_okbutton_clicked(self, widget, *args):
-		self.okbutton.set_property('sensitive', False)  # prevents repeat clicks
-		address = self.hostname.get_active_text()
-		self.ui.connect(address)
+		self.okbutton.set_property('sensitive', False)  # Prevent repeat clicks.
+		self.ui.connect(self.get_connection_parameters())
