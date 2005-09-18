@@ -18,11 +18,13 @@
 
 from twisted.internet import gtk2reactor
 gtk2reactor.install()
+
 import gtk
 from twisted.internet import reactor
+from twisted.internet.protocol import ClientCreator
 
 import conf
-from client.factory import PybridgeClientFactory
+from client.protocol import PybridgeClientProtocol
 from client.interface import IPybridgeClientListener
 
 from dialog_connection import DialogConnection
@@ -52,67 +54,88 @@ class GtkGladeUI:
 		if GtkGladeUI.__instance:
 			raise GtkGladeUI.__instance
 		GtkGladeUI.__instance = self
-	
-		self.config = conf  # configuration variables.
+
+		# Get configuration variables.
+		self.config = conf
+
+		self.connection = None  # Connection reference.
 
 
-	def connect(self, address):
-		reactor.connectTCP(address, 5040, PybridgeClientFactory())
-		reactor.run()
+	def connect(self, parameters):
+		"""Attempt to connect to Pybridge server with parameters."""
+
+		def connected(connection):
+			# Set up connection reference and listener.
+			self.connection = connection
+			self.connection.setListener(GtkGladeListener())
+		
+		if self.connection is None:
+			creator = ClientCreator(reactor, PybridgeClientProtocol)
+			defer = creator.connectTCP(parameters['host'], parameters['port'])
+			defer.addCallback(connected)
 
 
-	def disconnect(self):
-		if reactor.running:
-			# TODO: send quit
-			reactor.stop()
+	def load_main(self):
+		self.window_main = WindowMain()
+		self.window_bidbox = WindowBidbox()
+		self.window_calls = WindowCalls()
 
 
 	def run(self):
+		"""Starts the graphical interface."""
 		self.dialog_connection = DialogConnection()
-		gtk.main()  # Ready to roll.
+		reactor.run()  # Start Twisted layer.
+		gtk.main()     # Start GTK main loop.
 
 
 	def shutdown(self):
-		self.disconnect()
+		"""Bring everything to a stop."""
+		reactor.stop()
 		gtk.main_quit()
-
-
-	def window_close(self, window):
-		pass
 
 
 class GtkGladeListener:
 
 	__implements__ = (IPybridgeClientListener,)
-	
+
+	def __init__(self):
+		self.ui = getHandle()
 
 	def gameCallMade(self, seat, call):
 		print seat, call
 
-
 	def gameCardPlayed(self, seat, card):
 		print seat, card
-
 
 	def gameContract(self, contract):
 		pass
 
-
 	def gameResult(self, result):
 		pass
 
+	def loginGood(self):
+		self.ui.dialog_connection.widget.hide()
+		self.ui.load_main()
+
+	def loginBad(self):
+		print "eek"
 
 	def observerJoins(self, observer):
 		print 'observer joins', observer
 
-
 	def observerLeaves(self, observer):
 		print 'observer leaves', observer
-
 
 	def playerJoins(self, player, seat):
 		print 'player joins', player, seat
 
-
 	def playerLeaves(self, player):
 		print 'player leaves', player
+
+	def protocolGood(self, version):
+		# Attempt to login to server.
+		parameters = self.ui.dialog_connection.get_connection_parameters()
+		self.ui.connection.cmdLogin(parameters['username'], parameters['password'])
+
+	def protocolBad(self, version):
+		self.ui.dialog_connection.failure()
