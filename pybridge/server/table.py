@@ -16,8 +16,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from twisted.python import components
-
 from lib.core.deck import Deck
 from lib.core.enumeration import Seat
 from lib.core.game import Game, GameError
@@ -76,7 +74,7 @@ class Table:
 			raise TableError("already at table")
 		else:
 			self._listeners[identifier] = observer
-			[listener.observerJoin(identifier) for listener in self._listeners.values()]
+			[listener.observerJoins(identifier) for listener in self._listeners.values()]
 			
 
 	def addPlayer(self, player, seat):
@@ -93,7 +91,7 @@ class Table:
 		elif self._players[seat]:
 			raise TableError("seat occupied")
 		self._players[seat] = player
-		[listener.playerJoin(player) for listener in self._listeners.values()]
+		[listener.playerJoins(player) for listener in self._listeners.values()]
 		if not self.inProgress():
 			self._gameDeal()
 
@@ -169,7 +167,7 @@ class Table:
 			self.removePlayer(identity)  # Remove player first.
 		if identity in self._listeners:
 			del self._listeners[identity]
-			[listener.observerLeave(player) for listener in self._listeners.values()]
+			[listener.observerLeaves(player) for listener in self._listeners.values()]
 			# TODO: Check if the table should be closed down. Can't use registry.
 		else:
 			raise TableError("not at table")
@@ -182,7 +180,7 @@ class Table:
 		else:
 			seat = self.getSeat(player)
 			self._players[seat] = None
-			[listener.playerLeave(player) for listener in self._listeners.values()]
+			[listener.playerLeaves(player) for listener in self._listeners.values()]
 
 
 	def _checkContract(self):
@@ -203,31 +201,3 @@ class Table:
 		"""Instantiates game object."""
 		deal = self._deck.generateRandom()
 		self._game = Game(self._dealer, deal, self._scoring, vulnNS=False, vulnEW=False)
-
-
-class ITableListener(components.Interface):
-	"""The ITableListener interface allows monitoring of a table."""
-
-	def gameCallMade(self, player, call):
-		"""Called when player makes a call in this game."""
-
-	def gameCardPlayed(self, player, card):
-		"""Called when player plays a card in this game."""
-
-	def gameContract(self):
-		"""Called when game contract is known."""
-
-	def gameResult(self, result):
-		"""Called when game result is known."""
-
-	def observerJoin(self, person):
-		"""Called when an observer joins this table."""
-
-	def observerLeave(self, person):
-		"""Called when an observer leaves this table."""
-
-	def playerJoin(self, person, seat):
-		"""Called when a player joins this table."""
-
-	def playerLeave(self, person):
-		"""Called when a player leaves this table."""
