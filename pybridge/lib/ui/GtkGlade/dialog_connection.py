@@ -16,13 +16,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
-import gtk
-from wrapper import WidgetWrapper
+from wrapper import WindowWrapper
 
 
-class DialogConnection(WidgetWrapper):
+class DialogConnection(WindowWrapper):
 
-	widget_name = 'dialog_connection'
+	window_name = 'dialog_connection'
 
 
 	def new(self):

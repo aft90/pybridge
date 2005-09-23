@@ -17,12 +17,12 @@
 
 
 import gtk
-from wrapper import WidgetWrapper
+from wrapper import WindowWrapper
 
 
-class WindowBidbox(WidgetWrapper):
+class WindowBidbox(WindowWrapper):
 
-	widget_name = 'window_bidbox'
+	window_name = 'window_bidbox'
 
 
 	def update(self):

@@ -17,13 +17,13 @@
 
 
 import gtk
-from wrapper import WidgetWrapper
+from wrapper import WindowWrapper
 from lib.core.enumeration import CallType, Denomination, Seat
 
 
-class WindowCalls(WidgetWrapper):
+class WindowCalls(WindowWrapper):
 
-	widget_name = 'window_calls'
+	window_name = 'window_calls'
 
 
 	def new(self):
