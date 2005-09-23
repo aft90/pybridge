@@ -20,16 +20,11 @@
 
 from twisted.internet import protocol, reactor
 
-from server.protocol import ServerProtocol
-BridgeFactory = protocol.ServerFactory()
-BridgeFactory.protocol = ServerProtocol
+from server.factory import PybridgeServerFactory
 
-import server.registry
-registry = server.registry.getHandle()
 
-# TODO: Replaced with a service.
-reactor.listenTCP(5040, BridgeFactory)
+# TODO: Replace with a service.
+
+factory = PybridgeServerFactory()
+reactor.listenTCP(5040, factory)
 reactor.run()
-
-# Shut down registry, gracefully.
-registry.close()
