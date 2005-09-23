@@ -20,22 +20,24 @@ import gtk, gtk.glade
 import os.path, ui
 
 
+icon_file = os.path.abspath('lib/graphics/pybridge.png')
 glade_file = os.path.abspath('lib/ui/GtkGlade/pybridge.glade')
 
 
-class WidgetWrapper(dict):
+class WindowWrapper(dict):
 
 
 	def __init__(self):
-		self.glade = gtk.glade.XML(glade_file, self.widget_name, None)
-		self.widget = self.glade.get_widget(self.widget_name)
+		self.glade = gtk.glade.XML(glade_file, self.window_name, None)
+		self.window = self.glade.get_widget(self.window_name)
+		self.window.set_icon_from_file(icon_file)
 		self.signal_autoconnect()
 		self.ui = ui.getHandle()
 		self.new()
 
 
 	def __getattr__(self, name):
-		"""Allows referencing of Glade widgets as class attributes."""
+		"""Allows referencing of Glade widgets as window attributes."""
 		if name in self:
 			return self[name]
 		else:
