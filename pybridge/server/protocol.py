@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import re, shlex
+import shlex
 
 from twisted.protocols.basic import LineOnlyReceiver
 
@@ -24,10 +24,9 @@ from lib.core.bidding import Call
 from lib.core.enumeration import CallType, Denomination, Rank, Seat, Suit
 from lib.core.deck import Card
 
-from table import TableError, ITableListener
-
-import registry
-registry = registry.getHandle()
+from factory_interface import IFactoryListener
+from table_interface import ITableListener
+from table import TableError  # TODO: eliminate this dependency.
 
 
 SUPPORTED_PROTOCOLS = ('pybridge-0.1',)
@@ -39,7 +38,7 @@ class IllegalCommand(Exception): pass
 class Response(Exception): pass
 
 
-class ServerProtocol(LineOnlyReceiver):
+class PybridgeServerProtocol(LineOnlyReceiver):
 
 
 	# Mapping between command names and their executor functions.
@@ -55,6 +54,7 @@ class ServerProtocol(LineOnlyReceiver):
 		# Server commands.
 		'finger'    : 'cmdFinger',
 		'get'       : 'cmdVariableGet',
+		'list'      : 'cmdList',
 		'password'  : 'cmdPassword',
 		'set'       : 'cmdVariableSet',
 		'shout'     : 'cmdTalkShout',
@@ -97,11 +97,16 @@ class ServerProtocol(LineOnlyReceiver):
 
 	def connectionLost(self, reason):
 		if self.session['username']:
-			registry.userLogout(self.session['username'])
+			self.factory.userLogout(self.session['username'])
 
 
 	def getIdentifier(self):
 		return self.session['username']
+
+
+	def getFactoryListener(self):
+		"""Builds factory listener object."""
+		return ProtocolFactoryListener(self)
 
 
 	def getTableListener(self):
@@ -150,7 +155,7 @@ class ServerProtocol(LineOnlyReceiver):
 		except IllegalCommand, error:  # Command is ill-formatted.
 			self.sendTokens(tag, "bad", "'%s'" % error)
 		except Response, data:
-			self.sendTokens(tag, data)
+			self.sendTokens(tag, "data", data)
 
 
 	def sendStatus(self, name, value):
@@ -217,19 +222,40 @@ class ServerProtocol(LineOnlyReceiver):
 		raise Response(turn)
 
 
+	def cmdList(self, request):
+		self._checkStates(required=['loggedin'])
+		if request == 'tables':
+			tables = []
+			for tablename in self.factory.getTableList():
+				table = self.factory.getTable(tablename)
+				north = table.getPlayer(Seat.North) or ""
+				south = table.getPlayer(Seat.South) or ""
+				west = table.getPlayer(Seat.West) or ""
+				east = table.getPlayer(Seat.East) or ""
+				tables.append(str.join(":", (tablename, north, east, south, west)))
+			raise Response(str.join(",", tables))
+		elif request == 'users':
+			users = []
+			for username in self.factory.getUserList():
+				users.append(username)
+			raise Response(str.join(",", users))
+		else:
+			raise IllegalCommand("unknown request")
+
+
 	def cmdLogin(self, username, password):
-		self._checkStates(required=['loggedout'])  # Must not be logged in.
-		if registry.userAuth(username, password):
-			registry.userLogin(username, password, self)
+		self._checkStates(required=['loggedout'])
+		if self.factory.userAuth(username, password):
+			self.factory.userLogin(username, password, self.getFactoryListener())
 			self.session['username'] = username
 		else:
 			raise DeniedCommand("unrecognised username or bad password")
 
 
 	def cmdLogout(self):
-		self._checkStates(required=['loggedin'])  # Must be logged in.
+		self._checkStates(required=['loggedin'])
 		self._checkStates(forbidden=['game'], error="game in progress")
-		registry.userLogout(self.session['username'])
+		self.factory.userLogout(self.session['username'])
 		self.session['username'], self.session['table'] = None, None
 
 
@@ -242,21 +268,21 @@ class ServerProtocol(LineOnlyReceiver):
 
 
 	def cmdQuit(self):
-		self.loseConnection()
+		self.transport.loseConnection()
 
 
 	def cmdRegister(self, username, password):
 		self._checkStates(required=['loggedout'])  # Must not be logged in.
-		if registry.userRegister(username, password):
+		if self.factory.userRegister(username, password):
 			pass
 		else:
-			raise DeniedCommand("username taken")
+			raise DeniedCommand("invalid username")
 
 
 	def cmdTableCreate(self, identifier):
 		self._checkStates(required=['loggedin'], forbidden=['table'])
-		table = registry.tableCreate(identifier)
-		self.cmdTableObserve(identifier)  # We can branch like this, for now.
+		table = self.factory.tableOpen(identifier)
+#		self.cmdTableObserve(identifier)  # We can branch like this, for now.
 
 
 	def cmdTableLeave(self):
@@ -265,9 +291,9 @@ class ServerProtocol(LineOnlyReceiver):
 		self.session['table'] = None
 
 
-	def cmdTableObserve(self, identifier):
+	def cmdTableObserve(self, tablename):
 		self._checkStates(required=['loggedin'], forbidden=['table'])
-		table = registry.getTable(identifier)
+		table = self.factory.getTable(tablename)
 		if table:
 			table.addListener(self.session['username'], self.getTableListener())
 			self.session['table'] = table
@@ -279,7 +305,7 @@ class ServerProtocol(LineOnlyReceiver):
 		self._checkStates(required=['loggedin'], forbidden=['player'])
 		if seat not in Seat.Seats:
 			raise IllegalCommand("invalid seat")
-		table = registry.getTable(identifier)
+		table = self.factory.getTable(identifier)
 		if not table:
 			raise DeniedCommand("unknown table")
 		if self.session['table']:
@@ -303,30 +329,31 @@ class ServerProtocol(LineOnlyReceiver):
 		self.session['table'].removePlayer(self.session['username'])
 
 
-	def cmdUserFinger(self, user):
+	def cmdUserFinger(self, username):
 		self._checkStates(required=['loggedin'])
-		fields = registry.getFinger(identifier)
+		fields = self.factory.getFinger(username)
 		if fields:
+			# TODO: no, no, no!
 			[self.sendStatus(name, value) for name, value in fields]
 		else:
 			raise DeniedCommand("invalid user")
 
 
-	def cmdVariableGet(self, name):
-		self._checkStates(required=['loggedin'])
-		value = registry.getVariable(self.session['username'], name)
-		if value:
-			self.sendStatus(name, value)
-		else:
-			raise DeniedCommand("unknown variable")
+#	def cmdVariableGet(self, name):
+#		self._checkStates(required=['loggedin'])
+#		value = self.factory.getVariable(self.session['username'], name)
+#		if value:
+#			self.sendStatus(name, value)
+#		else:
+#			raise DeniedCommand("unknown variable")
 
 
-	def cmdVariableSet(self, name, value):
-		self._checkStates(required=['loggedin'])
-		if registry.getVariable(self.session['username'], name):  # Valid variable.
-			registry.setVariable(self.session['username'], name, value)
-		else:
-			raise DeniedCommand("unknown variable")
+#	def cmdVariableSet(self, name, value):
+#		self._checkStates(required=['loggedin'])
+#		if self.factory.getVariable(self.session['username'], name):  # Valid variable.
+#			self.factory.setVariable(self.session['username'], name, value)
+#		else:
+#			raise DeniedCommand("unknown variable")
 
 
 	def _checkStates(self, required=(), forbidden=(), error="unavailable"):
@@ -335,7 +362,7 @@ class ServerProtocol(LineOnlyReceiver):
 		- one or more required states are not present.
 		- one or more forbidden states are present.
 		"""
-		# TODO: once Python 2.4+ becomes standard, replace lists with sets.
+		# TODO: once Python 2.4 becomes standard, replace lists with sets.
 		states      = self._getStates()
 		missing     = [item for item in required if item not in states]
 		conflicting = [item for item in forbidden if item in states]
@@ -363,6 +390,33 @@ class ServerProtocol(LineOnlyReceiver):
 		return states
 
 
+class ProtocolFactoryListener:
+
+	__implements__ = (IFactoryListener,)
+
+
+	def __init__(self, client):
+		self._client = client
+
+	def messageReceived(self, username, message):
+		self._client.sendStatus("message", username, message)
+
+	def shutdown(self):
+		pass
+
+	def tableOpened(self, tablename):
+		self._client.sendStatus("table_opened", tablename)
+
+	def tableClosed(self, tablename):
+		self._client.sendStatus("table_closed", tablename)
+
+	def userLoggedIn(self, username):
+		self._client.sendStatus("user_loggedin", username)
+
+	def userLoggedOut(self, username):
+		self._client.sendStatus("user_loggedout", username)
+
+
 class ProtocolTableListener:
 
 	__implements__ = (ITableListener,)
@@ -385,14 +439,14 @@ class ProtocolTableListener:
 	def gameResult(self, result):
 		self._client.sendStatus("result", result)
 
-	def observerJoin(self, observer):
+	def observerJoins(self, observer):
 		self._client.sendStatus("observer_joins", observer)
 
-	def observerLeave(self, observer):
+	def observerLeaves(self, observer):
 		self._client.sendStatus("observer_leaves", observer)
 
-	def playerJoin(self, player):
+	def playerJoins(self, player):
 		self._client.sendStatus("player_joins", player)
 
-	def playerLeave(self, player):
+	def playerLeaves(self, player):
 		self._client.sendStatus("player_leaves", player)
