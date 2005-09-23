@@ -21,13 +21,18 @@ gtk2reactor.install()
 
 import gtk
 from twisted.internet import reactor
+from twisted.internet.error import *
 from twisted.internet.protocol import ClientCreator
 
-import conf
-from client.protocol import PybridgeClientProtocol
-from client.interface import IPybridgeClientListener
+import conf  # ??
 
+from client.protocol import PybridgeClientProtocol
+
+from listener import GtkGladeListener
+
+from dialog_about import DialogAbout
 from dialog_connection import DialogConnection
+from dialog_newtable import DialogNewtable
 from window_bidbox import WindowBidbox
 from window_calls import WindowCalls
 from window_main import WindowMain
@@ -64,78 +69,41 @@ class GtkGladeUI:
 	def connect(self, parameters):
 		"""Attempt to connect to Pybridge server with parameters."""
 
-		def connected(connection):
+		def success(connection):
 			# Set up connection reference and listener.
+			listener = GtkGladeListener(self)
 			self.connection = connection
-			self.connection.setListener(GtkGladeListener())
-		
+			self.connection.setListener(listener)
+
+		def failure(err):
+			print err.getErrorMessage()
+			self.dialog_connection.okbutton.set_property('sensitive', True)
+
 		if self.connection is None:
 			creator = ClientCreator(reactor, PybridgeClientProtocol)
 			defer = creator.connectTCP(parameters['host'], parameters['port'])
-			defer.addCallback(connected)
-
-
-	def load_main(self):
-		self.window_main = WindowMain()
-		self.window_bidbox = WindowBidbox()
-		self.window_calls = WindowCalls()
+			defer.addCallbacks(success, failure)
 
 
 	def run(self):
 		"""Starts the graphical interface."""
+		self.dialog_about = DialogAbout()
 		self.dialog_connection = DialogConnection()
+		self.dialog_newtable = DialogNewtable()
+		self.window_bidbox = WindowBidbox()
+		self.window_calls = WindowCalls()
+		self.window_main = WindowMain()
+
+		self.dialog_connection.window.show()
+
 		reactor.run()  # Start Twisted layer.
 		gtk.main()     # Start GTK main loop.
 
 
 	def shutdown(self):
-		"""Bring everything to a stop."""
+		"""Bring everything to a stop, in a clean fashion."""
 		reactor.stop()
 		gtk.main_quit()
 
 
-class GtkGladeListener:
 
-	__implements__ = (IPybridgeClientListener,)
-
-	def __init__(self):
-		self.ui = getHandle()
-
-	def gameCallMade(self, seat, call):
-		print seat, call
-
-	def gameCardPlayed(self, seat, card):
-		print seat, card
-
-	def gameContract(self, contract):
-		pass
-
-	def gameResult(self, result):
-		pass
-
-	def loginGood(self):
-		self.ui.dialog_connection.widget.hide()
-		self.ui.load_main()
-
-	def loginBad(self):
-		print "eek"
-
-	def observerJoins(self, observer):
-		print 'observer joins', observer
-
-	def observerLeaves(self, observer):
-		print 'observer leaves', observer
-
-	def playerJoins(self, player, seat):
-		print 'player joins', player, seat
-
-	def playerLeaves(self, player):
-		print 'player leaves', player
-
-	def protocolGood(self, version):
-		# Attempt to login to server.
-		parameters = self.ui.dialog_connection.get_connection_parameters()
-		self.ui.connection.cmdLogin(parameters['username'], parameters['password'])
-
-	def protocolBad(self, version):
-		self.ui.dialog_connection.failure()
