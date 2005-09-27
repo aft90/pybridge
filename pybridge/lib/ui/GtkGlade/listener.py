@@ -23,69 +23,106 @@ class GtkGladeListener:
 
 	__implements__ = (IPybridgeClientListener,)
 
+
 	def __init__(self, ui):
-		self.ui = ui
+		self.ui         = ui
+		self.parameters = None
+		self.tables     = {}
+		self.users      = {}
+
 
 	def gameCallMade(self, seat, call):
 		print seat, call
 
+
 	def gameCardPlayed(self, seat, card):
 		print seat, card
+
 
 	def gameContract(self, contract):
 		pass
 
+
 	def gameResult(self, result):
 		pass
 
+
 	def loginGood(self):
+		self.parameters = self.ui.dialog_connection.get_connection_parameters()  # hackish?
+		self.ui.dialog_connection.connect_success()
 		self.ui.dialog_connection.window.hide()
 		self.ui.window_main.window.show()
-
-		hostname = "wibble"
-		self.ui.window_main.message_add('connected', "Connected to %s" % hostname)
-
+		self.ui.window_main.message_add('connected', "Connected to %s" % self.parameters['hostname'])
 		# Get lists of active tables and online users.
 		self.ui.connection.cmdListTables()
 		self.ui.connection.cmdListUsers()
 
+
 	def loginBad(self):
-		print "eek"
+		self.ui.dialog_connection.connect_failure("Bad login.")
+
 
 	def observerJoins(self, observer):
-		print 'observer joins', observer
+		if observer == self.parameters['username']:
+			# The user is the observer, so create a card table.
+			self.ui.window_main.create_cardtable("Bob")
+
 
 	def observerLeaves(self, observer):
 		print 'observer leaves', observer
 
+
 	def playerJoins(self, player, seat):
 		print 'player joins', player, seat
+
 
 	def playerLeaves(self, player):
 		print 'player leaves', player
 
+
 	def protocolGood(self, version):
 		# Attempt to login to server.
 		parameters = self.ui.dialog_connection.get_connection_parameters()
+		if parameters['register']:
+			self.ui.connection.cmdRegister(parameters['username'], parameters['password'])
 		self.ui.connection.cmdLogin(parameters['username'], parameters['password'])
 
+
 	def protocolBad(self, version):
-		self.ui.dialog_connection.failure()
+		self.ui.dialog_connection.connect_failure("Bad protocol.")
+
 
 	def tableOpened(self, tablename):
-		self.ui.window_main.table_add(tablename)
+		self.tables[tablename] = {}
+		self.ui.window_main.update_tables(self.tables)
+
 
 	def tableClosed(self, tablename):
-		self.ui.window_main.table_remove(tablename)
+		del self.tables[tablename]
+		self.ui.window_main.update_tables(self.tables)
+
 
 	def tableListing(self, tables):
-		self.ui.window_main.tables_update(tables)
+		self.tables.clear()
+		for table in tables:
+			tablename = table[0]
+			self.tables[tablename] = {}
+		self.ui.window_main.update_tables(self.tables)
+
 
 	def userListing(self, users):
-		self.ui.window_main.users_update(users)
+		self.users.clear()
+		for user in users:
+			username = user[0]
+			self.users[username] = {}
+		self.ui.window_main.update_users(self.users)
+
 
 	def userLoggedIn(self, username):
-		self.ui.window_main.user_add(username)
+		self.users[username] = {}
+		self.ui.window_main.update_users(self.users)
+
 
 	def userLoggedOut(self, username):
-		self.ui.window_main.user_remove(username)
+		del self.users[username]
+		self.ui.window_main.update_users(self.users)
