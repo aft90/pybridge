@@ -45,8 +45,6 @@ class WindowMain(WindowWrapper):
 			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
 			self.user_listing.append_column(column)
 
-#		self.create_cardtable("the good guy")
-	
 
 	def create_cardtable(self, title):
 		"""Builds a new card table and tab widget with title."""
@@ -72,54 +70,20 @@ class WindowMain(WindowWrapper):
 		self.statusbar.pop(context)
 
 
-	def table_add(self, tablename):
-		iter = self.table_store.append()
-		self.table_store.set_value(iter, 0, tablename)
-
-
-	def table_remove(self, table):
-		print "table remove not implemented"
-
-
-	def tables_update(self, tables):
+	def update_tables(self, tables):
 		"""Update listing of tables."""
 		self.table_store.clear()
-		for table in tables:
+		for table in tables.keys():  # for now
 			iter = self.table_store.append()
-			self.table_store.set_value(iter, 0, table['title'])
-			players = str.join(", ", (table[Seat.North], table[Seat.East], table[Seat.South], table[Seat.West]))
-			self.table_store.set_value(iter, 1, players)
+			self.table_store.set_value(iter, 0, table)
 
 
-	def user_add(self, username):
-		iter = self.user_store.append()
-		user_store.set_value(iter, 0, username)
-
-
-	def user_remove(self, username):
-		pass
-
-
-	def users_update(self, users):
-		pass
-
-
-	def table_remove(self, table):
-		print "table remove not implemented"
-
-
-	def tables_update(self, tables):
-		"""Update listing of tables."""
-		self.table_store.clear()
-		for table in tables:
-			iter = self.table_store.append()
-			self.table_store.set_value(iter, 0, table['title'])
-			players = str.join(", ", (table[Seat.North], table[Seat.East], table[Seat.South], table[Seat.West]))
-			self.table_store.set_value(iter, 1, players)
-
-
-	def user_add(self, username):
-		iter = self.table_store.append()
+	def update_users(self, users):
+		"""Update listing of users."""
+		self.user_store.clear()
+		for user in users.keys():
+			iter = self.user_store.append()
+			self.user_store.set_value(iter, 0, user)
 
 
 	# Signal handlers
@@ -128,16 +92,25 @@ class WindowMain(WindowWrapper):
 	def on_window_main_destroy(self, widget, *args):
 		self.ui.shutdown()
 
+
 	def on_newtable_activate(self, widget, *args):
 		self.ui.dialog_newtable.window.show()
 
+
+	def on_disconnect_activate(self, widget, *args):
+		self.ui.connection.cmdQuit()
+
+
 	def on_quit_activate(self, widget, *args):
-		print "Check exit confirmation from user."
 		self.on_window_main_destroy(widget, *args)
 
 
 	def on_table_listing_row_activated(self, widget, *args):
-		print "ok", widget, args
+		# Get name of selected table.
+		iter = self.table_store.get_iter(args[0])  # path value
+		tablename = self.table_store.get_value(iter, 0)
+		self.ui.connection.cmdTableObserve(tablename)
+
 
 	def on_statusbar_activate(self, widget, *args):
 		if self.statusbar_main.get_property('visible'):
@@ -145,8 +118,10 @@ class WindowMain(WindowWrapper):
 		else:
 			self.statusbar_main.show()
 
+
 	def on_pybridge_home_activate(self, widget, *args):
 		webbrowser.open('http://pybridge.sourceforge.net/')
+
 
 	def on_about_activate(self, widget, *args):
 		self.ui.dialog_about.window.show()
