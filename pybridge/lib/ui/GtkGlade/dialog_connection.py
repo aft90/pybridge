@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
+import gtk
 from wrapper import WindowWrapper
 
 
@@ -25,19 +26,45 @@ class DialogConnection(WindowWrapper):
 
 
 	def new(self):
-		pass
+		self.hostname.set_text(self.ui.config.get('hostname', ""))
+		self.username.set_text(self.ui.config.get('username', ""))
+
+		# If password is saved, we assume that we wish to save in the future.
+		password = self.ui.config.get('password', "")
+		self.password.set_text(password)
+		self.save_password.set_active(password != "")
 
 
 	def get_connection_parameters(self):
 		"""Returns parameters for connection to server."""
-		return {'host'     : self.hostname.get_active_text(),
-		        'port'     : 5040,
-		        'username' : self.username.get_text(),
-		        'password' : self.password.get_text()}
+		return {
+			'hostname' : self.hostname.get_text(),
+			'port'     : 5040,
+			'username' : self.username.get_text(),
+			'password' : self.password.get_text(),
+			'register' : self.register_user.get_active()
+		}
 
 
-	def connection_failure(self, message):
-		print message
+	def connect_success(self):
+		"""Actions to perform after connecting successfully."""
+
+		# Save host details to settings.
+		self.ui.config['hostname'] = self.hostname.get_text()
+		self.ui.config['username'] = self.username.get_text()
+		if self.save_password.get_active():
+			self.ui.config['password'] = self.password.get_text()
+		else:
+			self.ui.config['password'] = ""
+
+
+	def connect_failure(self, reason):
+		"""Actions to perform after connecting fails."""
+		error_dialog = gtk.MessageDialog(
+			type=gtk.MESSAGE_ERROR,
+			buttons=gtk.BUTTONS_OK,
+			message_format=reason
+		).show()
 		self.okbutton.set_property('sensitive', True)
 
 
@@ -53,7 +80,7 @@ class DialogConnection(WindowWrapper):
 
 
 	def on_hostname_changed(self, widget, *args):
-		sensitive = (self.hostname.get_active_text() and self.username.get_text()) != ""
+		sensitive = (self.hostname.get_text() and self.username.get_text()) != ""
 		self.okbutton.set_property('sensitive', sensitive)
 
 
