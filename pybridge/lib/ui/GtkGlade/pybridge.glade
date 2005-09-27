@@ -47,7 +47,7 @@
 		      <signal name="activate" handler="on_newtable_activate" last_modification_time="Wed, 21 Sep 2005 15:48:14 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image86">
+			<widget class="GtkImage" id="image116">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-new</property>
 			  <property name="icon_size">1</property>
@@ -69,7 +69,7 @@
 		      <signal name="activate" handler="on_savegame_activate" last_modification_time="Mon, 19 Sep 2005 09:30:30 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image87">
+			<widget class="GtkImage" id="image117">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-save-as</property>
 			  <property name="icon_size">1</property>
@@ -96,7 +96,7 @@
 		      <signal name="activate" handler="on_disconnect_activate" last_modification_time="Mon, 19 Sep 2005 09:26:13 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image88">
+			<widget class="GtkImage" id="image118">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-disconnect</property>
 			  <property name="icon_size">1</property>
@@ -146,45 +146,6 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkMenuItem" id="view">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">_View</property>
-	      <property name="use_underline">True</property>
-
-	      <child>
-		<widget class="GtkMenu" id="view_menu">
-
-		  <child>
-		    <widget class="GtkCheckMenuItem" id="show_statusbar">
-		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Show _Statusbar</property>
-		      <property name="use_underline">True</property>
-		      <property name="active">True</property>
-		      <signal name="activate" handler="on_statusbar_activate" last_modification_time="Sat, 02 Apr 2005 19:32:06 GMT"/>
-		    </widget>
-		  </child>
-
-		  <child>
-		    <widget class="GtkSeparatorMenuItem" id="sep">
-		      <property name="visible">True</property>
-		    </widget>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckMenuItem" id="chat_window">
-		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">_Chat Window</property>
-		      <property name="use_underline">True</property>
-		      <property name="active">True</property>
-		      <signal name="activate" handler="on_chat_window_activate" last_modification_time="Wed, 16 Feb 2005 20:16:20 GMT"/>
-		    </widget>
-		  </child>
-		</widget>
-	      </child>
-	    </widget>
-	  </child>
-
-	  <child>
 	    <widget class="GtkMenuItem" id="help">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Help</property>
@@ -201,7 +162,7 @@
 		      <signal name="activate" handler="on_pybridge_home_activate" last_modification_time="Wed, 16 Feb 2005 20:14:44 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image89">
+			<widget class="GtkImage" id="image119">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-home</property>
 			  <property name="icon_size">1</property>
@@ -228,7 +189,7 @@
 		      <signal name="activate" handler="on_debug_info_activate" last_modification_time="Wed, 16 Feb 2005 20:18:12 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image90">
+			<widget class="GtkImage" id="image120">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-dialog-info</property>
 			  <property name="icon_size">1</property>
@@ -249,7 +210,7 @@
 		      <signal name="activate" handler="on_about_activate" last_modification_time="Wed, 16 Feb 2005 20:18:12 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image91">
+			<widget class="GtkImage" id="image121">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-about</property>
 			  <property name="icon_size">1</property>
@@ -303,6 +264,7 @@
 		  <property name="fixed_height_mode">False</property>
 		  <property name="hover_selection">False</property>
 		  <property name="hover_expand">False</property>
+		  <signal name="row_activated" handler="on_table_listing_row_activated" last_modification_time="Tue, 27 Sep 2005 13:54:01 GMT"/>
 		</widget>
 	      </child>
 	    </widget>
@@ -355,6 +317,7 @@
 		  <property name="fixed_height_mode">False</property>
 		  <property name="hover_selection">False</property>
 		  <property name="hover_expand">False</property>
+		  <signal name="row_activated" handler="on_user_listing_row_activated" last_modification_time="Tue, 27 Sep 2005 14:05:44 GMT"/>
 		</widget>
 	      </child>
 	    </widget>
@@ -1308,14 +1271,18 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkComboBoxEntry" id="hostname">
-		      <property name="width_request">180</property>
+		    <widget class="GtkEntry" id="hostname">
+		      <property name="width_request">160</property>
 		      <property name="visible">True</property>
-		      <property name="items" translatable="yes">localhost</property>
-		      <property name="add_tearoffs">False</property>
+		      <property name="can_focus">True</property>
+		      <property name="editable">True</property>
+		      <property name="visibility">True</property>
+		      <property name="max_length">0</property>
+		      <property name="text" translatable="yes"></property>
 		      <property name="has_frame">True</property>
-		      <property name="focus_on_click">True</property>
-		      <signal name="changed" handler="on_hostname_changed" last_modification_time="Wed, 14 Sep 2005 11:46:45 GMT"/>
+		      <property name="invisible_char">*</property>
+		      <property name="activates_default">False</property>
+		      <signal name="changed" handler="on_username_changed" last_modification_time="Wed, 14 Sep 2005 12:19:30 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1423,7 +1390,7 @@
 
 			  <child>
 			    <widget class="GtkEntry" id="username">
-			      <property name="width_request">180</property>
+			      <property name="width_request">160</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -1490,7 +1457,7 @@
 
 		      <child>
 			<widget class="GtkEntry" id="password">
-			  <property name="width_request">180</property>
+			  <property name="width_request">160</property>
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -1517,7 +1484,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="chk_savepassword">
+		    <widget class="GtkCheckButton" id="save_password">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">Save Password</property>
@@ -1536,7 +1503,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="chk_register">
+		    <widget class="GtkCheckButton" id="register_user">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">Register as New User</property>
