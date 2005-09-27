@@ -68,13 +68,13 @@ class Table:
 			raise TableError("player not at table")
 
 
-	def addListener(self, identifier, observer):
+	def addObserver(self, observer, listener):
 		"""Adds listener object as table observer."""
-		if identifier in self._listeners:
+		if observer in self._listeners:
 			raise TableError("already at table")
 		else:
-			self._listeners[identifier] = observer
-			[listener.observerJoins(identifier) for listener in self._listeners.values()]
+			self._listeners[observer] = listener
+			[listener.observerJoins(observer) for listener in self._listeners.values()]
 			
 
 	def addPlayer(self, player, seat):
@@ -161,13 +161,13 @@ class Table:
 		return self._game.whoseTurn()
 
 
-	def removeObserver(self, identity):
-		"""Removes observer from listener list.""" 
-		if identity in self._players.values() and not self.inProgress():
+	def removeObserver(self, observer):
+		"""Removes observer from listener list."""
+		if observer in self._players.values():
 			self.removePlayer(identity)  # Remove player first.
-		if identity in self._listeners:
-			del self._listeners[identity]
-			[listener.observerLeaves(player) for listener in self._listeners.values()]
+		if observer in self._listeners:
+			del self._listeners[observer]
+			[listener.observerLeaves(observer) for listener in self._listeners.values()]
 			# TODO: Check if the table should be closed down. Can't use registry.
 		else:
 			raise TableError("not at table")
