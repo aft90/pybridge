@@ -30,8 +30,8 @@ class PybridgeServerFactory(Factory):
 
 
 	def __init__(self):
-		self.listeners = {}  # Listener objects, keyed by user identifier.
-		self.tables    = {}  # Table objects, keyed by table identifier.
+		self.listeners = {}  # Listener objects, keyed by username.
+		self.tables    = {}  # Table objects, keyed by tablename.
 
 
 	def startFactory(self):
@@ -135,10 +135,6 @@ class PybridgeServerFactory(Factory):
 
 	def userLogout(self, username):
 		if username in self.listeners:
-			user = self.listeners[username]
-#			table = user.session['table']
-#			if table:
-#				table.removeObserver(username)
 			[listener.userLoggedOut(username) for listener in self.listeners.values()]
 			del self.listeners[username]
 			self.log.msg("Logout succeeded for user %s" % username)
