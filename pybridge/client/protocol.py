@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
-import sha, shlex
+import sha, string
 from twisted.protocols.basic import LineOnlyReceiver
 
 from lib.core.enumeration import Seat
@@ -80,11 +80,11 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 	def lineReceived(self, line):
 		print line
 
-		tokens = shlex.split(line)
+		tokens = string.split(line)
 		tag = tokens[0]
 
 		if tag[0] == '*':  # Status message.
-			event, data = tokens[1], str.join(' ', tokens[2:])
+			event, data = tokens[1], string.join(tokens[2:])
 			if event in self._status:
 				# Call appropriate listener function.	
 				dispatcher = getattr(self.listener, self._status[event])
@@ -97,9 +97,11 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 				if signal in (ACKNOWLEDGEMENT, DENIED, ILLEGAL):
 					message = str.join(' ', tokens[2:])
 					handler(signal, message)
-				else:  # Data block.
-					data = [str.split(str.strip(token, ","), ":") for token in tokens[2:]]
-					handler(signal, data)
+				else:  # tokens[2:] is a block of data.
+					# Convert strings of form "a:b, c:d:e" to [['a', 'b'], ['c', 'd', 'e']].
+					blocks = string.join(tokens[2:]).split(",")
+					items = [block.strip().split(":") for block in blocks if block!='']
+					handler(signal, items)
 				del self.pending[tag]  # Free tag.
 
 
@@ -109,6 +111,7 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 		line = str.join(" ", [str(token) for token in (tag, command) + args])
 		if handler:
 			self.pending[tag] = handler
+		print line
 		self.sendLine(line)
 
 
@@ -126,7 +129,7 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 	def cmdGameHand(self, seat=None):
 
 		def response(signal, data):
-			print data
+			pass
 
 		self.sendCommand('hand', (seat,), response)
 
@@ -138,15 +141,7 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 	def cmdListTables(self):
 
 		def response(signal, data):
-			tables = []
-			for datum in data:
-				table = {}
-				table['title'] = datum[0]
-				table[Seat.North] = datum[1] or None
-				table[Seat.East] = datum[2] or None
-				table[Seat.South] = datum[3] or None
-				table[Seat.West] = datum[4] or None
-				tables.append(table)
+			tables = data
 			self.listener.tableListing(tables)
 	
 		self.sendCommand('list', ('tables',), response)
@@ -156,6 +151,7 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 		def response(signal, data):
 			users = data
+			print users
 			self.listener.userListing(users)
 	
 		self.sendCommand('list', ('users',), response)
@@ -179,31 +175,29 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 	def cmdRegister(self, username, password):
 		hash = sha.new(password)  # Use password hash.
-		self.sendCommand('register', (username, hash.hexdigest()), None)
+		self.sendCommand('register', (username, hash.hexdigest()))
 
 
-	def cmdTableCreate(self, identifier):
+	def cmdTableCreate(self, tablename):
 
 		def response(signal, message):
 			if signal == ACKNOWLEDGEMENT:
-				self.listener.tableCreated(identifier)
-			else:
-				print "bleep"
+				self.listener.tableCreated(tablename)
 
-		self.sendCommand('create', (identifier,))
+		self.sendCommand('create', (tablename,))
 
 
 	def cmdTableLeave(self):
 		self.sendCommand('leave')
 
 
-	def cmdTableObserve(self, identifier):
-		self.sendCommand('observe', (identifier,))
+	def cmdTableObserve(self, tablename):
+		self.sendCommand('observe', (tablename,))
 
 
-	def cmdTableSit(self, identifier, seat):
-		self.sendCommand('sit', (identifier, seat))
+	def cmdTableSit(self, tablename, seat):
+		self.sendCommand('sit', (tablename, seat))  # ??
 
 
-	def cmdTableStand(self):
-		self.sendCommand('stand')
+	def cmdTableStand(self, tablename):
+		self.sendCommand('stand', (tablename,))

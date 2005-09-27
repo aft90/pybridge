@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import shlex
+import string
 
 from twisted.protocols.basic import LineOnlyReceiver
 
@@ -29,6 +29,7 @@ from table_interface import ITableListener
 from table import TableError  # TODO: eliminate this dependency.
 
 
+ACKNOWLEDGEMENT, DATA, DENIED, ILLEGAL = 'ok', 'data', 'no', 'bad'
 SUPPORTED_PROTOCOLS = ('pybridge-0.1',)
 
 
@@ -97,7 +98,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 	def connectionLost(self, reason):
 		if self.session['username']:
-			self.factory.userLogout(self.session['username'])
+			self.cmdLogout()
 
 
 	def getIdentifier(self):
@@ -115,7 +116,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 
 	def lineReceived(self, line):
-		tag, tokens = "-", shlex.split(line)
+		tag, tokens = "-", string.split(line)
 		try:
 
 			# Check for a command.
@@ -149,18 +150,20 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 				raise IllegalCommand("invalid number of arguments")
 		
 		except Acknowledgement:
-			self.sendTokens(tag, "ok")
+			self.sendTokens(tag, ACKNOWLEDGEMENT)
 		except DeniedCommand, error:  # Command is irrelevant.
-			self.sendTokens(tag, "no", "'%s'" % error)
+			self.sendTokens(tag, DENIED, "'%s'" % error)
 		except IllegalCommand, error:  # Command is ill-formatted.
-			self.sendTokens(tag, "bad", "'%s'" % error)
+			self.sendTokens(tag, ILLEGAL, "'%s'" % error)
 		except Response, data:
-			self.sendTokens(tag, "data", data)
+			self.sendTokens(tag, DATA, data)
 
 
-	def sendStatus(self, name, value):
+	def sendStatus(self, event, **kwargs):
 		"""Sends status message to client."""
-		self.sendTokens("*", name, ":", value)
+		# For now, ignore keys and just send values.
+		data = string.join(kwargs.values(), ",")
+		self.sendTokens("*", event, data)
 
 
 	def sendTokens(self, *tokens):
@@ -225,19 +228,10 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 	def cmdList(self, request):
 		self._checkStates(required=['loggedin'])
 		if request == 'tables':
-			tables = []
-			for tablename in self.factory.getTableList():
-				table = self.factory.getTable(tablename)
-				north = table.getPlayer(Seat.North) or ""
-				south = table.getPlayer(Seat.South) or ""
-				west = table.getPlayer(Seat.West) or ""
-				east = table.getPlayer(Seat.East) or ""
-				tables.append(str.join(":", (tablename, north, east, south, west)))
+			tables = self.factory.getTableList()
 			raise Response(str.join(",", tables))
 		elif request == 'users':
-			users = []
-			for username in self.factory.getUserList():
-				users.append(username)
+			users = self.factory.getUserList()
 			raise Response(str.join(",", users))
 		else:
 			raise IllegalCommand("unknown request")
@@ -254,7 +248,8 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 	def cmdLogout(self):
 		self._checkStates(required=['loggedin'])
-		self._checkStates(forbidden=['game'], error="game in progress")
+		if self.session['table']:  # Leave table.
+			self.session['table'].removeObserver(self.session['username'])
 		self.factory.userLogout(self.session['username'])
 		self.session['username'], self.session['table'] = None, None
 
@@ -279,10 +274,9 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 			raise DeniedCommand("invalid username")
 
 
-	def cmdTableCreate(self, identifier):
+	def cmdTableCreate(self, tablename):
 		self._checkStates(required=['loggedin'], forbidden=['table'])
-		table = self.factory.tableOpen(identifier)
-#		self.cmdTableObserve(identifier)  # We can branch like this, for now.
+		table = self.factory.tableOpen(tablename)
 
 
 	def cmdTableLeave(self):
@@ -295,7 +289,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 		self._checkStates(required=['loggedin'], forbidden=['table'])
 		table = self.factory.getTable(tablename)
 		if table:
-			table.addListener(self.session['username'], self.getTableListener())
+			table.addObserver(self.session['username'], self.getTableListener())
 			self.session['table'] = table
 		else:
 			raise DeniedCommand("unknown table")
@@ -316,7 +310,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 				raise DeniedCommand("already playing")  # TODO: shouldn't get here.
 		else:
 			# Not watching table, so add listener.
-			table.addListener(self.session['username'], self.getTableListener())
+			table.addObserver(self.session['username'], self.getTableListener())
 		try:
 			table.addPlayer(self.session['username'], seat)
 			self.session['table'] = table
@@ -329,14 +323,14 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 		self.session['table'].removePlayer(self.session['username'])
 
 
-	def cmdUserFinger(self, username):
-		self._checkStates(required=['loggedin'])
-		fields = self.factory.getFinger(username)
-		if fields:
-			# TODO: no, no, no!
-			[self.sendStatus(name, value) for name, value in fields]
-		else:
-			raise DeniedCommand("invalid user")
+#	def cmdUserFinger(self, username):
+#		self._checkStates(required=['loggedin'])
+#		fields = self.factory.getFinger(username)
+#		if fields:
+#			# TODO: no, no, no!
+#			[self.sendStatus(name, value) for name, value in fields]
+#		else:
+#			raise DeniedCommand("invalid user")
 
 
 #	def cmdVariableGet(self, name):
@@ -399,22 +393,22 @@ class ProtocolFactoryListener:
 		self._client = client
 
 	def messageReceived(self, username, message):
-		self._client.sendStatus("message", username, message)
+		self._client.sendStatus("message", user=username, message=message)
 
 	def shutdown(self):
-		pass
+		self._client.sendStatus("server_shutdown")
 
 	def tableOpened(self, tablename):
-		self._client.sendStatus("table_opened", tablename)
+		self._client.sendStatus("table_opened", table=tablename)
 
 	def tableClosed(self, tablename):
-		self._client.sendStatus("table_closed", tablename)
+		self._client.sendStatus("table_closed", table=tablename)
 
 	def userLoggedIn(self, username):
-		self._client.sendStatus("user_loggedin", username)
+		self._client.sendStatus("user_loggedin", user=username)
 
 	def userLoggedOut(self, username):
-		self._client.sendStatus("user_loggedout", username)
+		self._client.sendStatus("user_loggedout", user=username)
 
 
 class ProtocolTableListener:
@@ -434,19 +428,19 @@ class ProtocolTableListener:
 	def gameContract(self, contract):
 		doubles = {0 : "", 1 : "doubled", 2 : "redoubled"}
 		format = (contract['bidLevel'], contract['bidDenom'], doubles[contract['doubleLevel']], contract['declarer'])
-		self._client.sendStatus("contract", "%s %s %s by %s" % format)
+		self._client.sendStatus("contract", "%s %s %s by %s" % format)  # FIX THIS
 
 	def gameResult(self, result):
-		self._client.sendStatus("result", result)
+		self._client.sendStatus("result", result=result)
 
 	def observerJoins(self, observer):
-		self._client.sendStatus("observer_joins", observer)
+		self._client.sendStatus("observer_joins", user=observer)
 
 	def observerLeaves(self, observer):
-		self._client.sendStatus("observer_leaves", observer)
+		self._client.sendStatus("observer_leaves", user=observer)
 
 	def playerJoins(self, player):
-		self._client.sendStatus("player_joins", player)
+		self._client.sendStatus("player_joins", user=player)
 
 	def playerLeaves(self, player):
-		self._client.sendStatus("player_leaves", player)
+		self._client.sendStatus("player_leaves", user=player)
