@@ -21,10 +21,9 @@ gtk2reactor.install()
 
 import gtk
 from twisted.internet import reactor
-from twisted.internet.error import *
 from twisted.internet.protocol import ClientCreator
 
-import conf  # ??
+import os.path, shelve
 
 from client.protocol import PybridgeClientProtocol
 
@@ -60,14 +59,25 @@ class GtkGladeUI:
 			raise GtkGladeUI.__instance
 		GtkGladeUI.__instance = self
 
-		# Get configuration variables.
-		self.config = conf
+		# Construct path to datafiles.
+		dummyDir = "~/.pybridge/client"
+		dbDir = os.path.expanduser(dummyDir)
+		# Catch for OSes that do not have a $HOME.
+		if dbDir == dummyDir:
+			dbDir = "clientdata"
+		dbDir = os.path.normpath(dbDir)
+		if not os.path.isdir(dbDir):
+			os.makedirs(dbDir)
+
+		# Load configuration file.
+		configPath = os.path.join(dbDir, "db_config")
+		self.config = shelve.open(configPath, 'c', writeback=True)
 
 		self.connection = None  # Connection reference.
 
 
 	def connect(self, parameters):
-		"""Attempt to connect to Pybridge server with parameters."""
+		"""Attempt to connect to Pybridge server at hostname:port."""
 
 		def success(connection):
 			# Set up connection reference and listener.
@@ -75,13 +85,13 @@ class GtkGladeUI:
 			self.connection = connection
 			self.connection.setListener(listener)
 
-		def failure(err):
-			print err.getErrorMessage()
-			self.dialog_connection.okbutton.set_property('sensitive', True)
+		def failure(error):
+			self.dialog_connection.connect_failure(error)
 
+		hostname, port = parameters['hostname'], parameters['port']
 		if self.connection is None:
 			creator = ClientCreator(reactor, PybridgeClientProtocol)
-			defer = creator.connectTCP(parameters['host'], parameters['port'])
+			defer = creator.connectTCP(hostname, port)
 			defer.addCallbacks(success, failure)
 
 
@@ -104,6 +114,4 @@ class GtkGladeUI:
 		"""Bring everything to a stop, in a clean fashion."""
 		reactor.stop()
 		gtk.main_quit()
-
-
-
+		self.config.close()  # Save configuration
