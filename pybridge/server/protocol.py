@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import string
+import shlex
 
 from twisted.protocols.basic import LineOnlyReceiver
 
@@ -26,10 +26,11 @@ from lib.core.deck import Card
 
 from factory_interface import IFactoryListener
 from table_interface import ITableListener
-from table import TableError  # TODO: eliminate this dependency.
+from table import TableError
 
 
 ACKNOWLEDGEMENT, DATA, DENIED, ILLEGAL = 'ok', 'data', 'no', 'bad'
+UNVERIFIED, LOGGEDOUT, LOGGEDIN, TABLE, PLAYER, INGAME = range(6)
 SUPPORTED_PROTOCOLS = ('pybridge-0.1',)
 
 
@@ -53,56 +54,46 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 		'register' : 'cmdRegister',
 
 		# Server commands.
-		'finger'    : 'cmdFinger',
-		'get'       : 'cmdVariableGet',
-		'list'      : 'cmdList',
-		'password'  : 'cmdPassword',
-		'set'       : 'cmdVariableSet',
-		'shout'     : 'cmdTalkShout',
-		'silence'   : 'cmdSilence',
-		'tell'      : 'cmdTalkTell',
-		'unsilence' : 'cmdUnsilence',
+		'list'     : 'cmdList',
+		'password' : 'cmdPassword',
+		'shout'    : 'cmdTalkShout',
+		'tell'     : 'cmdTalkTell',
 		
-		# Non-table commands.
+		# Table commands.
+		'chat'    : 'cmdTalkChat,',
 		'create'  : 'cmdTableCreate',
+		'kibitz'  : 'cmdTalkKibitz',
 		'observe' : 'cmdTableObserve',
+		'leave'   : 'cmdTableLeave',
 		'sit'     : 'cmdTableSit',
 		'stand'   : 'cmdTableStand',
 
-		# Table commands.
-		'chat'   : 'cmdTalkChat',
-		'kibitz' : 'cmdTalkKibitz',
-		'leave'  : 'cmdTableLeave',
-
 		# Game commands.
-		'history'   : 'cmdGameHistory',
-		'turn'      : 'cmdGameTurn',
+		'history' : 'cmdGameHistory',
+		'turn'    : 'cmdGameTurn',
 
 		# Game player commands.
-		'accept'   : 'cmdGameClaimAccept',
-		'alert'    : 'cmdGameAlert',
-		'call'     : 'cmdGameCall',
-		'claim'    : 'cmdGameClaimClaim',
-		'concede'  : 'cmdGameClaimConcede',
-		'decline'  : 'cmdGameClaimDecline',
-		'hand'     : 'cmdGameHand',
-		'play'     : 'cmdGamePlay',
-		'retract'  : 'cmdGameClaimRetract'
+		'accept'  : 'cmdGameClaimAccept',
+		'alert'   : 'cmdGameAlert',
+		'call'    : 'cmdGameCall',
+		'claim'   : 'cmdGameClaimClaim',
+		'concede' : 'cmdGameClaimConcede',
+		'decline' : 'cmdGameClaimDecline',
+		'hand'    : 'cmdGameHand',
+		'play'    : 'cmdGamePlay',
+		'retract' : 'cmdGameClaimRetract',
 
 	}
 
 
 	def __init__(self):
-		self.session = dict.fromkeys(('protocol', 'username', 'table'), None)
+		self.username = None
+		self.table = None
+		self.version = None  # Version of client protocol.
 
 
 	def connectionLost(self, reason):
-		if self.session['username']:
-			self.cmdLogout()
-
-
-	def getIdentifier(self):
-		return self.session['username']
+		self.factory.userLogout(self.username)
 
 
 	def getFactoryListener(self):
@@ -116,20 +107,24 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 
 	def lineReceived(self, line):
-		tag, tokens = "-", string.split(line)
+		tokens = shlex.split(line)
 		try:
 
 			# Check for a command.
 			if len(tokens) == 0:
 				raise IllegalCommand("command required")
-			elif len(tokens) == 1 and tokens[0][0] == "#":
+			elif len(tokens) == 1 and tokens[0][0] == '#':
 				raise IllegalCommand("command required")
 
 			# Get tag, command and any supplied arguments.
-			if tokens[0][0] == "#":  # Tag provided.
-				tag, command, arguments = tokens[0], tokens[1].lower(), tokens[2:]
+			if tokens[0][0] == '#':
+				tag       = tokens[0]  # Tag provided.
+				command   = tokens[1].lower()
+				arguments = tokens[2:]
 			else:
-				command, arguments = tokens[0].lower(), tokens[1:]
+				tag       = '-'  # Use default '-' tag.
+				command   = tokens[0].lower()
+				arguments = tokens[1:]
 
 			# Command verification.
 			if command not in self._commands:
@@ -139,43 +134,41 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 			dispatcher = getattr(self, self._commands[command])
 			argsMax = dispatcher.func_code.co_argcount - 1  # "self"
 			argsMin = argsMax - len(dispatcher.func_defaults or [])
-
-			if argsMin <= len(arguments) <= argsMax:
-				try:
-					dispatcher(*arguments)  # Execution.
-					raise Acknowledgement   # If we get this far.
-				except TableError, error:
-					raise DeniedCommand(error)
-			else:
+			if argsMin > len(arguments) or argsMax < len(arguments):
 				raise IllegalCommand("invalid number of arguments")
+
+			# Call command, and be ready to trap resultant exceptions.
+			dispatcher(*arguments)  # Execution.
+			raise Acknowledgement   # (If we get this far.)
 		
 		except Acknowledgement:
-			self.sendTokens(tag, ACKNOWLEDGEMENT)
+			self.sendReply(tag, ACKNOWLEDGEMENT)
 		except DeniedCommand, error:  # Command is irrelevant.
-			self.sendTokens(tag, DENIED, "'%s'" % error)
+			self.sendReply(tag, DENIED, str(error))
 		except IllegalCommand, error:  # Command is ill-formatted.
-			self.sendTokens(tag, ILLEGAL, "'%s'" % error)
-		except Response, data:
-			self.sendTokens(tag, DATA, data)
+			self.sendReply(tag, ILLEGAL, str(error))
+		except Response, inst:
+			self.sendReply(tag, DATA, *inst.args)
 
 
-	def sendStatus(self, event, **kwargs):
+	def sendReply(self, tag, signal, *args):
+		"""Sends reply (to command with tag) to client."""
+		tokens = ["\'%s\'" % arg.strip() for arg in args]
+		self.sendLine(str.join(' ', [tag, signal] + tokens))
+
+
+	def sendStatus(self, event, *args):
 		"""Sends status message to client."""
-		# For now, ignore keys and just send values.
-		data = string.join(kwargs.values(), ",")
-		self.sendTokens("*", event, data)
-
-
-	def sendTokens(self, *tokens):
-		"""Sends string of tokens to client."""
-		self.sendLine(str.join(" ", [str(token) for token in tokens]))
+		tokens = ["\'%s\'" % arg.strip() for arg in args]
+		self.sendLine(str.join(' ', [str(token) for token in ['*', event] + tokens]))
 
 
 	# Command handlers.
 
 
 	def cmdGameCall(self, callType, bidLevel=None, bidDenom=None):
-		self._checkStates(required=['player', 'game'])
+		self._checkStates(required=[PLAYER, INGAME])
+		
 		if callType is CallType.Bid:
 			if bidLevel not in ('1', '2', '3', '4', '5', '6', '7'):
 				raise IllegalCommand("invalid bid level")
@@ -186,80 +179,91 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 			call = Call(callType)  # Double, redouble or pass.
 		else:
 			raise IllegalCommand("invalid calltype")
-		self.session['table'].gameMakeCall(self.session['username'], call)
+
+		try:
+			self.table.gameMakeCall(self.username, call)
+		except TableError:
+			raise DeniedCommand("illegal call")
 
 
 	def cmdGameHand(self, seat=None):
-		self._checkStates(required=['game'])
+		self._checkStates(required=[INGAME])
 		if seat is None:
-			self._checkStates(required=['player'], error="invalid seat")
-			seat, position = self.session['table'].getSeat(self.session['username']), None
-		elif seat in Seat.Seats and 'player' in self._getStates():
-			position = self.session['table'].getSeat(self.session['username'])
+			self._checkStates(required=[PLAYER], error="invalid seat")
+			seat, position = self.table.getSeat(self.username), None
+		elif seat in Seat.Seats and PLAYER in self._getStates():
+			position = self.table.getSeat(self.username)
 		elif seat in Seat.Seats:
 			position = None
 		else:
 			raise IllegalCommand("invalid seat")
-		cards = [str(card) for card in self.session['table'].gameHand(seat, position)]
+		cards = [str(card) for card in self.table.gameHand(seat, position)]
 		raise Response(str.join(", ", cards))
 
 
 	def cmdGameHistory(self):
-		self._checkStates(required=['game'])
+		self._checkStates(required=[INGAME])
 		# TODO: something.
 
 
 	def cmdGamePlay(self, rank, suit):
-		self._checkStates(required=['player', 'game'])
+		self._checkStates(required=[PLAYER, INGAME])
 		if rank not in Rank.Ranks:
 			raise IllegalCommand("invalid rank")
 		elif suit not in Suit.Suits:
 			raise IllegalCommand("invalid suit")
 		card = Card(rank, suit)
-		self.session['table'].gamePlayCard(self.session['username'], card)
+		try:
+			self.table.gamePlayCard(self.username, card)
+		except TableError:
+			raise DeniedCommand("illegal card")
 
 
 	def cmdGameTurn(self):
-		self._checkStates(required=['game'])
-		turn = self.session['table']._game.whoseTurn()
+		self._checkStates(required=[INGAME])
+		turn = self.table.game.whoseTurn()
 		raise Response(turn)
 
 
 	def cmdList(self, request):
-		self._checkStates(required=['loggedin'])
+		self._checkStates(required=[LOGGEDIN])
+		if request == 'players':
+			self._checkStates(required=[TABLE])
+			players = self.table.players.values()
+			raise Response(*players)
 		if request == 'tables':
-			tables = self.factory.getTableList()
-			raise Response(str.join(",", tables))
+			tables = self.factory.getTablesList()
+			raise Response(*tables)
 		elif request == 'users':
-			users = self.factory.getUserList()
-			raise Response(str.join(",", users))
+			users = self.factory.getUsersList()
+			raise Response(*users)
+		elif request == 'watchers':
+			watchers = self.table.listeners.keys()
+			raise Response(*watchers)
 		else:
 			raise IllegalCommand("unknown request")
 
 
 	def cmdLogin(self, username, password):
-		self._checkStates(required=['loggedout'])
-		if self.factory.userAuth(username, password):
-			self.factory.userLogin(username, password, self.getFactoryListener())
-			self.session['username'] = username
+		self._checkStates(required=[LOGGEDOUT])
+		if self.factory.userLogin(username, password, self.getFactoryListener()):
+			self.username = username
 		else:
 			raise DeniedCommand("unrecognised username or bad password")
 
 
 	def cmdLogout(self):
-		self._checkStates(required=['loggedin'])
-		if self.session['table']:  # Leave table.
-			self.session['table'].removeObserver(self.session['username'])
-		self.factory.userLogout(self.session['username'])
-		self.session['username'], self.session['table'] = None, None
+		self._checkStates(required=[LOGGEDIN])
+		self.factory.userLogout(self.username)
+		self.username, self.table = None, None
 
 
 	def cmdProtocol(self, version):
-		self._checkStates(required=['unverified'])
+		self._checkStates(required=[UNVERIFIED])
 		if version not in SUPPORTED_PROTOCOLS:
 			raise DeniedCommand("unsupported protocol")
 		else:
-			self.session['protocol'] = version
+			self.version = version
 
 
 	def cmdQuit(self):
@@ -267,7 +271,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 
 	def cmdRegister(self, username, password):
-		self._checkStates(required=['loggedout'])  # Must not be logged in.
+		self._checkStates(required=[LOGGEDOUT])  # Must not be logged in.
 		if self.factory.userRegister(username, password):
 			pass
 		else:
@@ -275,79 +279,70 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 
 	def cmdTableCreate(self, tablename):
-		self._checkStates(required=['loggedin'], forbidden=['table'])
-		table = self.factory.tableOpen(tablename)
+		self._checkStates(required=[LOGGEDIN], forbidden=[TABLE])
+		if self.factory.tableOpen(tablename):
+			pass
+		else:
+			raise DeniedCommand("invalid tablename")
 
 
 	def cmdTableLeave(self):
-		self._checkStates(required=['loggedin', 'table'])
-		self.session['table'].removeObserver(self.session['username'])
-		self.session['table'] = None
+		self._checkStates(required=[LOGGEDIN, TABLE])
+		self.factory.tableRemoveListener(self.username, self.table.name)
+		self.table = None
 
 
 	def cmdTableObserve(self, tablename):
-		self._checkStates(required=['loggedin'], forbidden=['table'])
-		table = self.factory.getTable(tablename)
-		if table:
-			table.addObserver(self.session['username'], self.getTableListener())
-			self.session['table'] = table
+		self._checkStates(required=[LOGGEDIN], forbidden=[TABLE])
+		if self.factory.tableAddListener(self.username, tablename, self.getTableListener()):
+			self.tablename = tablename
 		else:
 			raise DeniedCommand("unknown table")
 
 
-	def cmdTableSit(self, identifier, seat):
-		self._checkStates(required=['loggedin'], forbidden=['player'])
+	def cmdTableSit(self, seat):
+		self._checkStates(required=[TABLE], forbidden=[PLAYER])
 		if seat not in Seat.Seats:
 			raise IllegalCommand("invalid seat")
-		table = self.factory.getTable(identifier)
-		if not table:
-			raise DeniedCommand("unknown table")
-		if self.session['table']:
-			# Already watching table. Must not be playing.
-			if table is not self.session['table']:
-				raise DeniedCommand("already at table")
-			if self.session['table'].isPlayer(self.session['username']):
-				raise DeniedCommand("already playing")  # TODO: shouldn't get here.
-		else:
-			# Not watching table, so add listener.
-			table.addObserver(self.session['username'], self.getTableListener())
+
 		try:
-			table.addPlayer(self.session['username'], seat)
-			self.session['table'] = table
+			self.table.playerAdd(self.username, seat)
 		except TableError, error:
 			raise DeniedCommand(error)
 
 
 	def cmdTableStand(self):
-		self._checkStates(required=['loggedin', 'player'])
-		self.session['table'].removePlayer(self.session['username'])
+		self._checkStates(required=[PLAYER])
+		try:
+			self.table.playerRemove(self.username)
+		except TableError, error:
+			raise DeniedCommand(error)
 
 
-#	def cmdUserFinger(self, username):
-#		self._checkStates(required=['loggedin'])
-#		fields = self.factory.getFinger(username)
-#		if fields:
-#			# TODO: no, no, no!
-#			[self.sendStatus(name, value) for name, value in fields]
-#		else:
-#			raise DeniedCommand("invalid user")
+	def cmdTalkChat(self, message):
+		self._checkStates(required=[TABLE])
+		recepients = self.table.listeners.keys()
+		self.factory.userTalk(self.username, recepients, message)
 
 
-#	def cmdVariableGet(self, name):
-#		self._checkStates(required=['loggedin'])
-#		value = self.factory.getVariable(self.session['username'], name)
-#		if value:
-#			self.sendStatus(name, value)
-#		else:
-#			raise DeniedCommand("unknown variable")
+	def cmdTalkKibitz(self, message):
+		self._checkStates(required=[TABLE], forbidden=[PLAYER])
+		recepients = [username for username in self.table.listeners.keys() if username not in self.table.players.values()]
+		self.factory.userTalk(self.username, recepients, message)
 
 
-#	def cmdVariableSet(self, name, value):
-#		self._checkStates(required=['loggedin'])
-#		if self.factory.getVariable(self.session['username'], name):  # Valid variable.
-#			self.factory.setVariable(self.session['username'], name, value)
-#		else:
-#			raise DeniedCommand("unknown variable")
+	def cmdTalkShout(self, message):
+		self._checkStates(required=[LOGGEDIN])
+		recepients = self.factory.getUsersList()
+		self.factory.userTalk(self.username, recepients, message)
+
+
+	def cmdTalkTell(self, recepient, message):
+		self._checkStates(required=[LOGGEDIN])
+		if recepient in self.factory.getUsersList():
+			self.factory.userTalk(self.username, (recepient,), message)
+		else:
+			raise DeniedCommand("invalid username")
 
 
 	def _checkStates(self, required=(), forbidden=(), error="unavailable"):
@@ -367,20 +362,18 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 	def _getStates(self):
 		"""Returns a list of current states."""
 		states = []
-		if self.session['table']:
-			states.append('table')
-			if self.session['table'].isPlayer(self.session['username']):
-				states.append('player')
-			if self.session['table'].isObserver(self.session['username']):
-				states.append('observer')
-			if self.session['table'].inProgress():
-				states.append('game')
-		if self.session['username']:
-			states.append('loggedin')
-		elif self.session['protocol']:
-			states.append('loggedout')
+		if self.table:
+			states.append(TABLE)
+			if self.username in self.table.values():
+				states.append(PLAYER)
+			if self.table.inProgress():
+				states.append(INGAME)
+		if self.username:
+			states.append(LOGGEDIN)
+		elif self.version:
+			states.append(LOGGEDOUT)
 		else:
-			states.append('unverified')
+			states.append(UNVERIFIED)
 		return states
 
 
@@ -393,22 +386,28 @@ class ProtocolFactoryListener:
 		self._client = client
 
 	def messageReceived(self, username, message):
-		self._client.sendStatus("message", user=username, message=message)
+		self._client.sendStatus("message", username, message)
 
 	def shutdown(self):
 		self._client.sendStatus("server_shutdown")
 
 	def tableOpened(self, tablename):
-		self._client.sendStatus("table_opened", table=tablename)
+		self._client.sendStatus("table_opened", tablename)
 
 	def tableClosed(self, tablename):
-		self._client.sendStatus("table_closed", table=tablename)
+		self._client.sendStatus("table_closed", tablename)
+
+	def userJoinsTable(self, username, tablename):
+		self._client.sendStatus("user_joins_table", username, tablename)
+
+	def userLeavesTable(self, username, tablename):
+		self._client.sendStatus("user_leaves_table", username, tablename)
 
 	def userLoggedIn(self, username):
-		self._client.sendStatus("user_loggedin", user=username)
+		self._client.sendStatus("user_loggedin", username)
 
 	def userLoggedOut(self, username):
-		self._client.sendStatus("user_loggedout", user=username)
+		self._client.sendStatus("user_loggedout", username)
 
 
 class ProtocolTableListener:
@@ -431,16 +430,10 @@ class ProtocolTableListener:
 		self._client.sendStatus("contract", "%s %s %s by %s" % format)  # FIX THIS
 
 	def gameResult(self, result):
-		self._client.sendStatus("result", result=result)
-
-	def observerJoins(self, observer):
-		self._client.sendStatus("observer_joins", user=observer)
-
-	def observerLeaves(self, observer):
-		self._client.sendStatus("observer_leaves", user=observer)
+		self._client.sendStatus("result", result)
 
 	def playerJoins(self, player):
-		self._client.sendStatus("player_joins", user=player)
+		self._client.sendStatus("player_joins", player)
 
 	def playerLeaves(self, player):
-		self._client.sendStatus("player_leaves", user=player)
+		self._client.sendStatus("player_leaves", player)
