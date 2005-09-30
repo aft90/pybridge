@@ -21,7 +21,7 @@ from twisted.python import components, log
 import os.path, re, shelve, sys
 
 from protocol import PybridgeServerProtocol
-from table import Table
+from table import BridgeTable, TableError
 
 
 class PybridgeServerFactory(Factory):
@@ -30,8 +30,8 @@ class PybridgeServerFactory(Factory):
 
 
 	def __init__(self):
-		self.listeners = {}  # Listener objects, keyed by username.
-		self.tables    = {}  # Table objects, keyed by tablename.
+		self.listeners = {}  # For each username, the respective FactoryListener object.
+		self.tables    = {}  # For each tablename, the respective Table object.
 
 
 	def startFactory(self):
@@ -60,32 +60,42 @@ class PybridgeServerFactory(Factory):
 
 	def stopFactory(self):
 		self.log.msg("Stopping the PyBridge server.")
-
-		# Advise each listener that server is shutting down.
-		[user.shutdown() for user in self.listeners.values()]
-
-		# Save account information.
-		self.accounts.close()
+		[listener.shutdown() for listener in self.listeners.values()]
+		self.accounts.close()  # Save account information.
 
 
 	def getTable(self, tablename):
 		"""Returns table object associated with tablename."""
-		if tablename in self.tables:
-			return self.tables[tablename]
+		return self.tables.get(tablename, None)
 
 
-	def getTableList(self):
+	def getTablesList(self):
+		"""Returns a list of all active tablenames."""
 		return self.tables.keys()
 
 
-	def getUserList(self):
-		"""Returns a list of all registered users."""
+	def getUsersList(self):
+		"""Returns a list of all online usernames."""
 		return self.listeners.keys()
+
+
+	def getUsersAtTableList(self, tablename):
+		"""Returns a list of all usernames watching given table."""
+		return self.tables[tablename].listeners.keys()
+
+
+	def getTablesForUserList(self, username):
+		"""Returns a list of all tablenames that username is watching."""
+		tables = []
+		for tablename, table in self.tables.items():
+			if username in table.listeners:
+				tables.append(tablename)
+		return tables
 
 
 	def accountFieldRetrieve(self, accountname, field):
 		"""Returns the value of field for given account."""
-		if field in ("username", ):
+		if field in ("username", ):  # TODO: add more fields!
 			if accountname in self.accounts:
 				return self.accounts[accountname][field]
 		return False
@@ -95,9 +105,11 @@ class PybridgeServerFactory(Factory):
 		"""Creates a new table object with given identifier."""
 		if not tablename in self.tables:
 			# Table with tablename must not exist already.
-			self.tables[tablename] = Table(tablename)
+			self.tables[tablename] = BridgeTable(tablename)
 			[listener.tableOpened(tablename) for listener in self.listeners.values()]
 			self.log.msg("Opened table %s" % tablename)
+			return True
+		return False
 
 
 	def tableClose(self, tablename):
@@ -110,31 +122,53 @@ class PybridgeServerFactory(Factory):
 			self.log.msg("Closed table %s" % tablename)
 
 
-	def userAuth(self, username, password):
-		"""Returns True if username+password may login, False otherwise."""
+	def tableAddListener(self, username, tablename, tablelistener):
+		"""Adds table listener object associated with username, to table observer list."""
+		if self.tables[tablename]:
+			self.tables[tablename].listeners[username] = tablelistener
+			[listener.userJoinsTable(username, tablename) for listener in self.listeners.values()]
+			self.log.msg("User %s joins table %s" % (username, tablename))
+			return True
+		return False
+
+
+	def tableRemoveListener(self, username, tablename):
+		"""Removes table listener object associated with username, from table observer list."""
+		if self.tables[tablename]:
+			del self.tables[tablename].listeners[username]
+			[listener.userLeavesTable(username, tablename) for listener in self.listeners.values()]
+			self.log.msg("User %s leaves table %s" % (username, tablename))
+			# TODO: Check if we should close table.
+			return True
+		return False
+
+
+	def userLogin(self, username, password, factorylistener):
+		"""Attempt to login. Returns True if successful, False otherwise."""
+		# Check for spurious login requests.
 		if username not in self.accounts:
-			# User account does not exist.
+			self.log.msg("Login attempt failed for username %s: not registered" % username)
 			return False
-		elif username in self.listeners:
-			# User with username is already logged in.
+		if username in self.listeners:
+			self.log.msg("Login attempt failed for username %s: already logged in" % username)
 			return False
-		else:
-			# Check for password match.
-			return self.accounts[username]['password'] == password
-
-
-	def userLogin(self, username, password, listener):
-		"""Attempt to login."""
-		if self.userAuth(username, password):
-			self.listeners[username] = listener
+		# Check for password match.
+		if self.accounts[username]['password'] == password:
+			self.listeners[username] = factorylistener
 			[listener.userLoggedIn(username) for listener in self.listeners.values()]
 			self.log.msg("Login succeeded for user %s" % username)
+			return True
 		else:
-			self.log.msg("Login attempt failed (username %s)" % username)
+			self.log.msg("Login attempt failed for username %s: bad password" % username)
+			return False
 
 
 	def userLogout(self, username):
 		if username in self.listeners:
+			# Remove user from active tables.
+			tables = self.getTablesForUserList(username)
+			[self.tableRemoveListener(username, tablename) for tablename in tables]
+			# Inform all clients that user has logged out.
 			[listener.userLoggedOut(username) for listener in self.listeners.values()]
 			del self.listeners[username]
 			self.log.msg("Logout succeeded for user %s" % username)
@@ -143,6 +177,7 @@ class PybridgeServerFactory(Factory):
 	def userRegister(self, username, password):
 		"""Registers username+password in database."""
 		if username in self.accounts:
+			self.log.msg("Registration failed for username %s: already registered" % username)
 			return False
 		
 		# Check username for well-formedness.
@@ -156,4 +191,15 @@ class PybridgeServerFactory(Factory):
 			'password' : password,
 		}
 		self.log.msg("Registration succeeded for user %s" % username)
+		return True
+
+
+	def userTalk(self, speaker, receipients, message):
+		"""Sends message from speaker to each user in receipients."""
+		# TODO: check silence lists.
+		# TODO: profanity filter on message. (maybe client side?)
+		for username in recepients:
+			user = self.listeners.get(username, None)
+			if user:
+				user.messageReceived(speaker, message)
 		return True
