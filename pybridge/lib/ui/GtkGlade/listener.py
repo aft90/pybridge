@@ -29,6 +29,7 @@ class GtkGladeListener:
 		self.parameters = None
 		self.tables     = {}
 		self.users      = {}
+		self.watching   = {}
 
 
 	def gameCallMade(self, seat, call):
@@ -47,7 +48,11 @@ class GtkGladeListener:
 		pass
 
 
-	def loginGood(self):
+	def loginFailure(self):
+		self.ui.dialog_connection.connect_failure("Bad login.")
+
+
+	def loginSuccess(self):
 		self.parameters = self.ui.dialog_connection.get_connection_parameters()  # hackish?
 		self.ui.dialog_connection.connect_success()
 		self.ui.dialog_connection.window.hide()
@@ -58,20 +63,6 @@ class GtkGladeListener:
 		self.ui.connection.cmdListUsers()
 
 
-	def loginBad(self):
-		self.ui.dialog_connection.connect_failure("Bad login.")
-
-
-	def observerJoins(self, observer):
-		if observer == self.parameters['username']:
-			# The user is the observer, so create a card table.
-			self.ui.window_main.create_cardtable("Bob")
-
-
-	def observerLeaves(self, observer):
-		print 'observer leaves', observer
-
-
 	def playerJoins(self, player, seat):
 		print 'player joins', player, seat
 
@@ -80,7 +71,7 @@ class GtkGladeListener:
 		print 'player leaves', player
 
 
-	def protocolGood(self, version):
+	def protocolSuccess(self, version):
 		# Attempt to login to server.
 		parameters = self.ui.dialog_connection.get_connection_parameters()
 		if parameters['register']:
@@ -88,7 +79,7 @@ class GtkGladeListener:
 		self.ui.connection.cmdLogin(parameters['username'], parameters['password'])
 
 
-	def protocolBad(self, version):
+	def protocolFailure(self, version):
 		self.ui.dialog_connection.connect_failure("Bad protocol.")
 
 
@@ -104,16 +95,27 @@ class GtkGladeListener:
 
 	def tableListing(self, tables):
 		self.tables.clear()
-		for table in tables:
-			tablename = table[0]
+		for tablename in tables:
 			self.tables[tablename] = {}
 		self.ui.window_main.update_tables(self.tables)
 
 
+	def userJoinsTable(self, username, tablename):
+		if username == self.parameters['username']:
+			# The user is the observer, so create a card table.
+			#self.ui.window_main.table_listing.set_sensitivity(False)
+			self.ui.window_main.create_cardtable(tablename)
+
+
+	def userLeavesTable(self, username, tablename):
+		if username == self.parameters['username']:
+			print "left the table"
+		print 'observer leaves', observer
+
+
 	def userListing(self, users):
 		self.users.clear()
-		for user in users:
-			username = user[0]
+		for username in users:
 			self.users[username] = {}
 		self.ui.window_main.update_users(self.users)
 
