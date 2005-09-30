@@ -16,13 +16,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
-import sha, string
+import sha, shlex
 from twisted.protocols.basic import LineOnlyReceiver
 
 from lib.core.enumeration import Seat
 
 
-ACKNOWLEDGEMENT, DENIED, ILLEGAL = 'ok', 'no', 'bad'
+ACKNOWLEDGEMENT, DATA, DENIED, ILLEGAL = 'ok', 'data', 'no', 'bad'
 PROTOCOL = 'pybridge-0.1'
 
 
@@ -33,16 +33,16 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 	_status = {
 
 		# Server events.
-		'table_opened'   : 'tableOpened',
-		'table_closed'   : 'tableClosed',
-		'user_loggedin'  : 'userLoggedIn',
-		'user_loggedout' : 'userLoggedOut',
+		'table_opened'      : 'tableOpened',
+		'table_closed'      : 'tableClosed',
+		'user_joins_table'  : 'userJoinsTable',
+		'user_leaves_table' : 'userLeavesTable',
+		'user_loggedin'     : 'userLoggedIn',
+		'user_loggedout'    : 'userLoggedOut',
 
 		# Table events.
-		'observer_joins'  : 'observerJoins',
-		'observer_leaves' : 'observerLeaves',
-		'player_joins'    : 'playerJoins',
-		'player_leaves'   : 'playerLeaves',
+		'player_joins'  : 'playerJoins',
+		'player_leaves' : 'playerLeaves',
 
 		# Game events.
 		'call_made'   : 'gameCallMade',
@@ -60,49 +60,41 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 
 	def connectionMade(self):
-
-		def response(signal, message):
-			if signal == ACKNOWLEDGEMENT:
-				self.listener.protocolGood(PROTOCOL)
-			else:
-				self.listener.protocolBad(PROTOCOL)
-
-		self.sendCommand("protocol", (PROTOCOL,), response)
+		self.cmdProtocol()  # Verify protocol first.
 
 
 	def generateTag(self):
 		"""Returns a free tag identifier and increments tag index."""
-		tag = self.tagIndex
+		tag = "#%s" % self.tagIndex
 		self.tagIndex = (self.tagIndex + 1) % 10000
-		return "#%s" % tag
+		return tag
 
 
 	def lineReceived(self, line):
-		print line
+		print line  # DEBUG DEBUG DEBUG
 
-		tokens = string.split(line)
-		tag = tokens[0]
+		tokens = shlex.split(line)
+		tag, signal, data = tokens[0], tokens[1], tokens[2:]
 
 		if tag[0] == '*':  # Status message.
-			event, data = tokens[1], string.join(tokens[2:])
-			if event in self._status:
-				# Call appropriate listener function.	
-				dispatcher = getattr(self.listener, self._status[event])
-				dispatcher(data)
+			if signal in self._status:
+				# Execute appropriate listener function.	
+				dispatcher = getattr(self.listener, self._status[signal])
+				dispatcher(*data)
 
-		elif tag[0] == '#':
+		elif tag[0] == '#':  # Reply to tagged command.
 			handler = self.pending.get(tag, None)
 			if handler:
-				signal = tokens[1]
-				if signal in (ACKNOWLEDGEMENT, DENIED, ILLEGAL):
-					message = str.join(' ', tokens[2:])
-					handler(signal, message)
-				else:  # tokens[2:] is a block of data.
-					# Convert strings of form "a:b, c:d:e" to [['a', 'b'], ['c', 'd', 'e']].
-					blocks = string.join(tokens[2:]).split(",")
-					items = [block.strip().split(":") for block in blocks if block!='']
-					handler(signal, items)
+				if signal == DATA:
+					handler(signal, data)
+				else:
+					handler(signal, str.join(' ', data))
 				del self.pending[tag]  # Free tag.
+				
+#					# Convert strings of form "a:b, c:d:e" to [['a', 'b'], ['c', 'd', 'e']].
+#					blocks = string.join(tokens[2:]).split(",")
+#					items = [block.strip().split(":") for block in blocks if block!='']
+#					handler(signal, items)
 
 
 	def sendCommand(self, command, args=(), handler=None):
@@ -111,7 +103,7 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 		line = str.join(" ", [str(token) for token in (tag, command) + args])
 		if handler:
 			self.pending[tag] = handler
-		print line
+		print line  # DEBUG DEBUG DEBUG
 		self.sendLine(line)
 
 
@@ -151,7 +143,6 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 		def response(signal, data):
 			users = data
-			print users
 			self.listener.userListing(users)
 	
 		self.sendCommand('list', ('users',), response)
@@ -161,9 +152,9 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 		def response(signal, message):
 			if signal == ACKNOWLEDGEMENT:
-				self.listener.loginGood()
+				self.listener.loginSuccess()
 			else:
-				self.listener.loginBad()
+				self.listener.loginFailure()
 
 		hash = sha.new(password)  # Use password hash.
 		self.sendCommand('login', (username, hash.hexdigest()), response)
@@ -171,6 +162,17 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 	def cmdLogout(self):
 		self.sendCommand('logout')
+
+
+	def cmdProtocol(self):
+
+		def response(signal, message):
+			if signal == ACKNOWLEDGEMENT:
+				self.listener.protocolSuccess(PROTOCOL)
+			else:
+				self.listener.protocolFailure(PROTOCOL)
+
+		self.sendCommand("protocol", (PROTOCOL,), response)
 
 
 	def cmdRegister(self, username, password):
