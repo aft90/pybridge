@@ -34,6 +34,12 @@ class IFactoryListener(components.Interface):
 	def tableClosed(self, tablename):
 		"""Called when a table is closed."""
 
+	def userJoinedTable(self, username, tablename):
+		"""Called when a user joins a table."""
+
+	def userLeftTable(self, username, tablename):
+		"""Called when a user leaves a table."""
+
 	def userLoggedIn(self, username):
 		"""Called when user logs in."""
 
