@@ -35,17 +35,11 @@ class IPybridgeClientListener(Interface):
 	def gameResult(self, result):
 		"""Called when game result is known."""
 
-	def loginGood(self):
-		"""Called when login is succssful"""
-
-	def loginBad(self):
+	def loginFailure(self):
 		"""Called when login failed."""
 
-	def observerJoins(self, observer):
-		"""Called when an observer joins table."""
-
-	def observerLeaves(self, observer):
-		"""Called when an observer leaves table."""
+	def loginSuccess(self):
+		"""Called when login is successful."""
 
 	def playerJoins(self, player, seat):
 		"""Called when a player joins table."""
@@ -53,11 +47,11 @@ class IPybridgeClientListener(Interface):
 	def playerLeaves(self, player):
 		"""Called when a player leaves table."""
 
-	def protocolGood(self, version):
-		"""Called when protocol verification has succeeded."""
-
-	def protocolBad(self, version):
+	def protocolFailure(self, version):
 		"""Called when protocol verification has failed."""
+
+	def protocolSuccess(self, version):
+		"""Called when protocol verification has succeeded."""
 
 	def tableOpened(self, tablename):
 		"""Called when a table has been created."""
@@ -68,8 +62,17 @@ class IPybridgeClientListener(Interface):
 	def tableListing(self, tables):
 		"""Called when a listing of tables has been provided."""
 
+	def userJoinsTable(self, username, tablename):
+		"""Called when a user joins a table."""
+
+	def userLeavesTable(self, username, tablename):
+		"""Called when a user leaves a table."""
+
 	def userLoggedIn(self, username):
 		"""Called when user logs in."""
 
 	def userLoggedOut(self, username):
 		"""Called when user logs out."""
+
+	def userListing(self, tables):
+		"""Called when a listing of users has been provided."""
