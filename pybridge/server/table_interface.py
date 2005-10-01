@@ -34,8 +34,8 @@ class ITableListener(Interface):
 	def gameResult(self, result):
 		"""Called when game result is known."""
 
-	def playerJoins(self, person, seat):
+	def playerJoins(self, player, seat):
 		"""Called when a player joins this table."""
 
-	def playerLeaves(self, person):
+	def playerLeaves(self, player, seat):
 		"""Called when a player leaves this table."""
