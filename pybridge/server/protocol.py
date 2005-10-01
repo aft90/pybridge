@@ -112,8 +112,10 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 			# Check for a command.
 			if len(tokens) == 0:
+				tag = '-'
 				raise IllegalCommand("command required")
 			elif len(tokens) == 1 and tokens[0][0] == '#':
+				tag = '-'
 				raise IllegalCommand("command required")
 
 			# Get tag, command and any supplied arguments.
@@ -287,6 +289,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 
 	def cmdTableLeave(self):
+		print self._getStates()
 		self._checkStates(required=[LOGGEDIN, TABLE])
 		self.factory.tableRemoveListener(self.username, self.table.name)
 		self.table = None
@@ -294,8 +297,11 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 	def cmdTableObserve(self, tablename):
 		self._checkStates(required=[LOGGEDIN], forbidden=[TABLE])
-		if self.factory.tableAddListener(self.username, tablename, self.getTableListener()):
-			self.tablename = tablename
+		table = self.factory.getTable(tablename)
+		if table:
+			listener = self.getTableListener()
+			self.factory.tableAddListener(self.username, tablename, listener)
+			self.table = table
 		else:
 			raise DeniedCommand("unknown table")
 
@@ -364,9 +370,9 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 		states = []
 		if self.table:
 			states.append(TABLE)
-			if self.username in self.table.values():
+			if self.username in self.table.players.values():
 				states.append(PLAYER)
-			if self.table.inProgress():
+			if self.table.game:  # Game in progress.
 				states.append(INGAME)
 		if self.username:
 			states.append(LOGGEDIN)
@@ -432,8 +438,8 @@ class ProtocolTableListener:
 	def gameResult(self, result):
 		self._client.sendStatus("result", result)
 
-	def playerJoins(self, player):
-		self._client.sendStatus("player_joins", player)
+	def playerJoins(self, player, seat):
+		self._client.sendStatus("player_joins", player, seat)
 
 	def playerLeaves(self, player):
 		self._client.sendStatus("player_leaves", player)
