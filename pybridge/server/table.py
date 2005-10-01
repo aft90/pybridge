@@ -54,7 +54,7 @@ class BridgeTable:
 		"""
 		if username in self.listeners and self.players[seat] is None:
 			self.players[seat] = username
-			[listener.playerJoins(username, seat) for listener in self.listeners]
+			[listener.playerJoins(username, seat) for listener in self.listeners.values()]
 		else:
 			raise TableError("cannot add player")
 
@@ -64,7 +64,7 @@ class BridgeTable:
 		if username in self.players.values():
 			seat = [seat for seat, username in self.players.items() if player==username][0]  # Get key.
 			self.players[seat] = None
-			[listener.playerLeaves(username, seat) for listener in self.listeners]
+			[listener.playerLeaves(username, seat) for listener in self.listeners.values()]
 		else:
 			raise TableError("cannot remove player")
 
@@ -73,7 +73,7 @@ class BridgeTable:
 		"""Called to start a game."""
 		deal = self.deck.generateRandom()
 		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
-		[listener.gameStarted() for listener in self.listeners]
+		[listener.gameStarted() for listener in self.listeners.values()]
 
 
 	def gameFinished(self):
@@ -84,7 +84,7 @@ class BridgeTable:
 		"""
 		# TODO: get score.
 		self.game = None
-		[listener.gameFinished() for listener in self.listeners]
+		[listener.gameFinished() for listener in self.listeners.values()]
 
 
 	def gameHand(self, seat, player=None):
