@@ -1,4 +1,4 @@
-from enumeration import CallType, Denomination, Seat
+from enumeration import CallType, Denomination, Level, Seat
 
 
 class Call:
@@ -9,7 +9,7 @@ class Call:
 		if type not in CallType.CallTypes:
 			raise "Invalid specification of call."
 		elif type == CallType.Bid:
-			if bidLevel in range(1,8) and bidDenom in Denomination.Denominations:
+			if bidLevel in Level.Levels and bidDenom in Denomination.Denominations:
 				self.bidLevel = bidLevel
 				self.bidDenom = bidDenom
 			else:
@@ -35,7 +35,10 @@ class Call:
 
 
 	def __eq__(self, other):
-		return repr(self) == repr(other)
+		if self.callType == other.callType == CallType.Bid:
+			return self.bidLevel == other.bidLevel and self.bidDenom == other.bidDenom
+		return self.callType == other.callType
+#		return repr(self) == repr(other)
 
 
 	def __str__(self):
@@ -43,15 +46,20 @@ class Call:
 			return "%s %s" % (self.bidLevel, self.bidDenom)
 		else:
 			return self.callType
-		
 
 
 class Bidding:
 	"""A bidding session is a list of Call objects and the dealer."""
 
+	# Enumeration of all available calls.
+	BIDS     = [Call(CallType.Bid, l, d) for l, d in zip(5*Level.Levels, 7*Denomination.Denominations)]
+	DOUBLE   = Call(CallType.Double)
+	REDOUBLE = Call(CallType.Redouble)
+	PASS     = Call(CallType.Pass)
+
 
 	def __init__(self, dealer):
-		self.calls = []
+		self.calls  = []
 		self.dealer = dealer
 
 
@@ -61,18 +69,14 @@ class Bidding:
 		- at least 4 calls made.
 		- last 3 calls are passes.
 		"""
-		if len(self.calls) >= 4:
-			return len([call for call in self.calls[-3:] if call.callType==CallType.Pass]) == 3
-		else:
-			return False
+		passes = len([call for call in self.calls[-3:] if call==self.PASS])
+		return len(self.calls) >= 4 and passes == 3
 
 
 	def isPassedOut(self):
-		"""Bidding is passed out if each player has passed on their first turn. This implies no contract."""
-		if len(self.calls) == 4:
-			return len([call for call in self.calls if call.callType==CallType.Pass]) == 4
-		else:
-			return False
+		"""Bidding is passed out if each player has passed on their first turn. This is a special case of isComplete; it implies no contract has been established."""
+		passes = len([call for call in self.calls if call==self.PASS])
+		return len(self.calls) == 4 and passes == 4
 
 
 	def contract(self):
@@ -88,11 +92,8 @@ class Bidding:
 
 	def currentBid(self):
 		"""Returns most recent bid, or False if no bids made."""
-		bids = [call for call in self.calls if call.callType==CallType.Bid]
-		if len(bids) > 0:
-			return bids[-1]
-		else:
-			return False
+		bids = [call for call in self.calls if call in self.BIDS]
+		return len(bids)>0 and bids[-1]
 
 
 	def currentDoubleLevel(self):
@@ -103,13 +104,18 @@ class Bidding:
 		- 2, if current bid is redoubled.
 		"""
 		for call in self.calls[::-1]:
-			if call.callType is CallType.Bid:
+			if call in self.BIDS:
 				break
-			elif call.callType is CallType.Double:
+			elif call == self.DOUBLE:
 				return 1
-			elif call.callType is CallType.Redouble:
+			elif call == self.REDOUBLE:
 				return 2
 		return 0
+
+
+	def validCall(self, call):
+		"""Check a given call for validity against the previous calls."""
+		return call in self.listAvailableCalls()
 
 
 	def addCall(self, call):
@@ -118,49 +124,40 @@ class Bidding:
 			self.calls.append(call)
 
 
-	def validCall(self, call):
-		"""Check a given call for validity against the previous calls."""
+	def listAvailableCalls(self):
+		"""Returns a tuple of all calls available to current seat."""
+		calls = []
+		if not self.isComplete():
+			currentBid = self.currentBid()
 
-		# The bidding must not be passed out.
-		if self.isComplete():
-			return False
+			# If bidding is not complete, a pass is always available.
+			calls.append(self.PASS)
 
-		elif call.callType == CallType.Bid:
-			# A bid must be greater than the current bid.
-			return (not self.currentBid()) or call > self.currentBid()
+			# There must be an existing bid for a double or redouble.
+			if currentBid:
+				opposition = (self.whoseTurn(1), self.whoseTurn(3))
+				partnership = (self.whoseTurn(0), self.whoseTurn(2))
+				bidder = self.whoseCall(currentBid)
+				# Check if double (on opposition's bid) is available.
+				if self.currentDoubleLevel() == 0 and bidder in opposition:
+					calls.append(self.DOUBLE)
+				# Check if redouble (on partnership's bid) is available.
+				elif self.currentDoubleLevel() == 1 and bidder in partnership:
+					calls.append(self.REDOUBLE)
 
-		elif call.callType == CallType.Double:
-			if self.currentBid():
-				# If opposition's bid, must be single double.
-				bidder = self.whoseCall(self.currentBid())
-				if bidder in (self.whoseTurn(1), self.whoseTurn(3)):  # opposition
-					return self.currentDoubleLevel() == 0  # no double
-			return False
+			# Bids are available only if they are stronger than the current bid.
+			calls += [bid for bid in self.BIDS if (not currentBid) or bid > currentBid]
 
-		elif call.callType == CallType.Redouble:
-			if self.currentBid():
-				# If partnership's bid, must be redouble.
-				bidder = self.whoseCall(self.currentBid())
-				if bidder in (self.whoseTurn(), self.whoseTurn(2)):  # partnership
-					return self.currentDoubleLevel() == 1  # opponent double
-			return False
-
-		else:  # call.callType == CallType.Pass
-			# Bidding is not complete; a pass is valid.
-			return True
+		return calls
 
 
 	def whoseTurn(self, offset=0):
 		"""Returns the seat that is next to call."""
-		if self.isComplete():
-			return False
-		else:
-			return Seat.Seats[(len(self.calls) + Seat.Seats.index(self.dealer) + offset) % 4]
+		seat = Seat.Seats[(len(self.calls) + Seat.Seats.index(self.dealer) + offset) % 4]
+		return not(self.isComplete()) and seat
 
 
 	def whoseCall(self, call):
 		"""Returns the seat from which the call was made."""
-		if call in self.calls:
-			return Seat.Seats[(self.calls.index(call) + Seat.Seats.index(self.dealer)) % 4]
-		else:
-			return False
+		seat = Seat.Seats[(self.calls.index(call) + Seat.Seats.index(self.dealer)) % 4]
+		return call in self.calls and seat
