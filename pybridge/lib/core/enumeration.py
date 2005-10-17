@@ -11,6 +11,11 @@ class Denomination:
 	Denominations = [Club, Diamond, Heart, Spade, NoTrump]
 
 
+class Level:
+	One, Two, Three, Four, Five, Six, Seven = range(1,8)
+	Levels = [One, Two, Three, Four, Five, Six, Seven]
+
+
 class Rank:
 	Two = 'two'; Three = 'three'; Four = 'four'; Five = 'five'; Six = 'six'
 	Seven = 'seven'; Eight = 'eight'; Nine = 'nine'; Ten = 'ten'
