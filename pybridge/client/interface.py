@@ -20,7 +20,9 @@ from twisted.python.components import Interface
 
 
 class IPybridgeClientListener(Interface):
-	"""events."""
+	"""The IPybridgeClientListener interface provides the events to drive a
+	client connected to a PyBridge server.
+	"""
 
 
 	def gameCallMade(self, seat, call):
@@ -34,6 +36,9 @@ class IPybridgeClientListener(Interface):
 
 	def gameResult(self, result):
 		"""Called when game result is known."""
+
+	def gameStarted(self):
+		"""Called when game is started."""
 
 	def loginFailure(self):
 		"""Called when login failed."""
