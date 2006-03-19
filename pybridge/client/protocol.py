@@ -45,10 +45,11 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 		'player_leaves' : 'playerLeaves',
 
 		# Game events.
-		'call_made'   : 'gameCallMade',
-		'card_played' : 'gameCardPlayed',
-		'contract'    : 'gameContract',
-		'result'      : 'gameResult',
+		'game_call_made'   : 'gameCallMade',
+		'game_card_played' : 'gameCardPlayed',
+		'game_contract'    : 'gameContract',
+		'game_result'      : 'gameResult',
+		'game_started'     : 'gameStarted',
 
 	}
 
@@ -90,11 +91,6 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 				else:
 					handler(signal, str.join(' ', data))
 				del self.pending[tag]  # Free tag.
-				
-#					# Convert strings of form "a:b, c:d:e" to [['a', 'b'], ['c', 'd', 'e']].
-#					blocks = string.join(tokens[2:]).split(",")
-#					items = [block.strip().split(":") for block in blocks if block!='']
-#					handler(signal, items)
 
 
 	def sendCommand(self, command, args=(), handler=None):

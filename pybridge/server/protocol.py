@@ -425,18 +425,21 @@ class ProtocolTableListener:
 		self._client = client
 
 	def gameCallMade(self, seat, call):
-		self._client.sendStatus("call_made", "%s by %s" % (call, seat))
+		self._client.sendStatus("game_call_made", "%s by %s" % (call, seat))
 
 	def gameCardPlayed(self, seat, card):
-		self._client.sendStatus("card_played", "%s by %s" % (card, seat))
+		self._client.sendStatus("game_card_played", "%s by %s" % (card, seat))
 
 	def gameContract(self, contract):
 		doubles = {0 : "", 1 : "doubled", 2 : "redoubled"}
 		format = (contract['bidLevel'], contract['bidDenom'], doubles[contract['doubleLevel']], contract['declarer'])
-		self._client.sendStatus("contract", "%s %s %s by %s" % format)  # FIX THIS
+		self._client.sendStatus("game_contract", "%s %s %s by %s" % format)  # FIX THIS
 
 	def gameResult(self, result):
-		self._client.sendStatus("result", result)
+		self._client.sendStatus("game_result", result)
+
+	def gameStarted(self):
+		self._client.sendStatus("game_started")
 
 	def playerJoins(self, player, seat):
 		self._client.sendStatus("player_joins", player, seat)
