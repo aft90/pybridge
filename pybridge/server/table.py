@@ -71,7 +71,7 @@ class BridgeTable:
 
 	def gameStart(self):
 		"""Called to start a game."""
-		deal = self.deck.generateRandom()
+		deal = self.deck.dealRandom()
 		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
 		[listener.gameStarted() for listener in self.listeners.values()]
 
