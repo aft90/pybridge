@@ -1,4 +1,4 @@
-from deck import Card, Hand, Deck
+from deck import Card, Deck
 from bidding import Call, Bidding
 from play import Trick, Play
 
@@ -79,7 +79,7 @@ class Game:
 			
 			result = {'contract'   : self.bidding.contract(),
 			          'tricksMade' : self.play.wonTricks(declarer) + self.play.wonTricks(dummy),
-					  'vulnerable' : vulnerable }
+			          'vulnerable' : vulnerable, }
 			return self.scoring(result)
 
 
