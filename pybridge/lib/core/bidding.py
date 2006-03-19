@@ -2,19 +2,20 @@ from enumeration import CallType, Denomination, Level, Seat
 
 
 class Call:
-	"""A call represents a bid, a pass or a (re)double."""
+	"""A call represents a bid, a pass, a double or a redouble."""
 
+
+	# TODO: decide if call types would be better implemented by inheritance.
 
 	def __init__(self, type, bidLevel=False, bidDenom=False):
-		if type not in CallType.CallTypes:
-			raise "Invalid specification of call."
-		elif type == CallType.Bid:
-			if bidLevel in Level.Levels and bidDenom in Denomination.Denominations:
-				self.bidLevel = bidLevel
-				self.bidDenom = bidDenom
-			else:
-				raise "Invalid specification of bid."
+		"""
+		pre:
+			type in CallType.CallTypes
+			(type == CallType.Bid) => (bidLevel in Level.Levels and bidDenom in Denomination.Denominations)
+		"""
 		self.callType = type
+		self.bidLevel = bidLevel
+		self.bidDenom = bidDenom
 
 
 	def __cmp__(self, other):
@@ -24,6 +25,9 @@ class Call:
 		- 1, if self call is greater than other call.
 		- 0, if self call is same as other call.
 		- -1, if self call is less than other call.
+
+		pre:
+			isinstance(other, Call)
 		"""
 		if self.callType == other.callType == CallType.Bid:
 			# Compare bids by their level and then their denomination.
@@ -38,7 +42,6 @@ class Call:
 		if self.callType == other.callType == CallType.Bid:
 			return self.bidLevel == other.bidLevel and self.bidDenom == other.bidDenom
 		return self.callType == other.callType
-#		return repr(self) == repr(other)
 
 
 	def __str__(self):
@@ -59,6 +62,10 @@ class Bidding:
 
 
 	def __init__(self, dealer):
+		"""
+		pre:
+			dealer in Seat.Seats
+		"""
 		self.calls  = []
 		self.dealer = dealer
 
@@ -74,7 +81,10 @@ class Bidding:
 
 
 	def isPassedOut(self):
-		"""Bidding is passed out if each player has passed on their first turn. This is a special case of isComplete; it implies no contract has been established."""
+		"""Bidding is passed out if each player has passed on their first turn.
+		
+		This is a special case of isComplete; it implies no contract has been established.
+		"""
 		passes = len([call for call in self.calls if call==self.PASS])
 		return len(self.calls) == 4 and passes == 4
 
@@ -82,10 +92,12 @@ class Bidding:
 	def contract(self):
 		"""A contract is the final state of the bidding."""
 		if self.isComplete() and self.currentBid():
-			return {'bidDenom'    : self.currentBid().bidDenom,
-			        'bidLevel'    : self.currentBid().bidLevel,
-			        'declarer'    : self.whoseCall(self.currentBid()),
-			        'doubleLevel' : self.currentDoubleLevel() }
+			return {
+				'bidDenom'    : self.currentBid().bidDenom,
+				'bidLevel'    : self.currentBid().bidLevel,
+				'declarer'    : self.whoseCall(self.currentBid()),
+				'doubleLevel' : self.currentDoubleLevel(),
+			}
 		else:  # No bids, no contract.
 			return None
 
@@ -114,12 +126,21 @@ class Bidding:
 
 
 	def validCall(self, call):
-		"""Check a given call for validity against the previous calls."""
+		"""Check a given call for validity against the previous calls.
+		
+		pre:
+			isinstance(call, Call)
+		"""
 		return call in self.listAvailableCalls()
 
 
 	def addCall(self, call):
-		"""Add call to the calls list."""
+		"""Add call to the calls list.
+		
+		pre:
+			isinstance(call, Call)
+			self.validCall(call)
+		"""
 		if self.validCall(call):
 			self.calls.append(call)
 
@@ -158,6 +179,10 @@ class Bidding:
 
 
 	def whoseCall(self, call):
-		"""Returns the seat from which the call was made."""
-		seat = Seat.Seats[(self.calls.index(call) + Seat.Seats.index(self.dealer)) % 4]
-		return call in self.calls and seat
+		"""Returns the seat from which the call was made.
+		
+		pre:
+			isinstance(call, Call)
+			call in self.calls
+		"""
+		return Seat.Seats[(self.calls.index(call) + Seat.Seats.index(self.dealer)) % 4]
