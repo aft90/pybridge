@@ -48,6 +48,10 @@ class GtkGladeListener:
 		pass
 
 
+	def gameStarted(self):
+		pass
+
+
 	def loginFailure(self):
 		self.ui.dialog_connection.connect_failure("Bad login.")
 
