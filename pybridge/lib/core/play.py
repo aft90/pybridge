@@ -6,6 +6,10 @@ class Trick:
 
 
 	def __init__(self, leader):
+		"""
+		pre:
+			leader in Seat.Seats
+		"""
 		self.cards  = dict.fromkeys(Seat.Seats, None)
 		self.leader = leader
 
@@ -21,7 +25,12 @@ class Trick:
 
 
 	def playCard(self, card, seat):
-		"""Add card to trick."""
+		"""Add card to trick.
+		
+		pre:
+			seat in Seat.Seats
+			card not in self.cardsPlayed()
+		"""
 		if not self.isComplete():
 			self.cards[seat] = card
 
