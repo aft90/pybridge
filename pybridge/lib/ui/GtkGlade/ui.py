@@ -105,6 +105,7 @@ class GtkGladeUI:
 		self.window_main = WindowMain()
 
 		self.dialog_connection.window.show()
+#		self.window_bidbox.window.show()  # DEBUG DEBUG
 
 		reactor.run()  # Start Twisted layer.
 		gtk.main()     # Start GTK main loop.
