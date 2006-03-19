@@ -19,18 +19,23 @@
 import gtk
 from wrapper import WindowWrapper
 
+from lib.core.bidding import Call
+
 
 class WindowBidbox(WindowWrapper):
 
 	window_name = 'window_bidbox'
 
 
-	def update(self):
+	def new(self):
+		pass
+
+
+	def update_from_bidding(self, bidding):
 		"""Enables/disables call buttons based on bidding object."""
-		if self.game:
-			pass
-
-
-	def make_call(self, call):
-		"""Builds a call object and submits."""
 		
+
+
+	def make_call(self, *args):
+		"""Builds a call object and submits."""
+		print args
