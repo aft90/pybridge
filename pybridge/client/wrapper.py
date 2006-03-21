@@ -20,8 +20,8 @@ import gtk, gtk.glade
 import os.path, ui
 
 
-icon_file = os.path.abspath('lib/graphics/pybridge.png')
-glade_file = os.path.abspath('lib/ui/GtkGlade/pybridge.glade')
+icon_file = os.path.join("pybridge", "client", "images", "pybridge.png")
+glade_file = os.path.join("pybridge", "client", "pybridge.glade")
 
 
 class WindowWrapper(dict):

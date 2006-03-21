@@ -20,9 +20,9 @@ import shlex
 
 from twisted.protocols.basic import LineOnlyReceiver
 
-from lib.core.bidding import Call
-from lib.core.enumeration import CallType, Denomination, Rank, Seat, Suit
-from lib.core.deck import Card
+from pybridge.common.bidding import Call
+from pybridge.common.deck import Card
+from pybridge.common.enumeration import CallType, Denomination, Rank, Seat, Suit
 
 from factory_interface import IFactoryListener
 from table_interface import ITableListener

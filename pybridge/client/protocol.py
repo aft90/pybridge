@@ -19,7 +19,7 @@
 import sha, shlex
 from twisted.protocols.basic import LineOnlyReceiver
 
-from lib.core.enumeration import Seat
+from pybridge.common.enumeration import Seat
 
 
 ACKNOWLEDGEMENT, DATA, DENIED, ILLEGAL = 'ok', 'data', 'no', 'bad'

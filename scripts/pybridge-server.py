@@ -20,7 +20,7 @@
 
 from twisted.internet import protocol, reactor
 
-from server.factory import PybridgeServerFactory
+from pybridge.server.factory import PybridgeServerFactory
 
 
 # TODO: Replace with a service.

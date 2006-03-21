@@ -19,11 +19,11 @@
 import gc, gtk, os.path, webbrowser
 
 from wrapper import WindowWrapper
-from lib.core.enumeration import Rank, Seat, Suit
+from pybridge.common.enumeration import Rank, Seat, Suit
 
 
-BACKGROUND_PATH = os.path.abspath("lib/graphics/baize.png")
-CARD_MASK_PATH = os.path.abspath("lib/graphics/bonded.png")
+BACKGROUND_PATH = os.path.join("pybridge", "client", "images", "baize.png")
+CARD_MASK_PATH = os.path.join("pybridge", "client", "images", "bonded.png")
 
 CARD_MASK_RANKS = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
                    Rank.Six, Rank.Seven, Rank.Eight, Rank.Nine, Rank.Ten,

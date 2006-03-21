@@ -19,7 +19,7 @@
 import gtk
 from wrapper import WindowWrapper
 
-from lib.core.bidding import Call
+from pybridge.common.bidding import Call
 
 
 class WindowBidbox(WindowWrapper):

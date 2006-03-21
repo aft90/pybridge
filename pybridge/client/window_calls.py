@@ -18,7 +18,7 @@
 
 import gtk
 from wrapper import WindowWrapper
-from lib.core.enumeration import CallType, Denomination, Seat
+from pybridge.common.enumeration import CallType, Denomination, Seat
 
 
 class WindowCalls(WindowWrapper):
@@ -37,7 +37,7 @@ class WindowCalls(WindowWrapper):
 			self.call_tree.append_column(column)
 
 		# TEMP TEMP TEMP
-		from lib.core.bidding import Call, Bidding
+		from pybridge.common.bidding import Call, Bidding
 		x = Bidding(Seat.South)
 		x.addCall(Call('pass'))
 		x.addCall(Call('bid', 1, 'spade'))

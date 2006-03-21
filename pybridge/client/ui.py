@@ -25,7 +25,7 @@ from twisted.internet.protocol import ClientCreator
 
 import os.path, shelve
 
-from client.protocol import PybridgeClientProtocol
+from protocol import PybridgeClientProtocol
 
 from listener import GtkGladeListener
 

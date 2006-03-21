@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
-from lib.ui.GtkGlade.ui import GtkGladeUI
+from pybridge.client.ui import GtkGladeUI
 
 client = GtkGladeUI()
 client.run()

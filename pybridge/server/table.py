@@ -16,10 +16,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from lib.core.deck import Deck
-from lib.core.enumeration import Seat
-from lib.core.game import Game, GameError
-from lib.core.scoring import scoreDuplicate
+from pybridge.common.deck import Deck
+from pybridge.common.enumeration import Seat
+from pybridge.common.game import Game, GameError
+from pybridge.common.scoring import scoreDuplicate
 
 
 class TableError(Exception): pass
