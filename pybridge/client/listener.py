@@ -16,12 +16,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
-from interface import IPybridgeClientListener
+from pybridge.common.listener import IProtocolListener
 
 
 class GtkGladeListener:
 
-	__implements__ = (IPybridgeClientListener,)
+	__implements__ = (IProtocolListener,)
 
 
 	def __init__(self, ui):

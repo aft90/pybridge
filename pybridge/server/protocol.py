@@ -24,8 +24,7 @@ from pybridge.common.bidding import Call
 from pybridge.common.deck import Card
 from pybridge.common.enumeration import CallType, Denomination, Rank, Seat, Suit
 
-from factory_interface import IFactoryListener
-from table_interface import ITableListener
+from pybridge.common.listener import IProtocolListener
 from table import TableError
 
 
@@ -385,7 +384,7 @@ class PybridgeServerProtocol(LineOnlyReceiver):
 
 class ProtocolFactoryListener:
 
-	__implements__ = (IFactoryListener,)
+	__implements__ = (IProtocolListener,)
 
 
 	def __init__(self, client):
@@ -418,7 +417,7 @@ class ProtocolFactoryListener:
 
 class ProtocolTableListener:
 
-	__implements__ = (ITableListener,)
+	__implements__ = (IProtocolListener,)
 
 
 	def __init__(self, client):

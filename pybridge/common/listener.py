@@ -19,8 +19,8 @@
 from twisted.python.components import Interface
 
 
-class IPybridgeClientListener(Interface):
-	"""The IPybridgeClientListener interface provides the events to drive a
+class IProtocolListener(Interface):
+	"""The IProtocolListener interface provides the events to drive a
 	client connected to a PyBridge server.
 	"""
 
