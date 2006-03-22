@@ -16,14 +16,15 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 
-import gc, gtk, os.path, webbrowser
+import gc, gtk, webbrowser
 
 from wrapper import WindowWrapper
 from pybridge.common.enumeration import Rank, Seat, Suit
 
+from pybridge.environment import environment
 
-BACKGROUND_PATH = os.path.join("pybridge", "client", "images", "baize.png")
-CARD_MASK_PATH = os.path.join("pybridge", "client", "images", "bonded.png")
+BACKGROUND_PATH = environment.find_pixmap("baize.png")
+CARD_MASK_PATH = environment.find_pixmap("bonded.png")
 
 CARD_MASK_RANKS = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
                    Rank.Six, Rank.Seven, Rank.Eight, Rank.Nine, Rank.Ten,

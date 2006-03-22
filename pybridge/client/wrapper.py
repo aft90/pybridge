@@ -15,26 +15,23 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 
-
 import gtk, gtk.glade
-import os.path, ui
+import ui
 
+from pybridge.environment import environment
 
-icon_file = os.path.join("pybridge", "client", "images", "pybridge.png")
-glade_file = os.path.join("pybridge", "client", "pybridge.glade")
-
+ICON_PATH = environment.find_pixmap("pybridge.png")
+GLADE_PATH = environment.find_glade("pybridge.glade")
 
 class WindowWrapper(dict):
 
-
 	def __init__(self):
-		self.glade = gtk.glade.XML(glade_file, self.window_name, None)
+		self.glade = gtk.glade.XML(GLADE_PATH, self.window_name, None)
 		self.window = self.glade.get_widget(self.window_name)
-		self.window.set_icon_from_file(icon_file)
+		self.window.set_icon_from_file(ICON_PATH)
 		self.signal_autoconnect()
 		self.ui = ui.getHandle()
 		self.new()
-
 
 	def __getattr__(self, name):
 		"""Allows referencing of Glade widgets as window attributes."""
@@ -48,10 +45,8 @@ class WindowWrapper(dict):
 			else:
 				raise AttributeError(name)
 
-
 	def __setattr__(self, name, value):
 		self[name] = value
-
 
 	def signal_autoconnect(self):
 		"""Sets up class methods as named signal handlers."""
@@ -61,7 +56,6 @@ class WindowWrapper(dict):
 			if callable(attribute):
 				signals[attribute_name] = attribute
 		self.glade.signal_autoconnect(signals)
-
 
 	def new(self):
 		pass
