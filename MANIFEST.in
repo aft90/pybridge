@@ -1,5 +1,6 @@
-include MANIFEST MANIFEST.in README 
+include MANIFEST MANIFEST.in
+include AUTHORS COPYING INSTALL README 
+recursive-include bin *.py
+recursive-include glade *.glade
+recursive-include pixmaps *.png 
 recursive-include pybridge *.py
-recursive-include tests *.py
-recursive-include scripts *
-recursive-include pack *
