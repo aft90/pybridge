@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2005 PyBridge Project.
+# Copyright (C) 2004-2006 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@ from twisted.python import components, log
 import os.path, re, shelve, sys
 
 from protocol import PybridgeServerProtocol
-from table import BridgeTable, TableError
+from table import BridgeTable
 
 
 class PybridgeServerFactory(Factory):
@@ -30,8 +30,8 @@ class PybridgeServerFactory(Factory):
 
 
 	def __init__(self):
-		self.listeners = {}  # For each username, the respective FactoryListener object.
-		self.tables    = {}  # For each tablename, the respective Table object.
+		self.tables = {}  # For each table name, its Table object.
+		self.users = {}   # For each online user name, its ServerProtocol instance.
 
 
 	def startFactory(self):
@@ -41,165 +41,119 @@ class PybridgeServerFactory(Factory):
 		# Catch for OSes that do not have a $HOME.
 		if dbDir == dummyDir:
 			dbDir = "serverdata"
-
 		dbDir = os.path.normpath(dbDir)
 		if not os.path.isdir(dbDir):
 			os.makedirs(dbDir)
-
-		# Set up logging.
-		logPath = os.path.join(dbDir, "log")
-		self.log = log
-		#self.log.startLogging(open(logPath, 'w'), 0)
-		self.log.startLogging(sys.stdout)
-		self.log.msg("Starting the PyBridge server.")
-
+		#logPath = os.path.join(dbDir, "log")
+		#log.startLogging(open(logPath, 'w'), 0)
+		log.startLogging(sys.stdout)  # Log to stdout.
+		log.msg("Starting the PyBridge server.")
 		# Load user account file.
+		# TODO: replace user account file with a SQLite database.
 		accountPath = os.path.join(dbDir, "db_accounts")
 		self.accounts = shelve.open(accountPath, 'c', writeback=True)
 
 
 	def stopFactory(self):
-		self.log.msg("Stopping the PyBridge server.")
-		[listener.shutdown() for listener in self.listeners.values()]
+		log.msg("Stopping the PyBridge server.")
+		self.informAllUsers(self, "shutdown")
 		self.accounts.close()  # Save account information.
 
 
-	def getTable(self, tablename):
-		"""Returns table object associated with tablename."""
-		return self.tables.get(tablename, None)
-
-
-	def getTablesList(self):
-		"""Returns a list of all active tablenames."""
-		return self.tables.keys()
-
-
-	def getUsersList(self):
-		"""Returns a list of all online usernames."""
-		return self.listeners.keys()
-
-
-	def getUsersAtTableList(self, tablename):
-		"""Returns a list of all usernames watching given table."""
-		return self.tables[tablename].listeners.keys()
-
-
-	def getTablesForUserList(self, username):
-		"""Returns a list of all tablenames that username is watching."""
-		tables = []
-		for tablename, table in self.tables.items():
-			if username in table.listeners:
-				tables.append(tablename)
-		return tables
-
-
-	def accountFieldRetrieve(self, accountname, field):
-		"""Returns the value of field for given account."""
-		if field in ("username", ):  # TODO: add more fields!
-			if accountname in self.accounts:
-				return self.accounts[accountname][field]
-		return False
+# Factory operations.
 
 
 	def tableOpen(self, tablename):
-		"""Creates a new table object with given identifier."""
-		if not tablename in self.tables:
-			# Table with tablename must not exist already.
-			self.tables[tablename] = BridgeTable(tablename)
-			[listener.tableOpened(tablename) for listener in self.listeners.values()]
-			self.log.msg("Opened table %s" % tablename)
-			return True
-		return False
+		"""Creates a new table."""
+		if tablename in self.tables:
+			return "tablename already exists"
+		table = BridgeTable(tablename)
+		self.tables[tablename] = table
+		self.informAllUsers("tableOpened", tablename)
+		log.msg("Opened table %s" % tablename)
 
 
 	def tableClose(self, tablename):
-		"""Closes the table object with given identifier."""
+		"""Closes the specified table."""
 		if tablename in self.tables:
-			table = self.tables[tablename]
-			table.close()
-			[listener.tableClosed(tablename) for listener in self.listeners.values()]
+#			self.tables[tablename].close()
+			self.informAllUsers("tableClosed", tablename)
 			del self.tables[tablename]
-			self.log.msg("Closed table %s" % tablename)
+			log.msg("Closed table %s" % tablename)
 
 
-	def tableAddListener(self, username, tablename, tablelistener):
-		"""Adds table listener object associated with username, to table observer list."""
-		if self.tables[tablename]:
-			self.tables[tablename].listeners[username] = tablelistener
-			[listener.userJoinsTable(username, tablename) for listener in self.listeners.values()]
-			self.log.msg("User %s joins table %s" % (username, tablename))
-			return True
-		return False
+	def tableAddUser(self, username, tablename):
+		"""Adds user to table observer list."""
+		table = self.tables.get(tablename)
+		if table and username not in table.observers:
+			table.observers[username] = self.users[username]
+			self.informAllUsers("userJoinsTable", username, tablename)
+			log.msg("User %s joins table %s" % (username, tablename))
 
 
-	def tableRemoveListener(self, username, tablename):
-		"""Removes table listener object associated with username, from table observer list."""
-		if self.tables[tablename]:
-			del self.tables[tablename].listeners[username]
-			[listener.userLeavesTable(username, tablename) for listener in self.listeners.values()]
-			self.log.msg("User %s leaves table %s" % (username, tablename))
-			# TODO: Check if we should close table.
-			return True
-		return False
+	def tableRemoveUser(self, username, tablename):
+		"""Removes user from table observer list."""
+		table = self.tables.get(tablename)
+		if table and username in table.observers:
+			self.informAllUsers("userLeavesTable", username, tablename)
+			del table.observers[username]
+			log.msg("User %s leaves table %s" % (username, tablename))
+			# If there are no remaining users, we should close table.
+			if len(table.observers) == 0:
+				self.tableClose(tablename)
 
 
-	def userLogin(self, username, password, factorylistener):
-		"""Attempt to login. Returns True if successful, False otherwise."""
-		# Check for spurious login requests.
+	def userLogin(self, username, password, listener):
+		"""Attempt login."""
 		if username not in self.accounts:
-			self.log.msg("Login attempt failed for username %s: not registered" % username)
-			return False
-		if username in self.listeners:
-			self.log.msg("Login attempt failed for username %s: already logged in" % username)
-			return False
-		# Check for password match.
-		if self.accounts[username]['password'] == password:
-			self.listeners[username] = factorylistener
-			[listener.userLoggedIn(username) for listener in self.listeners.values()]
-			self.log.msg("Login succeeded for user %s" % username)
-			return True
+			return "not registered"
+		elif username in self.users:
+			return "already logged in"
+		elif self.accounts[username]['password'] == password:  # Password match.
+			self.users[username] = listener
+			self.informAllUsers("userLoggedIn", username)
+			log.msg("User %s logged in" % username)
 		else:
-			self.log.msg("Login attempt failed for username %s: bad password" % username)
-			return False
+			return "incorrect password"
 
 
 	def userLogout(self, username):
-		if username in self.listeners:
+		if username in self.users:
 			# Remove user from active tables.
-			tables = self.getTablesForUserList(username)
-			[self.tableRemoveListener(username, tablename) for tablename in tables]
-			# Inform all clients that user has logged out.
-			[listener.userLoggedOut(username) for listener in self.listeners.values()]
-			del self.listeners[username]
-			self.log.msg("Logout succeeded for user %s" % username)
+			[self.tableRemoveUser(username, tablename) for tablename in self.tables]
+			self.informAllUsers("userLoggedOut", username)
+			del self.users[username]
+			log.msg("User %s logged out" % username)
 
 
 	def userRegister(self, username, password):
 		"""Registers username+password in database."""
 		if username in self.accounts:
-			self.log.msg("Registration failed for username %s: already registered" % username)
-			return False
-		
-		# Check username for well-formedness.
-		if len(username) > 20:
-			return False
-
-		# TODO: check that username A-Za-z0-9\_ (\w?)
-
-		self.accounts[username] = {
-			'username' : username,
-			'password' : password,
-		}
-		self.log.msg("Registration succeeded for user %s" % username)
-		return True
+			return "already registered"
+		elif len(username) > 20:
+			return "too many characters"
+		elif re.search("[^A-Za-z0-9_]", username):
+			return "invalid characters"
+		else:
+			self.accounts[username] = {'username' : username, 'password' : password}
+			log.msg("New user %s registered" % username)
 
 
-	def userTalk(self, speaker, receipients, message):
-		"""Sends message from speaker to each user in receipients."""
+	def userTalk(self, sender, recipients, message):
+		"""Sends message from sender to each recipient user."""
 		# TODO: check silence lists.
-		# TODO: profanity filter on message. (maybe client side?)
-		for username in recepients:
-			user = self.listeners.get(username, None)
-			if user:
-				user.messageReceived(speaker, message)
-		return True
+		self.informUsers("messageReceived", recipients, sender, message)
+
+
+# Utility functions.
+
+
+	def informUsers(self, eventName, usernames, *args):
+		"""For each given user, calls specified event with provided args."""
+		for username in usernames:
+			event = getattr(self.users[username], eventName)
+			event(*args)
+
+
+	def informAllUsers(self, eventName, *args):
+		self.informUsers(eventName, self.users.keys(), *args)
