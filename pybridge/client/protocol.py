@@ -19,11 +19,11 @@
 import sha, shlex
 from twisted.protocols.basic import LineOnlyReceiver
 
+from pybridge.conf import PYBRIDGE_PROTOCOL
 from pybridge.common.enumeration import Seat
 
 
 ACKNOWLEDGEMENT, DATA, DENIED, ILLEGAL = 'ok', 'data', 'no', 'bad'
-PROTOCOL = 'pybridge-0.1'
 
 
 class PybridgeClientProtocol(LineOnlyReceiver):
@@ -164,11 +164,11 @@ class PybridgeClientProtocol(LineOnlyReceiver):
 
 		def response(signal, message):
 			if signal == ACKNOWLEDGEMENT:
-				self.listener.protocolSuccess(PROTOCOL)
+				self.listener.protocolSuccess(PYBRIDGE_PROTOCOL)
 			else:
-				self.listener.protocolFailure(PROTOCOL)
+				self.listener.protocolFailure(PYBRIDGE_PROTOCOL)
 
-		self.sendCommand("protocol", (PROTOCOL,), response)
+		self.sendCommand("protocol", (PYBRIDGE_PROTOCOL,), response)
 
 
 	def cmdRegister(self, username, password):
