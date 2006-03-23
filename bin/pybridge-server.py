@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2005 PyBridge Project.
+# Copyright (C) 2004-2006 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -25,7 +25,8 @@ basedir = os.path.abspath(os.path.join(currentdir, '..'))
 
 # Find the Python module path, relative to the base directory.
 if os.path.exists(os.path.join(basedir, 'lib')):
-	pythonpath = os.path.join(basedir, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
+	pythonver = 'python%d.%d' % sys.version_info[:2]
+	pythonpath = os.path.join(basedir, 'lib', pythonver, 'site-packages')
 else:
 	pythonpath = basedir
 
@@ -33,10 +34,12 @@ sys.path.insert(0, pythonpath)
 
 
 from twisted.internet import protocol, reactor
+
+from pybridge.conf import TCP_PORT
 from pybridge.server.factory import PybridgeServerFactory
 
 # TODO: Replace with a service.
 
 factory = PybridgeServerFactory()
-reactor.listenTCP(5040, factory)
+reactor.listenTCP(TCP_PORT, factory)
 reactor.run()

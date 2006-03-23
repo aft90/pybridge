@@ -15,7 +15,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 import os, sys
 
@@ -25,7 +25,8 @@ basedir = os.path.abspath(os.path.join(currentdir, '..'))
 
 # Find the Python module path, relative to the base directory.
 if os.path.exists(os.path.join(basedir, 'lib')):
-	pythonpath = os.path.join(basedir, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
+	pythonver = 'python%d.%d' % sys.version_info[:2]
+	pythonpath = os.path.join(basedir, 'lib', pythonver, 'site-packages')
 else:
 	pythonpath = basedir
 
