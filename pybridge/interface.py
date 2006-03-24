@@ -19,80 +19,12 @@
 from twisted.python.components import Interface
 
 
-# Correspondence between protocol commands and executing functions.
-COMMANDS = {
-
-	# Connection and session control.
-	'login'    : 'cmdLogin',
-	'logout'   : 'cmdLogout',
-	'protocol' : 'cmdProtocol',
-	'quit'     : 'cmdQuit',
-	'register' : 'cmdRegister',
-
-	# Server commands.
-	'host'     : 'cmdTableHost',
-	'list'     : 'cmdList',
-	'password' : 'cmdPassword',
-	'shout'    : 'cmdTalkShout',
-	'tell'     : 'cmdTalkTell',
-
-	# Table commands.
-	'chat'     : 'cmdTalkChat,',
-	'kibitz'   : 'cmdTalkKibitz',
-	'observe'  : 'cmdTableObserve',
-	'leave'    : 'cmdTableLeave',
-	'sit'      : 'cmdTableSit',
-	'stand'    : 'cmdTableStand',
-
-	# Game commands.
-	'history'  : 'cmdGameHistory',
-	'turn'     : 'cmdGameTurn',
-
-	# Game player commands.
-	'accept'   : 'cmdGameClaimAccept',
-	'alert'    : 'cmdGameAlert',
-	'call'     : 'cmdGameCall',
-	'claim'    : 'cmdGameClaimClaim',
-	'concede'  : 'cmdGameClaimConcede',
-	'decline'  : 'cmdGameClaimDecline',
-	'hand'     : 'cmdGameHand',
-	'play'     : 'cmdGamePlay',
-	'retract'  : 'cmdGameClaimRetract',
-
-}
-
-
-# Correspondence between protocol status messages and IProtocolListener events.
-STATUS = {
-	
-	# Server events.
-	'table_opened'      : 'tableOpened',
-	'table_closed'      : 'tableClosed',
-	'user_joins_table'  : 'userJoinsTable',
-	'user_leaves_table' : 'userLeavesTable',
-	'user_loggedin'     : 'userLoggedIn',
-	'user_loggedout'    : 'userLoggedOut',
-
-	# In-table events.
-	'player_joins'      : 'playerJoins',	# sits
-	'player_leaves'     : 'playerLeaves',	# stands
-
-	# Game events.
-	'game_call_made'    : 'gameCallMade',
-	'game_card_played'  : 'gameCardPlayed',
-	'game_contract'     : 'gameContract',
-	'game_result'       : 'gameResult',
-	'game_started'      : 'gameStarted',
-
-	'message_received'  : 'messageReceived',
-
-}
-
-
 class IProtocolListener(Interface):
 	"""The IProtocolListener interface provides the events to drive a
 	client connected to a PyBridge server.
 	"""
+
+# Game events.
 
 	def gameCallMade(self, seat, call):
 		"""Called when seat makes a call in this game."""
@@ -103,32 +35,36 @@ class IProtocolListener(Interface):
 	def gameContract(self, contract):
 		"""Called when game contract is known."""
 
+	def gameEnded(self):
+		"""Called when game has finished, or terminated abruptly."""
+
 	def gameResult(self, result):
 		"""Called when game result is known."""
 
 	def gameStarted(self):
 		"""Called when game is started."""
 
-	def loginFailure(self):
-		"""Called when login failed."""
-
-	def loginSuccess(self):
-		"""Called when login is successful."""
+# Server events.
 
 	def messageReceived(self, sender, message):
-		"""Called when a message is received from sender."""
+		"""Called when message is received from sender."""
 
-	def playerJoins(self, player, seat):
-		"""Called when a player joins table."""
+	def serverShutdown(self):
+		"""Called when server is in the process of shutting down."""
 
-	def playerLeaves(self, player):
-		"""Called when a player leaves table."""
+# Table events.
 
-	def protocolFailure(self, version):
-		"""Called when protocol verification has failed."""
+	def tablePlayerSits(self, player, seat):
+		"""Called when a user occupies a seat at table, to become a player."""
 
-	def protocolSuccess(self, version):
-		"""Called when protocol verification has succeeded."""
+	def tablePlayerStands(self, player):
+		"""Called when a player relinquishes their seat at table."""
+
+	def tableUserJoins(self, username, tablename):
+		"""Called when a user joins a table."""
+
+	def tableUserLeaves(self, username, tablename):
+		"""Called when a user leaves a table."""
 
 	def tableOpened(self, tablename):
 		"""Called when a table has been created."""
@@ -136,20 +72,10 @@ class IProtocolListener(Interface):
 	def tableClosed(self, tablename):
 		"""Called when a table has been closed."""
 
-	def tableListing(self, tables):
-		"""Called when a listing of tables has been provided."""
-
-	def userJoinsTable(self, username, tablename):
-		"""Called when a user joins a table."""
-
-	def userLeavesTable(self, username, tablename):
-		"""Called when a user leaves a table."""
+# User events.
 
 	def userLoggedIn(self, username):
-		"""Called when user logs in."""
+		"""Called when a user logs in."""
 
 	def userLoggedOut(self, username):
-		"""Called when user logs out."""
-
-	def userListing(self, tables):
-		"""Called when a listing of users has been provided."""
+		"""Called when a user logs out."""
