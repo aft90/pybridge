@@ -1,10 +1,29 @@
+# PyBridge -- online contract bridge made easy.
+# Copyright (C) 2004-2006 PyBridge Project.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not write to the Free Software
+# Foundation Inc. 51 Franklin Street Fifth Floor Boston MA 02110-1301 USA.
+
+
 from deck import Card, Deck
 from bidding import Call, Bidding
 from play import Trick, Play
 
+from pybridge.strings import Error
 
-class GameError(Exception):
-	pass
+
+class GameError(Exception): pass
 
 
 class Game:
@@ -34,12 +53,12 @@ class Game:
 	def makeCall(self, seat, call):
 		"""Makes call from seat."""
 		if self.bidding.isComplete():
-			raise GameError("unavailable")
+			raise GameError(Error.GAME_UNAVAILABLE)
 
 		if self.bidding.whoseTurn() is not seat:
-			raise GameError("out of turn")
+			raise GameError(Error.GAME_OUTOFTURN)
 		elif not self.bidding.validCall(call):
-			raise GameError("invalid call")
+			raise GameError(Error.GAME_INVALIDCALL)
 
 		self.bidding.addCall(call)
 			
@@ -47,17 +66,17 @@ class Game:
 	def playCard(self, seat, card):
 		"""Plays card from seat."""
 		if not self.bidding.isComplete() or self.bidding.isPassedOut():
-			raise GameError("unavailable")
+			raise GameError(Error.GAME_UNAVAILABLE)
 		elif not self.play:
 			self._startPlay()  # Kickstart play session.
 		elif self.play.isComplete():
-			raise GameError("unavailable")
+			raise GameError(Error.GAME_UNAVAILABLE)
 
 		hand = self.deal[seat]
 		if self.play.whoseTurn() is not seat:
-			raise GameError("out of turn")
+			raise GameError(Error.GAME_OUTOFTURN)
 		elif not self.play.validCard(card, hand, seat):
-			raise GameError("invalid card")
+			raise GameError(Error.GAME_INVALIDCARD)
 		
 		self.play.playCard(card)
 
@@ -69,7 +88,7 @@ class Game:
 		- play stage is complete.
 		"""
 		if not self.isComplete():
-			raise GameError("unavailable")
+			raise GameError(Error.GAME_UNAVAILABLE)
 		elif self.bidding.isPassedOut():
 			return 0  # A passed out deal does not score.
 		else:
