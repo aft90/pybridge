@@ -21,10 +21,15 @@ from pybridge.common.enumeration import Seat
 from pybridge.common.game import Game, GameError
 from pybridge.common.scoring import scoreDuplicate
 
+from pybridge.strings import Event, Error
+
+
+class TableError(Exception): pass
+
 
 class BridgeTable:
 	"""A bridge table sits four players."""
-	# TODO: perhaps subclass BridgeTable and facilitate tables for different card games.
+	# TODO: perhaps subclass BridgeTable, facilitating tables for different card games.
 
 
 	def __init__(self, name):
@@ -44,17 +49,17 @@ class BridgeTable:
 		- player is not already playing at the table.
 		- the specified seat is empty.
 		"""
-		if username not in self.observers:
-			return "not watching table"
-		elif username in self.players.values():
-			return "alredy playing at table"
-		elif self.players[seat] is not None:
-			return "seat occupied"
+		if username not in self.observers:	# Not watching table.
+			raise TableError(Error.COMMAND_UNAVAILABLE)
+		elif username in self.players.values():	# Already playing at table.
+			raise TableError(Error.COMMAND_UNAVAILABLE)
+		elif self.players[seat] is not None:	# Seat occupied.
+			raise TableError(Error.COMMAND_UNAVAILABLE)
 		else:
 			self.players[seat] = username
-			self.informWatchers("playerJoins", username, seat)
+			self.informWatchers(Event.TABLE_PLAYERSITS, username, seat)
 		# TODO: find somewhere better to put this code.
-		if game is None:
+		if self.game is None:
 			playerCount = len([p for p in self.players.values() if p != None])
 			if playerCount == 4:
 				self.gameStart()
@@ -62,20 +67,20 @@ class BridgeTable:
 
 	def playerRemove(self, username):
 		"""Removes player from seat."""
-		if username in self.players.values():
-			seat = [seat for seat, username in self.players.items() if player==username][0]
-			self.players[seat] = None
-			self.informWatchers("playerLeaves", username, seat)
+		if username not in self.players.values():
+			raise TableError(Error.COMMAND_UNAVAILABLE)
 		else:
-			return "cannot remove player"
+			seat = self.getSeatForPlayer(username)
+			self.players[seat] = None
+			self.informWatchers(Event.TABLE_PLAYERSTANDS, username, seat)
 
 
 	def gameStart(self, dealer=None, deal=None):
 		"""Called to start a game."""
 		deal = deal or self.deck.dealRandom()
-		self.dealer = dealer or Seat.Seats[(Seat.Seats.index(self.declarer) + 1) % 4]
+		self.dealer = dealer or Seat.Seats[(Seat.Seats.index(self.dealer) + 1) % 4]
 		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
-		self.informWatchers("gameStarted")
+		self.informWatchers(Event.GAME_STARTED)
 
 
 	def gameEnd(self):
@@ -85,7 +90,7 @@ class BridgeTable:
 		- the play has been completed.
 		"""
 		# TODO: get score.
-		self.informWatchers("gameFinished")
+		self.informWatchers(Event.GAME_FINISHED)
 		self.game = None
 
 
@@ -109,42 +114,44 @@ class BridgeTable:
 				elif seat is dummy and self.game.play.tricks[0].cardsPlayed() > 0:
 					# Declarer and defenders can see dummy's hand after first card is played.
 					return self.game.deal[seat]
-			return "hand hidden"
+			raise TableError(Error.GAME_UNAVAILABLE)  # Hidden hand.
 		else:
-			return "unavailable"
+			raise TableError(Error.COMMAND_UNAVAILABLE)
 
 
 	def gameMakeCall(self, player, call):
 		"""Player makes call."""
 		seat = self.getSeatForPlayer(player)
 		if not seat:  # Invalid player.
-			return "unavailable"
-		try:
+			raise TableError(Error.COMMAND_UNAVAILABLE)
+
+		try:  # Trap a GameError.
 			self.game.makeCall(seat, call)
-			self.informWatchers("gameCallMade", seat, call)
-			# Check for contract or end of game.
-			if self.game.bidding.isPassedOut():
-				self.gameEnd()
-			elif self.game.bidding.isComplete():
-				contract = "wibble"
-				self.informWatchers("gameContract", contract)
 		except GameError, error:
-			return error
+			raise TableError(error)
+
+		self.informWatchers(Event.GAME_CALLMADE, seat, call)
+		# Check for contract or end of game.
+		if self.game.bidding.isPassedOut():
+			self.gameEnd()
+		elif self.game.bidding.isComplete():
+			contract = "wibble"  # TODO: fix this.
+			self.informWatchers(Event.GAME_CONTRACTAGREED, contract)
 
 
 	def gamePlayCard(self, player, card):
 		"""Player plays card."""
 		if player not in self.players.values() or self.game is None:
-			return "unavailable"
+			raise TableError(Error.COMMAND_UNAVAILABLE)
+		seat = self.getSeatForPlayer(player)
 		try:
-			seat = self.getSeat(player)
 			self.game.playCard(seat, card)
-			self.informWatchers("gameCardPlayed", seat, card)
+			self.informWatchers(Event.GAME_CARDPLAYED, seat, card)
 			# Check for end of game.
 			if self.game.play.isComplete():
 				self.gameEnd()
 		except GameError, error:
-			return error
+			raise TableError(error)
 
 
 	def gameTurn(self):
@@ -152,7 +159,7 @@ class BridgeTable:
 		if self.game:
 			return self.game.whoseTurn()
 		else:
-			return "unavailable"
+			raise TableError(Error.COMMAND_UNAVAILABLE)
 
 
 # Utility functions.
