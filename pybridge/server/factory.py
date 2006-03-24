@@ -22,6 +22,7 @@ import os.path, re, shelve, sys
 
 from protocol import PybridgeServerProtocol
 from table import BridgeTable
+from pybridge.strings import Error, Event
 
 
 class PybridgeServerFactory(Factory):
@@ -56,7 +57,7 @@ class PybridgeServerFactory(Factory):
 
 	def stopFactory(self):
 		log.msg("Stopping the PyBridge server.")
-		self.informAllUsers(self, "shutdown")
+		self.informAllUsers(self, Event.SERVER_SHUTDOWN)
 		self.accounts.close()  # Save account information.
 
 
@@ -66,10 +67,10 @@ class PybridgeServerFactory(Factory):
 	def tableOpen(self, tablename):
 		"""Creates a new table."""
 		if tablename in self.tables:
-			return "tablename already exists"
+			return Error.TABLENAME_EXISTS
 		table = BridgeTable(tablename)
 		self.tables[tablename] = table
-		self.informAllUsers("tableOpened", tablename)
+		self.informAllUsers(Event.TABLE_OPENED, tablename)
 		log.msg("Opened table %s" % tablename)
 
 
@@ -77,7 +78,7 @@ class PybridgeServerFactory(Factory):
 		"""Closes the specified table."""
 		if tablename in self.tables:
 #			self.tables[tablename].close()
-			self.informAllUsers("tableClosed", tablename)
+			self.informAllUsers(Event.TABLE_CLOSED, tablename)
 			del self.tables[tablename]
 			log.msg("Closed table %s" % tablename)
 
@@ -87,7 +88,7 @@ class PybridgeServerFactory(Factory):
 		table = self.tables.get(tablename)
 		if table and username not in table.observers:
 			table.observers[username] = self.users[username]
-			self.informAllUsers("userJoinsTable", username, tablename)
+			self.informAllUsers(Event.TABLE_USERJOINS, username, tablename)
 			log.msg("User %s joins table %s" % (username, tablename))
 
 
@@ -95,7 +96,7 @@ class PybridgeServerFactory(Factory):
 		"""Removes user from table observer list."""
 		table = self.tables.get(tablename)
 		if table and username in table.observers:
-			self.informAllUsers("userLeavesTable", username, tablename)
+			self.informAllUsers(Event.TABLE_USERLEAVES, username, tablename)
 			del table.observers[username]
 			log.msg("User %s leaves table %s" % (username, tablename))
 			# If there are no remaining users, we should close table.
@@ -106,22 +107,24 @@ class PybridgeServerFactory(Factory):
 	def userLogin(self, username, password, listener):
 		"""Attempt login."""
 		if username not in self.accounts:
-			return "not registered"
+			return Error.LOGIN_NOACCOUNT
 		elif username in self.users:
-			return "already logged in"
+			return Error.LOGIN_ALREADY
 		elif self.accounts[username]['password'] == password:  # Password match.
 			self.users[username] = listener
-			self.informAllUsers("userLoggedIn", username)
+			self.informAllUsers(Event.USER_LOGGEDIN, username)
 			log.msg("User %s logged in" % username)
 		else:
-			return "incorrect password"
+			return Error.LOGIN_BADPASSWORD
 
 
 	def userLogout(self, username):
 		if username in self.users:
-			# Remove user from active tables.
-			[self.tableRemoveUser(username, tablename) for tablename in self.tables]
-			self.informAllUsers("userLoggedOut", username)
+			# Remove user from table.
+			if self.users[username].table != None:
+				tablename = self.users[username].table.name
+				self.tableRemoveUser(username, tablename)
+			self.informAllUsers(Event.USER_LOGGEDOUT, username)
 			del self.users[username]
 			log.msg("User %s logged out" % username)
 
@@ -129,11 +132,9 @@ class PybridgeServerFactory(Factory):
 	def userRegister(self, username, password):
 		"""Registers username+password in database."""
 		if username in self.accounts:
-			return "already registered"
-		elif len(username) > 20:
-			return "too many characters"
-		elif re.search("[^A-Za-z0-9_]", username):
-			return "invalid characters"
+			return Error.USER_REGISTERED
+		elif len(username) > 20 or re.search("[^A-Za-z0-9_]", username):
+			return Error.USER_BADUSERNAME
 		else:
 			self.accounts[username] = {'username' : username, 'password' : password}
 			log.msg("New user %s registered" % username)
@@ -142,7 +143,7 @@ class PybridgeServerFactory(Factory):
 	def userTalk(self, sender, recipients, message):
 		"""Sends message from sender to each recipient user."""
 		# TODO: check silence lists.
-		self.informUsers("messageReceived", recipients, sender, message)
+		self.informUsers(Event.TALK_MESSAGE, recipients, sender, message)
 
 
 # Utility functions.
@@ -156,4 +157,5 @@ class PybridgeServerFactory(Factory):
 
 
 	def informAllUsers(self, eventName, *args):
+		"""Same as informUsers, but informs all users."""
 		self.informUsers(eventName, self.users.keys(), *args)
