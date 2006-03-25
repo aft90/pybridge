@@ -96,9 +96,9 @@ class Game:
 			declarer, dummy = contract['declarer'], Seat.Seats[(Seat.Seats.index(contract['declarer']) + 2) % 4]
 			vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + (self.vulnEW and declarer in (Seat.West, Seat.East))
 			
-			result = {'contract'   : self.bidding.contract(),
-			          'tricksMade' : self.play.wonTricks(declarer) + self.play.wonTricks(dummy),
-			          'vulnerable' : vulnerable, }
+			result = {'contract' : self.bidding.contract(),
+			        'tricksMade' : self.play.wonTricks(declarer) + self.play.wonTricks(dummy),
+			        'vulnerable' : vulnerable, }
 			return self.scoring(result)
 
 
@@ -118,5 +118,5 @@ class Game:
 	def _startPlay(self):
 		contract  = self.bidding.contract()
 		declarer  = contract['declarer']
-		trumpSuit = contract['bidDenom']
+		trumpSuit = contract['bid'].bidDenom
 		self.play = Play(declarer, trumpSuit)
