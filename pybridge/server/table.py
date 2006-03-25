@@ -134,7 +134,7 @@ class BridgeTable:
 		if self.game.bidding.isPassedOut():
 			self.gameEnd()
 		elif self.game.bidding.isComplete():
-			contract = "wibble"  # TODO: fix this.
+			contract = self.game.bidding.contract()
 			self.informWatchers(Event.GAME_CONTRACTAGREED, contract)
 
 

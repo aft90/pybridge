@@ -34,9 +34,14 @@ class ProtocolEvents:
 		self.sendStatus(Event.GAME_CARDPLAYED, "%s by %s" % (card, seat))
 
 	def gameContract(self, contract):
-		doubles = {0 : "", 1 : "doubled", 2 : "redoubled"}
-		format = (contract['bidLevel'], contract['bidDenom'], doubles[contract['doubleLevel']], contract['declarer'])
-		self.sendStatus(Event.GAME_CONTRACTAGREED, "%s %s %s by %s" % format)  # FIX THIS
+		if contract['redoubleBy']:
+			doubled = " rdbl"
+		elif contract['doubleBy']:
+			doubled = " dbl"
+		else:
+			doubled = ""
+		format = (contract['bid'], doubled, contract['declarer'])
+		self.sendStatus(Event.GAME_CONTRACTAGREED, "%s%s by %s" % format)
 
 	def gameEnded(self):
 		self.sendStatus(Event.GAME_ENDED)
