@@ -94,19 +94,18 @@ class BridgeTable:
 		self.game = None
 
 
-	def gameHand(self, seat, player=None):
+	def gameGetHand(self, seat, viewpoint=None):
 		"""Returns the hand of seat, or False if hand is unavailable or hidden.
 
-		If player is specified, then that player's ability to view the hand of
-		seat will be examined.
+		If viewing player's seat is specified, then that player's ability to
+		view the hand of seat will be examined.
 		"""
 		if self.game:
-			viewpoint = self.getSeatForPlayer(username)
 			if viewpoint in (seat, None):
 				# No viewpoint specified, or viewpoint is seat.
 				return self.game.deal[seat]
 			# We now consider viewpoint, provided that bidding is complete.
-			if self.game._getStage() != 'bidding':
+			if self.game.bidding.isComplete():
 				dummy = Seat.Seats[(Seat.Seats.index(self.game.play.declarer) + 2) % 4]
 				if viewpoint is dummy:
 					# Dummy can see all hands in play.

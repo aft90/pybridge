@@ -203,17 +203,22 @@ class ProtocolCommands:
 
 	def cmdHand(self, seat=None):
 		self._checkStates(required=(INGAME,))
-		if seat is None:
+		if seat is None:  # Assume a player requesting own hand.
 			self._checkStates(required=(PLAYER,), error=Error.COMMAND_UNAVAILABLE)
-			seat, position = self.table.getSeat(self.username), None
+			seat = self.table.getSeatForPlayer(self.username)
+			viewer = None
 		elif seat in Seat.Seats and PLAYER in self._getStates():
-			position = self.table.getSeat(self.username)
-		elif seat in Seat.Seats:
-			position = None
+			viewer = self.table.getSeatForPlayer(self.username)
+		elif seat in Seat.Seats:  # An observer can view all hands.
+			viewer = None
 		else:
 			raise self.IllegalCommand(Error.COMMAND_PARAMSPEC)
-		cards = [str(card) for card in self.table.gameHand(seat, position)]
-		raise self.Response(str.join(", ", cards))
+		try:
+			hand = self.table.gameGetHand(seat, viewer)
+			cards = [str(card) for card in hand]
+			raise self.Response(str.join(", ", cards))
+		except TableError, error:
+			raise self.DeniedCommand(error)
 
 
 	def cmdPlay(self, rank, suit):
