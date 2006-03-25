@@ -1,3 +1,21 @@
+# PyBridge -- online contract bridge made easy.
+# Copyright (C) 2004-2006 PyBridge Project.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+
 from enumeration import CallType, Denomination, Level, Seat
 
 
@@ -91,38 +109,60 @@ class Bidding:
 
 	def contract(self):
 		"""A contract is the final state of the bidding."""
-		if self.isComplete() and self.currentBid():
-			return {
-				'bidDenom'    : self.currentBid().bidDenom,
-				'bidLevel'    : self.currentBid().bidLevel,
-				'declarer'    : self.whoseCall(self.currentBid()),
-				'doubleLevel' : self.currentDoubleLevel(),
-			}
-		else:  # No bids, no contract.
+		bid = self.currentCall(CallType.Bid)
+		if bid and self.isComplete() and not self.isPassedOut():
+			
+			double, doubleBy = self.currentCall(CallType.Double), None
+			if double:
+				doubleBy = self.whoseCall(double)
+			redouble, redoubleBy = self.currentCall(CallType.Redouble), None
+			if redouble:
+				redoubleBy = self.whoseCall(redouble)
+			
+			return {'bid' : bid,
+			   'declarer' : self.whoseCall(bid),
+			   'doubleBy' : doubleBy,
+			 'redoubleBy' : redoubleBy, }
+		
+		else:
 			return None
 
 
-	def currentBid(self):
-		"""Returns most recent bid, or False if no bids made."""
-		bids = [call for call in self.calls if call in self.BIDS]
-		return len(bids)>0 and bids[-1]
+	def currentCall(self, type):
+		"""Returns most recent current call of type calltype, or None.
 
-
-	def currentDoubleLevel(self):
-		"""Returns:
-
-		- 0, if current bid is not doubled.
-		- 1, if current bid is doubled.
-		- 2, if current bid is redoubled.
+		pre:
+			type in CallType.CallTypes
 		"""
 		for call in self.calls[::-1]:
-			if call in self.BIDS:
+			if call.callType == type:
+				return call
+			elif call.callType == CallType.Bid:
 				break
-			elif call == self.DOUBLE:
-				return 1
-			elif call == self.REDOUBLE:
-				return 2
-		return 0
+		return None
+
+
+#	def currentBid(self):
+#		"""Returns most recent bid, or False if no bids made."""
+#		bids = [call for call in self.calls if call in self.BIDS]
+#		return len(bids) > 0 and bids[-1]
+#
+#
+#	def currentDoubleLevel(self):
+#		"""Returns:
+#
+#		- 0, if current bid is not doubled.
+#		- 1, if current bid is doubled.
+#		- 2, if current bid is redoubled.
+#		"""
+#		for call in self.calls[::-1]:
+#			if call in self.BIDS:
+#				break
+#			elif call == self.DOUBLE:
+#				return 1
+#			elif call == self.REDOUBLE:
+#				return 2
+#		return 0
 
 
 	def validCall(self, call):
@@ -149,7 +189,7 @@ class Bidding:
 		"""Returns a tuple of all calls available to current seat."""
 		calls = []
 		if not self.isComplete():
-			currentBid = self.currentBid()
+			currentBid = self.currentCall(CallType.Bid)
 
 			# If bidding is not complete, a pass is always available.
 			calls.append(self.PASS)
@@ -160,10 +200,10 @@ class Bidding:
 				partnership = (self.whoseTurn(0), self.whoseTurn(2))
 				bidder = self.whoseCall(currentBid)
 				# Check if double (on opposition's bid) is available.
-				if self.currentDoubleLevel() == 0 and bidder in opposition:
+				if not self.currentCall(CallType.Double) and bidder in opposition:
 					calls.append(self.DOUBLE)
 				# Check if redouble (on partnership's bid) is available.
-				elif self.currentDoubleLevel() == 1 and bidder in partnership:
+				elif self.currentCall(CallType.Double) and bidder in partnership:
 					calls.append(self.REDOUBLE)
 
 			# Bids are available only if they are stronger than the current bid.
@@ -173,7 +213,11 @@ class Bidding:
 
 
 	def whoseTurn(self, offset=0):
-		"""Returns the seat that is next to call."""
+		"""Returns the seat that is next to call.
+
+		pre:
+			isinstance(offset, int)
+		"""
 		seat = Seat.Seats[(len(self.calls) + Seat.Seats.index(self.dealer) + offset) % 4]
 		return not(self.isComplete()) and seat
 
