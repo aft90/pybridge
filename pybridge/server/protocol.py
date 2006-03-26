@@ -52,23 +52,28 @@ class PybridgeServerProtocol(LineOnlyReceiver, ProtocolCommands, ProtocolEvents)
 
 
 	def lineReceived(self, line):
-		tokens = shlex.split(line)
+		tag = '-'	# In case of no #-tag provided.
 		try:
+			
+			# Extract tokens from line.
+			try:
+				tokens = shlex.split(line)
+			except ValueError, error:
+				raise self.IllegalCommand(Error.COMMAND_PARSE)
+			
 			# Check for a command.
 			if len(tokens) == 0:
-				tag = '-'
 				raise self.IllegalCommand(Error.COMMAND_REQUIRED)
-			elif len(tokens) == 1 and tokens[0][0] == '#':
+			elif len(tokens) == 1 and tokens[0].startswith('#'):
 				tag = tokens[0]
 				raise self.IllegalCommand(Error.COMMAND_REQUIRED)
 			
 			# Get tag, command and any supplied parameters.
-			if tokens[0][0] == '#':
-				tag       = tokens[0]  # Tag provided.
+			if tokens[0].startswith('#'):
+				tag       = tokens[0]	# Tag provided.
 				command   = tokens[1].capitalize()
 				arguments = tokens[2:]
 			else:
-				tag       = '-'  # Use default '-' tag.
 				command   = tokens[0].capitalize()
 				arguments = tokens[1:]
 			
@@ -78,20 +83,20 @@ class PybridgeServerProtocol(LineOnlyReceiver, ProtocolCommands, ProtocolEvents)
 				raise self.IllegalCommand(Error.COMMAND_UNKNOWN)
 			
 			# Parameter count verification.
-			argsMax = dispatcher.func_code.co_argcount - 1  # "self"
+			argsMax = dispatcher.func_code.co_argcount - 1	# "self"
 			argsMin = argsMax - len(dispatcher.func_defaults or [])
 			if argsMin > len(arguments) or argsMax < len(arguments):
 				raise self.IllegalCommand(Error.COMMAND_PARAMNUM)
 			
 			# Call command, and be ready to trap resultant exceptions.
-			dispatcher(*arguments)  # Execution.
-			raise self.Acknowledgement   # (If we get this far.)
+			dispatcher(*arguments)	# Execution.
+			raise self.Acknowledgement	# (If we get this far.)
 		
 		except self.Acknowledgement:
 			self.sendReply(tag, CommandReply.ACKNOWLEDGE)
-		except self.DeniedCommand, error:  # Command is irrelevant.
+		except self.DeniedCommand, error:	# Command is irrelevant.
 			self.sendReply(tag, CommandReply.DENIED, error)
-		except self.IllegalCommand, error:  # Command is ill-formatted.
+		except self.IllegalCommand, error:	# Command is ill-formatted.
 			self.sendReply(tag, CommandReply.ILLEGAL, error)
 		except self.Response, tokens:
 			self.sendReply(tag, CommandReply.RESPONSE, *tokens.args)
