@@ -229,7 +229,7 @@ class ProtocolCommands:
 		try:
 			self.table.gamePlayCard(self.username, card)
 		except TableError, error:
-			raise DeniedCommand(error)
+			raise self.DeniedCommand(error)
 
 
 # Utility functions.
