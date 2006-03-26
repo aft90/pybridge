@@ -64,10 +64,11 @@ class CommandReply:
 
 
 class Error:
-	"""Protocol errors issued by server in response to an invalid command from client."""
+	"""Protocol errors issued by server in response to a denied or illegal command from client."""
 
 	COMMAND_PARAMNUM = 'invalid number of parameters'
 	COMMAND_PARAMSPEC = 'invalid parameter'
+	COMMAND_PARSE = 'unable to parse'
 	COMMAND_REQUIRED = 'command required'
 	COMMAND_UNAVAILABLE = 'command unavailable'
 	COMMAND_UNIMPLEMENTED = 'command not yet implemented'
@@ -89,7 +90,7 @@ class Error:
 	USER_UNKNOWN = 'no such user'
 
 	TABLE_EXISTS = 'table already exists'
-	TABLE_SEATOCCUPIED = ''
+	TABLE_SEATOCCUPIED = 'seat occupied'
 	TABLE_UNKNOWN = 'no such table'
 
 
