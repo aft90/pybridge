@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2005 PyBridge Project.
+# Copyright (C) 2004-2006 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -13,28 +13,33 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from wrapper import WindowWrapper
+from wrapper import GladeWrapper
+
+from connector import connector
+from windowmanager import windowmanager
 
 
-class DialogNewtable(WindowWrapper):
+class DialogNewtable(GladeWrapper):
 
-	window_name = 'dialog_newtable'
+	glade_name = 'dialog_newtable'
 
 
 	def new(self):
 		pass
 
 
-	# Signal handlers
+# Signal handlers.
 
 
 	def on_cancelbutton_clicked(self, widget, *args):
-		self.window.hide()
+		windowmanager.terminate('dialog_newtable')
+
 
 	def on_okbutton_clicked(self, widget, *args):
-		title = self.title.get_text()
-		self.ui.connection.cmdTableCreate(title)
-		self.window.hide()
+		tablename = self.tablename.get_text()
+		connector.connection.cmdHost(tablename)
+		windowmanager.terminate('dialog_newtable')
+
