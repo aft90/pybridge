@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2005 PyBridge Project.
+# Copyright (C) 2004-2006 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -13,14 +13,18 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gc, gtk, webbrowser
+import gc, webbrowser
 
-from wrapper import WindowWrapper
+import gtk
+from wrapper import GladeWrapper
+
+from connector import connector
+from windowmanager import windowmanager
+from pybridge.conf import PYBRIDGE_VERSION
 from pybridge.common.enumeration import Rank, Seat, Suit
-
 from pybridge.environment import environment
 
 BACKGROUND_PATH = environment.find_pixmap("baize.png")
@@ -47,9 +51,9 @@ WRAPAROUNDS = {
 }
 
 
-class WindowMain(WindowWrapper):
+class WindowMain(GladeWrapper):
 
-	window_name = 'window_main'
+	glade_name = 'window_main'
 
 
 	def new(self):
@@ -232,7 +236,7 @@ class WindowMain(WindowWrapper):
 
 
 	def on_window_main_destroy(self, widget, *args):
-		self.ui.shutdown()
+		windowmanager.shutdown()
 
 
 	def on_newtable_activate(self, widget, *args):
@@ -245,11 +249,12 @@ class WindowMain(WindowWrapper):
 
 
 	def on_disconnect_activate(self, widget, *args):
-		self.ui.connection.cmdQuit()
+		connector.disconnect()
+		windowmanager.launch('dialog_connection')
 
 
 	def on_quit_activate(self, widget, *args):
-		self.on_window_main_destroy(widget, *args)
+		windowmanager.shutdown()
 
 
 	def on_table_listing_row_activated(self, widget, *args):
@@ -265,9 +270,21 @@ class WindowMain(WindowWrapper):
 			self.statusbar_main.show()
 
 
-	def on_pybridge_home_activate(self, widget, *args):
-		webbrowser.open('http://pybridge.sourceforge.net/')
-
-
 	def on_about_activate(self, widget, *args):
-		self.ui.dialog_about.window.show()
+		about = gtk.AboutDialog()
+		about.set_name('PyBridge')
+		about.set_version(PYBRIDGE_VERSION)
+		about.set_copyright('Copyright (C) 2004-2006 Michael Banks')
+		about.set_comments('Online bridge made easy')
+		about.set_website('http://sourceforge.net/projects/pybridge/')
+		license = file(environment.find_doc('COPYING')).read()
+		about.set_license(license)
+		authorsfile = file(environment.find_doc('AUTHORS'))
+		authors = [author.strip() for author in authorsfile.readlines()]
+		about.set_authors(authors)
+		logo_path = environment.find_pixmap('pybridge.png')
+		logo = gtk.gdk.pixbuf_new_from_file(logo_path)
+		about.set_logo(logo)
+		
+		about.run()
+		about.destroy()
