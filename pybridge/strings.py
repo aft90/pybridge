@@ -51,7 +51,6 @@ class Command:
 	GAME_CLAIMDECLINE = 'decline'
 	CLAIM_HAND = 'hand'
 	GAME_PLAYCARD = 'play'
-#	'retract'  : 'cmdGameClaimRetract'
 
 
 class CommandReply:
@@ -85,13 +84,14 @@ class Error:
 
 	PROTOCOL_UNSUPPORTED = 'protocol version unsupported'
 
-	USER_BADUSERNAME = 'invalid username'	
-	USER_REGISTERED = 'username already registered'
-	USER_UNKNOWN = 'no such user'
-
+	TABLE_BADNAME = 'invalid tablename'
 	TABLE_EXISTS = 'table already exists'
 	TABLE_SEATOCCUPIED = 'seat occupied'
 	TABLE_UNKNOWN = 'no such table'
+
+	USER_BADNAME = 'invalid username'	
+	USER_REGISTERED = 'username already registered'
+	USER_UNKNOWN = 'no such user'
 
 
 class Event:

@@ -67,7 +67,9 @@ class PybridgeServerFactory(Factory):
 	def tableOpen(self, tablename):
 		"""Creates a new table."""
 		if tablename in self.tables:
-			return Error.TABLENAME_EXISTS
+			return Error.TABLE_EXISTS
+		elif not self.testSanity(tablename):
+			return Error.TABLE_BADNAME
 		table = BridgeTable(tablename)
 		self.tables[tablename] = table
 		self.informAllUsers(Event.TABLE_OPENED, tablename)
@@ -133,8 +135,8 @@ class PybridgeServerFactory(Factory):
 		"""Registers username+password in database."""
 		if username in self.accounts:
 			return Error.USER_REGISTERED
-		elif len(username) > 20 or re.search("[^A-Za-z0-9_]", username):
-			return Error.USER_BADUSERNAME
+		elif not self.testSanity(username):
+			return Error.USER_BADNAME
 		else:
 			self.accounts[username] = {'username' : username, 'password' : password}
 			log.msg("New user %s registered" % username)
@@ -159,3 +161,8 @@ class PybridgeServerFactory(Factory):
 	def informAllUsers(self, eventName, *args):
 		"""Same as informUsers, but informs all users."""
 		self.informUsers(eventName, self.users.keys(), *args)
+
+
+	def testSanity(self, word):
+		"""Checks a given word for invalid characters."""
+		return 0 < len(word) <= 20 and not re.search("[^A-Za-z0-9_]", word)
