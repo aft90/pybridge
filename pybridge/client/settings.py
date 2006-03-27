@@ -34,5 +34,5 @@ if not settings.has_section('Server'):
 	settings.set('Server', 'port', TCP_PORT)
 	settings.set('Server', 'username', '')
 	settings.set('Server', 'password', '')
-	settings.write(file(CONFIG_PATH, 'w'))
+	settings.write(file(CLIENT_SETTINGS_PATH, 'w'))
 
