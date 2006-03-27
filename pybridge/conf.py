@@ -18,7 +18,7 @@
 
 # Internal settings.
 
-TCP_PORT = 5040  # Unassigned according to Network Service Query.
+TCP_PORT = 5040  # (Unassigned according to Network Service Query.)
 
 
 # Constants.
@@ -26,21 +26,3 @@ TCP_PORT = 5040  # Unassigned according to Network Service Query.
 PYBRIDGE_PROTOCOL = "pybridge-0.1"
 PYBRIDGE_VERSION = "0.1.0"
 
-
-# About PyBridge.
-
-NAME      = "PyBridge"
-VERSION   = "0.1"
-COPYRIGHT = "Copyright (C) 2004-2005 PyBridge Project"
-COMMENTS  = "Online bridge made easy."
-URL       = "http://pybridge.sourceforge.net/"
-
-
-# Credits.
-
-AUTHORS       = ('Michael Banks', 'Sourav K. Mandal')
-AUTHORS_EMAIL = ('michaelbanks@dsl.pipex.com', 'smandal@users.sourceforge.net')
-ARTISTS       = ('Stephen Banks',)
-ARTISTS_EMAIL = ('stephenbanks@dsl.pipex.com',)
-DOCUMENTERS   = ('No documenters.',)
-TRANSLATORS   = ('No translations.',)
