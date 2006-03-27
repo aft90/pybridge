@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2005 PyBridge Project.
+# Copyright (C) 2004-2006 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -13,49 +13,43 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
 
 import gtk, gtk.glade
-import ui
 
 from pybridge.environment import environment
-
 ICON_PATH = environment.find_pixmap("pybridge.png")
 GLADE_PATH = environment.find_glade("pybridge.glade")
 
-class WindowWrapper(dict):
+
+class GladeWrapper:
+	"""A superclass for Glade applications.
+
+	Modified from: http://www.pixelbeat.org/libs/libglade.py
+	"""
 
 	def __init__(self):
-		self.glade = gtk.glade.XML(GLADE_PATH, self.window_name, None)
-		self.window = self.glade.get_widget(self.window_name)
+		self.widgets = gtk.glade.XML(GLADE_PATH, self.glade_name, None)
+		self.window = self.widgets.get_widget(self.glade_name)
+		
+		instance_attributes = {}
+		for attribute in dir(self.__class__):
+			instance_attributes[attribute] = getattr(self, attribute)
+		self.widgets.signal_autoconnect(instance_attributes)
+		
 		self.window.set_icon_from_file(ICON_PATH)
-		self.signal_autoconnect()
-		self.ui = ui.getHandle()
 		self.new()
 
-	def __getattr__(self, name):
+
+	def __getattr__(self, attribute):
 		"""Allows referencing of Glade widgets as window attributes."""
-		if name in self:
-			return self[name]
-		else:
-			widget = self.glade.get_widget(name)
-			if widget != None:
-				self[name] = widget  # Saves time later.
-				return widget
-			else:
-				raise AttributeError(name)
+		widget = self.widgets.get_widget(attribute)
+	        if widget is None:
+			raise AttributeError("No widget named %s" % attribute)
+		self.__dict__[attribute] = widget  # Cache reference for later.
+		return widget
 
-	def __setattr__(self, name, value):
-		self[name] = value
-
-	def signal_autoconnect(self):
-		"""Sets up class methods as named signal handlers."""
-		signals = {}
-		for attribute_name in dir(self):
-			attribute = getattr(self, attribute_name)
-			if callable(attribute):
-				signals[attribute_name] = attribute
-		self.glade.signal_autoconnect(signals)
 
 	def new(self):
 		pass
