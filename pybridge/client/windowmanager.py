@@ -52,7 +52,7 @@ class WindowManager:
 		self.instances[windowname] = instance
 
 
-	def destroy(self, windowname):
+	def terminate(self, windowname):
 		self.instances[windowname].window.destroy()
 		del self.instances[windowname]
 
