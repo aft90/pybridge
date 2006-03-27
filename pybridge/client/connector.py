@@ -64,7 +64,7 @@ class Connector:
 			if signal == CommandReply.ACKNOWLEDGE:
 				self.callbackSuccess()
 			else:
-				self.callbackFailure()
+				self.callbackFailure("Protocol verification failed.")
 		
 		# Verify protocol version transparently.
 		self.connection.cmdProtocol(protocolResult)

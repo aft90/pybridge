@@ -64,14 +64,14 @@ class DialogConnection(GladeWrapper):
 		connector.connection.cmdLogin(username, password, loginResult)
 
 
-	def connect_failure(self):
+	def connect_failure(self, error):
 		"""Actions to perform after connecting fails."""
 		error_dialog = gtk.MessageDialog(
 			parent = self.window,
 			flags = gtk.DIALOG_MODAL,
 			type = gtk.MESSAGE_ERROR,
 			buttons = gtk.BUTTONS_OK,
-			message_format = "Protocol verification failed."
+			message_format = error
 		)
 		error_dialog.run()
 		error_dialog.destroy()
