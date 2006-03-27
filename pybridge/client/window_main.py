@@ -16,9 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gc, webbrowser
+import gc, gtk
 
-import gtk
 from wrapper import GladeWrapper
 
 from connector import connector
@@ -235,12 +234,12 @@ class WindowMain(GladeWrapper):
 	# Signal handlers
 
 
-	def on_window_main_destroy(self, widget, *args):
+	def on_window_main_delete_event(self, widget, *args):
 		windowmanager.shutdown()
 
 
 	def on_newtable_activate(self, widget, *args):
-		self.ui.dialog_newtable.window.show()
+		windowmanager.launch('dialog_newtable')
 
 
 	def on_notebook_switch_page(self, widget, *args):
@@ -250,6 +249,7 @@ class WindowMain(GladeWrapper):
 
 	def on_disconnect_activate(self, widget, *args):
 		connector.disconnect()
+		windowmanager.terminate('window_main')
 		windowmanager.launch('dialog_connection')
 
 

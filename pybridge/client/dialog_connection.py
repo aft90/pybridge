@@ -90,7 +90,7 @@ class DialogConnection(GladeWrapper):
 			settings.set('Server', 'password', '')
 		
 		# Launch main window.
-		windowmanager.destroy('dialog_connection')
+		windowmanager.terminate('dialog_connection')
 		windowmanager.launch('window_main')
 
 
@@ -114,7 +114,7 @@ class DialogConnection(GladeWrapper):
 # Signal handlers.
 
 
-	def on_dialog_connection_destroy(self, widget, *args):
+	def on_dialog_connection_delete_event(self, widget, *args):
 		windowmanager.shutdown()
 
 
