@@ -33,7 +33,16 @@ else:
 sys.path.insert(0, pythonpath)
 
 
-from pybridge.client.ui import GtkGladeUI
+# Now proceed to load the client.
 
-client = GtkGladeUI()
-client.run()
+from twisted.internet import gtk2reactor
+gtk2reactor.install()
+
+import gtk
+from twisted.internet import reactor
+
+from pybridge.client.windowmanager import windowmanager
+windowmanager.launch("dialog_connection")
+
+reactor.run()	# Start Twisted layer.
+gtk.main()	# Start PyGTK main loop.
