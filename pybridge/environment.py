@@ -10,32 +10,42 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import os, sys
 
+import os.path, sys
+
+
+HOME = os.path.expanduser("~")
+CURRENTDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+BASEDIR = os.path.abspath(os.path.join(CURRENTDIR, '..'))
+
+if os.path.exists(os.path.join(BASEDIR, 'share')):
+	DATADIR = os.path.join(BASEDIR, 'share', 'pybridge')
+else:
+	DATADIR = BASEDIR
+
+CLIENT_SETTINGS_PATH = os.path.join(HOME, '.pybridge', 'client.cfg')
+
+DOCS_DIR = "."
 GLADE_DIR = "glade"
 PIXMAPS_DIR = "pixmaps"
 
+
 class Environment:
 
-	def __init__(self):
-		currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
-		basedir = os.path.abspath(os.path.join(currentdir, '..'))
-
-		if os.path.exists(os.path.join(basedir, 'share')):
-			self._data_dir = os.path.join(basedir, 'share', 'pybridge')
-		else:
-			self._data_dir = basedir
-
+	def find_doc(self, name):
+		return os.path.join(DATADIR, DOCS_DIR, name)
 
 	def find_glade(self, name):
-		return os.path.join(self._data_dir, GLADE_DIR, name)
+		return os.path.join(DATADIR, GLADE_DIR, name)
 
 	def find_pixmap(self, name):
-		return os.path.join(self._data_dir, PIXMAPS_DIR, name)
+		return os.path.join(DATADIR, PIXMAPS_DIR, name)
+
 
 environment = Environment()
+
