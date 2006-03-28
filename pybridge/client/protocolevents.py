@@ -78,7 +78,7 @@ class ProtocolEvents:
 		pass
 
 
-	def tablePlayerStands(self, player):
+	def tablePlayerStands(self, player, seat):
 		pass
 
 

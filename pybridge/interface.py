@@ -57,7 +57,7 @@ class IProtocolListener(Interface):
 	def tablePlayerSits(self, player, seat):
 		"""Called when a user occupies a seat at table, to become a player."""
 
-	def tablePlayerStands(self, player):
+	def tablePlayerStands(self, player, seat):
 		"""Called when a player relinquishes their seat at table."""
 
 	def tableUserJoins(self, username, tablename):

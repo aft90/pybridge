@@ -65,8 +65,8 @@ class ProtocolEvents:
 	def tablePlayerSits(self, player, seat):
 		self.sendStatus(Event.TABLE_PLAYERSITS, player, seat)
 
-	def tablePlayerStands(self, player):
-		self.sendStatus(Event.TABLE_PLAYERSTANDS, player)
+	def tablePlayerStands(self, player, seat):
+		self.sendStatus(Event.TABLE_PLAYERSTANDS, player, seat)
 
 	def tableUserJoins(self, username, tablename):
 		self.sendStatus(Event.TABLE_USERJOINS, username, tablename)
