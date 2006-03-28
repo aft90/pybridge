@@ -19,6 +19,12 @@
 from pybridge.interface import IProtocolListener
 from pybridge.strings import Event
 
+from pybridge.common.bidding import Call
+from pybridge.common.deck import Card
+from pybridge.common.enumeration import CallType
+
+from windowmanager import windowmanager
+
 
 class ProtocolEvents:
 
@@ -26,7 +32,13 @@ class ProtocolEvents:
 
 
 	def gameCallMade(self, seat, call):
-		print seat, call
+		components = split(call, ' ')
+		callType = components[0]
+		if callType == CallType.Bid:
+			bidLevel, bidDenom = components[1:]
+		else:
+			bidLevel, bidDenom = None, None
+		Call(callType, bidLevel, bidDenom)
 
 
 	def gameCardPlayed(self, seat, card):
@@ -40,8 +52,10 @@ class ProtocolEvents:
 	def gameEnded(self):
 		pass
 
+
 	def gameResult(self, result):
 		pass
+
 
 	def gameStarted(self):
 		pass
@@ -69,7 +83,10 @@ class ProtocolEvents:
 
 
 	def tableUserJoins(self, username, tablename):
-		pass
+		if username == self.username:
+			self.tablename = tablename
+			print "meeeee"
+		print "joined"
 
 
 	def tableUserLeaves(self, username, tablename):
@@ -77,11 +94,11 @@ class ProtocolEvents:
 
 
 	def tableOpened(self, tablename):
-		pass
+		windowmanager.get('window_tablelisting').add_table(tablename)
 
 
 	def tableClosed(self, tablename):
-		pass
+		windowmanager.get('window_tablelisting').remove_table(tablename)
 
 
 # User events.
@@ -93,3 +110,4 @@ class ProtocolEvents:
 
 	def userLoggedOut(self, username):
 		pass
+
