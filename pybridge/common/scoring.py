@@ -1,4 +1,22 @@
-from enumeration import Denomination, Seat
+# PyBridge -- online contract bridge made easy.
+# Copyright (C) 2004-2006 PyBridge Project.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+
+from bidding import Strain
 
 
 # There are undoubtedly many minor variations of the score values.
@@ -20,13 +38,13 @@ def scoreDuplicate(self, result):
 		# Contract fulfilled.
 
 		# Calculate scores for tricks bid and made.
-		if trumpSuit in (Denomination.Club, Denomination.Diamond):
+		if trumpSuit in (Strain.Club, Strain.Diamond):
 			# Clubs and Diamonds score 20 for each odd trick.
 			score += contractLevel * 20
 		else:
 			# Hearts, Spades and NT score 30 for each odd trick.
 			score += contractLevel * 30
-			if trumpSuit is Denomination.NoTrump:
+			if trumpSuit is Strain.NoTrump:
 				score += 10  # For NT, add a 10 point bonus.
 
 		# Calculate scores for doubles.
@@ -78,7 +96,7 @@ def scoreDuplicate(self, result):
 			else:
 				score += overTricks * 200
 		else:
-			if trumpSuit in (Denomination.Club, Denomination.Diamond):
+			if trumpSuit in (Strain.Club, Strain.Diamond):
 				# Clubs and Diamonds score 20 for each undoubled overtrick.
 				score += overTricks * 20
 			else:
@@ -119,3 +137,4 @@ def scoreDuplicate(self, result):
 
 def scoreRubber(self, result):
 	pass  # TODO: implement.
+
