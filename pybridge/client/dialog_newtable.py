@@ -43,3 +43,8 @@ class DialogNewtable(GladeWrapper):
 		connector.connection.cmdHost(tablename)
 		windowmanager.terminate('dialog_newtable')
 
+
+	def on_tablename_changed(self, widget, *args):
+		sensitive = self.tablename.get_text() != ""
+		self.okbutton.set_property('sensitive', sensitive)
+
