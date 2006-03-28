@@ -28,11 +28,11 @@ settings.read([CLIENT_SETTINGS_PATH])
 
 # Create sections and options, if they do not exist.
 
-if not settings.has_section('Server'):
-	settings.add_section('Server')
-	settings.set('Server', 'hostname', '')
-	settings.set('Server', 'port', TCP_PORT)
-	settings.set('Server', 'username', '')
-	settings.set('Server', 'password', '')
+if not settings.has_section('connection'):
+	settings.add_section('connection')
+	settings.set('connection', 'hostname', '')
+	settings.set('connection', 'portnum', str(TCP_PORT))
+	settings.set('connection', 'username', '')
+	settings.set('connection', 'password', '')
 	settings.write(file(CLIENT_SETTINGS_PATH, 'w'))
 

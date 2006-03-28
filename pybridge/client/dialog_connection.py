@@ -19,7 +19,6 @@
 import gtk
 from wrapper import GladeWrapper
 
-from pybridge.conf import TCP_PORT
 from connector import connector
 from settings import settings
 from windowmanager import windowmanager
@@ -32,10 +31,9 @@ class DialogConnection(GladeWrapper):
 
 	def new(self):
 		# Read connection parameters from client settings.
-		self.hostname.set_text(settings.get('Server', 'hostname'))
-		self.username.set_text(settings.get('Server', 'username'))
-		
-		password = settings.get('Server', 'password')
+		self.hostname.set_text(settings.get('connection', 'hostname'))
+		self.username.set_text(settings.get('connection', 'username'))
+		password = settings.get('connection', 'password')
 		if password:
 			self.password.set_text(password)
 			self.save_password.set_active(True)
@@ -82,12 +80,12 @@ class DialogConnection(GladeWrapper):
 		"""Actions to perform when login succeeds."""
 		
 		# Save hostname/username to settings.
-		settings.set('Server', 'hostname', self.hostname.get_text())
-		settings.set('Server', 'username', self.username.get_text())
+		settings.set('connection', 'hostname', self.hostname.get_text())
+		settings.set('connection', 'username', self.username.get_text())
 		if self.save_password.get_active():
-			settings.set('Server', 'password', self.password.get_text())
+			settings.set('connection', 'password', self.password.get_text())
 		else:	# Flush password.
-			settings.set('Server', 'password', '')
+			settings.set('connection', 'password', '')
 		
 		# Launch main window.
 		windowmanager.terminate('dialog_connection')
@@ -119,18 +117,19 @@ class DialogConnection(GladeWrapper):
 
 
 	def on_hostname_changed(self, widget, *args):
-		sensitive = (self.hostname.get_text() and self.username.get_text()) != ""
+		sensitive = self.hostname.get_text() != "" and self.username.get_text() != ""
 		self.connectbutton.set_property('sensitive', sensitive)
 
 
 	def on_username_changed(self, widget, *args):
-		self.on_hostname_changed(self, widget, *args)	# Same as host field.
+		self.on_hostname_changed(self, widget, *args)  # Same as host field.
 
 
 	def on_connectbutton_clicked(self, widget, *args):
-		self.connectbutton.set_property('sensitive', False)	# Prevent repeat clicks.
+		self.connectbutton.set_property('sensitive', False)  # Prevent repeat clicks.
 		hostname = self.hostname.get_text()
-		connector.connect(self.hostname.get_text(), TCP_PORT)	# Hostname and port.
+		port = settings.getint('connection', 'portnum')
+		connector.connect(hostname, port)
 
 
 	def on_quitbutton_clicked(self, widget, *args):
