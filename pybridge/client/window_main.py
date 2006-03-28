@@ -57,84 +57,62 @@ class WindowMain(GladeWrapper):
 
 	def new(self):
 		# Placeholders for pixbuf representations of active observed table.
-		self.table_mask = None
+		self.backing = None
 		self.hand_masks = dict.fromkeys(Seat.Seats, None)
-
-		# Set up table and user listings.
-		cell_renderer = gtk.CellRendererText()
-		self.table_store = gtk.ListStore(str, str, str)
-		self.table_listing.set_model(self.table_store)
-		for index, title in enumerate(('Table Title', 'Players', 'Observers')):
-			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
-			self.table_listing.append_column(column)
-		self.user_store = gtk.ListStore(str)
-		self.user_listing.set_model(self.user_store)
-		for index, title in enumerate(('User Name',)):
-			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
-			self.user_listing.append_column(column)
-
+		
 		# Load table background and card pixbufs.
 		self.background = gtk.gdk.pixbuf_new_from_file(BACKGROUND_PATH).render_pixmap_and_mask()[0]
 		self.card_mask = gtk.gdk.pixbuf_new_from_file_at_size(CARD_MASK_PATH, 1028, 615)
+		# Expect cards of unit size 13 x 5.
 		self.card_width = self.card_mask.get_width() / 13
 		self.card_height = self.card_mask.get_height() / 5
-
-
-	def create_cardtable(self, title):
-		"""Builds a new card table and tab widget with title."""
-
-		tab = gtk.Label(title)
-		card_table = gtk.DrawingArea()
-#		self.card_tables[card_table] = {}  # Dict of hand pixbufs.
 		
-		card_table.connect("configure_event", self.card_table_configure)
-		card_table.connect("expose_event", self.card_table_expose)
-		card_table.connect("button_press_event", self.card_table_button_press)
-		card_table.add_events(gtk.gdk.BUTTON_PRESS_MASK)
-		card_table.show()
-		self.notebook.append_page(card_table, tab)
+		self.card_table.set_size_request(width=640, height=480)
+		self.card_table.connect("configure_event", self.card_table_configure)
+		self.card_table.connect("expose_event", self.card_table_expose)
+		self.card_table.connect("button_press_event", self.card_table_button_press)
+		self.card_table.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+		
+		windowmanager.launch('window_tablelisting')
+
+#		# Set up table and user listings.
+#		cell_renderer = gtk.CellRendererText()
+#		self.table_store = gtk.ListStore(str)
+#		self.table_listing.set_model(self.table_store)
+#		for index, title in enumerate(('Table Name', )):
+#			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
+#			self.table_listing.append_column(column)
+#		self.user_store = gtk.ListStore(str)
+#		self.user_listing.set_model(self.user_store)
+#		for index, title in enumerate(('User Name', )):
+#			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
+#			self.user_listing.append_column(column)
 
 
-	def message_add(self, symbol, message):
-		"""Adds message with identifying symbol to statusbar."""
-
-		context = self.statusbar.get_context_id(symbol)
-		self.statusbar.push(context, message)
 
 
-	def message_remove(self, symbol):
-		"""Removes message with identifying symbol from statusbar."""
-
-		context = self.statusbar.get_context_id(symbol)
-		self.statusbar.pop(context)
-
-
-	def update_tables(self, tables):
-		"""Update listing of tables."""
-
-		self.table_store.clear()
-		for table in tables.keys():  # for now
-			iter = self.table_store.append()
-			self.table_store.set_value(iter, 0, table)
+#	def user_online(self, username):
+#		"""Adds a user to the user listing."""
+#		row = (username, )
+#		iter = self.user_store.append(row)
+#		self.users_online[username] = iter
+#
+#
+#	def user_offline(self, username):
+#		"""Removes a user from the user listing."""
+#		iter = self.users_online[username]
+#		self.user_store.remove(iter)
+#		del self.users_online[username]
 
 
-	def update_users(self, users):
-		"""Update listing of users."""
-
-		self.user_store.clear()
-		for user in users.keys():
-			iter = self.user_store.append()
-			self.user_store.set_value(iter, 0, user)
-
-
-	# The following code drives the card tables.
+# The following code drives the card tables.
 
 
 	def draw_card(self, dest_pixbuf, pos_x, pos_y, card=None):
 		"""Draws graphic of specified card to dest_pixbuf at (pos_x, pos_y)."""
 		if card:  # Determine co-ordinates of card graphic in card_mask pixbuf.
-			src_x = RANKS.index(card.rank) * self.card_width
-			src_y = SUITS.index(card.suit) * self.card_height
+			src_x = CARD_MASK_RANKS.index(card.rank) * self.card_width
+			src_y = CARD_MASK_SUITS.index(card.suit) * self.card_height
 		else:  # If no card is specified, draw a face-down card.
 			src_x, src_y = self.card_width*2, self.card_height*4
 		self.card_mask.copy_area(src_x, src_y, self.card_width, self.card_height, dest_pixbuf, pos_x, pos_y)
@@ -183,9 +161,9 @@ class WindowMain(GladeWrapper):
 	def card_table_configure(self, widget, event):
 		"""Creates backing pixmap of the appropriate size."""
 		x, y, width, height = widget.get_allocation()
-		self.table_mask = gtk.gdk.Pixmap(widget.window, width, height)
-		backgroundGC = gtk.gdk.GC(self.table_mask, fill=gtk.gdk.TILED, tile=self.background)
-		self.table_mask.draw_rectangle(backgroundGC, True, 0, 0, width, height)
+		self.backing = gtk.gdk.Pixmap(self.card_table.window, width, height)
+		backgroundGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)
+		self.backing.draw_rectangle(backgroundGC, True, 0, 0, width, height)
 
 #		for seat, hand in deck.items():
 #			# Render each hand mask separately.
@@ -210,14 +188,14 @@ class WindowMain(GladeWrapper):
 		"""Redraws card table widget from the backing pixmap."""
 		x, y, width, height = event.area
 		widget.window.draw_drawable(widget.get_style().bg_gc[gtk.STATE_NORMAL],
-		                            self.table_mask, x, y, x, y, width, height)
+		                            self.backing, x, y, x, y, width, height)
 		return False  # Expose event is expected to return false.
 
 
 	def card_table_button_press(self, widget, event):
 		""""""
 
-		if event.button == 1 and self.table_mask != None:
+		if event.button == 1 and self.backing != None:
 			# Determine if button press event lies in a hand.
 			for hand in hand_masks.values():
 				start_x, start_y, finish_x, finish_y = hand[-1]
@@ -238,13 +216,16 @@ class WindowMain(GladeWrapper):
 		windowmanager.shutdown()
 
 
-	def on_newtable_activate(self, widget, *args):
+	def on_hosttable_activate(self, widget, *args):
 		windowmanager.launch('dialog_newtable')
 
 
-	def on_notebook_switch_page(self, widget, *args):
-		print "changed page"
-		pass  # TODO: redraw card table, if necessary.
+	def on_tablelisting_toggled(self, widget, *args):
+		window = windowmanager.get('window_tablelisting').window
+		if self.button_tablelisting.get_active():
+			window.show()
+		else:
+			window.hide()
 
 
 	def on_disconnect_activate(self, widget, *args):
@@ -255,19 +236,6 @@ class WindowMain(GladeWrapper):
 
 	def on_quit_activate(self, widget, *args):
 		windowmanager.shutdown()
-
-
-	def on_table_listing_row_activated(self, widget, *args):
-		iter = self.table_store.get_iter(args[0])  # path value
-		tablename = self.table_store.get_value(iter, 0)
-		self.ui.connection.cmdTableObserve(tablename)
-
-
-	def on_statusbar_activate(self, widget, *args):
-		if self.statusbar_main.get_property('visible'):
-			self.statusbar_main.hide()
-		else:
-			self.statusbar_main.show()
 
 
 	def on_about_activate(self, widget, *args):
