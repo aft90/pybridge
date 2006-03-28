@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from enumeration import Seat, Suit
+from deck import Seat, Suit
 
 
 class Trick:
@@ -24,11 +24,8 @@ class Trick:
 
 
 	def __init__(self, leader):
-		"""
-		pre:
-			leader in Seat.Seats
-		"""
-		self.cards  = dict.fromkeys(Seat.Seats, None)
+		assert(leader in Seat)
+		self.cards  = dict.fromkeys(Seat.Seat, None)
 		self.leader = leader
 
 
@@ -43,12 +40,9 @@ class Trick:
 
 
 	def playCard(self, card, seat):
-		"""Add card to trick.
-		
-		pre:
-			seat in Seat.Seats
-			card not in self.cardsPlayed()
-		"""
+		"""Add card to trick."""
+		assert(card not in self.cardsPlayed())
+		assert(seat in Seat)
 		if not self.isComplete():
 			self.cards[seat] = card
 
@@ -85,11 +79,13 @@ class Play:
 
 
 	def __init__(self, declarer, trumpSuit):
+		assert(declarer in Seat)
 		self.declarer  = declarer
 		self.tricks    = []
+		assert(trumpSuit in Strains)
 		self.trumpSuit = trumpSuit
 		# Leader of first trick is declarer's left-hand opponent.
-		self._newTrick(leader = Seat.Seats[(Seat.Seats.index(self.declarer) + 1) % 4])
+		self._newTrick(leader = Seat[(self.declarer.index() + 1) % 4])
 
 
 	def isComplete(self):
@@ -137,9 +133,9 @@ class Play:
 		if self.isComplete():
 			return False
 		else:
-			leaderIndex = Seat.Seats.index(self._currentTrick().leader)
+			leaderIndex = Seat.Seat.index(self._currentTrick().leader)
 			cardCount   = len(self._currentTrick().cardsPlayed())
-			return Seat.Seats[(leaderIndex + cardCount + offset) % 4]
+			return Seat.Seat[(leaderIndex + cardCount + offset) % 4]
 
 
 	def wonTricks(self, seat):
@@ -162,3 +158,4 @@ class Play:
 		"""Adds a new trick object to self.tricks."""
 		leader = leader or self._currentTrick().winningSeat()
 		self.tricks.append(Trick(leader))
+
