@@ -363,15 +363,44 @@
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
+  <signal name="delete_event" handler="on_window_bidbox_delete_event" last_modification_time="Tue, 28 Mar 2006 11:28:01 GMT"/>
 
   <child>
-    <widget class="GtkVBox" id="vbox2">
+    <widget class="GtkVBox" id="calls">
       <property name="visible">True</property>
       <property name="homogeneous">False</property>
       <property name="spacing">0</property>
 
       <child>
-	<widget class="GtkTable" id="calls_bids">
+	<widget class="GtkButton" id="pass">
+	  <property name="visible">True</property>
+	  <property name="can_focus">True</property>
+	  <property name="label" translatable="yes">Pass</property>
+	  <property name="use_underline">True</property>
+	  <property name="relief">GTK_RELIEF_NONE</property>
+	  <property name="focus_on_click">True</property>
+	  <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:32:29 GMT"/>
+	</widget>
+	<packing>
+	  <property name="padding">0</property>
+	  <property name="expand">False</property>
+	  <property name="fill">False</property>
+	</packing>
+      </child>
+
+      <child>
+	<widget class="GtkHSeparator" id="hseparator2">
+	  <property name="visible">True</property>
+	</widget>
+	<packing>
+	  <property name="padding">0</property>
+	  <property name="expand">True</property>
+	  <property name="fill">True</property>
+	</packing>
+      </child>
+
+      <child>
+	<widget class="GtkTable" id="bids">
 	  <property name="visible">True</property>
 	  <property name="n_rows">7</property>
 	  <property name="n_columns">5</property>
@@ -380,13 +409,14 @@
 	  <property name="column_spacing">0</property>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid1nt">
+	    <widget class="GtkButton" id="bid1nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:35:34 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -398,13 +428,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid1s">
+	    <widget class="GtkButton" id="bid1spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♠</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:33:17 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -416,13 +447,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid1h">
+	    <widget class="GtkButton" id="bid1heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:33:03 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -434,13 +466,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid1d">
+	    <widget class="GtkButton" id="bid1diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:32:45 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -452,13 +485,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid1c">
+	    <widget class="GtkButton" id="bid1club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:26:19 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -470,13 +504,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid3d">
+	    <widget class="GtkButton" id="bid3diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:34:39 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -488,13 +523,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid2d">
+	    <widget class="GtkButton" id="bid2diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:33:56 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -506,13 +542,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid2c">
+	    <widget class="GtkButton" id="bid2club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:33:47 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -524,13 +561,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid2nt">
+	    <widget class="GtkButton" id="bid2nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:34:18 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -542,13 +580,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid3nt">
+	    <widget class="GtkButton" id="bid3nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:35:20 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -560,13 +599,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid4nt">
+	    <widget class="GtkButton" id="bid4nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:13 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -578,13 +618,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid5nt">
+	    <widget class="GtkButton" id="bid5nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:42 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -596,13 +637,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid6nt">
+	    <widget class="GtkButton" id="bid6nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:08 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -614,13 +656,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid7nt">
+	    <widget class="GtkButton" id="bid7nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7NT</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:39 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -632,13 +675,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid7s">
+	    <widget class="GtkButton" id="bid7spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♠</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:34 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -650,13 +694,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid7h">
+	    <widget class="GtkButton" id="bid7heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:29 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -668,13 +713,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid7d">
+	    <widget class="GtkButton" id="bid7diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:24 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -686,13 +732,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid7c">
+	    <widget class="GtkButton" id="bid7club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:19 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -704,13 +751,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid6c">
+	    <widget class="GtkButton" id="bid6club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:47 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -722,13 +770,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid6d">
+	    <widget class="GtkButton" id="bid6diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:54 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -740,13 +789,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid6h">
+	    <widget class="GtkButton" id="bid6heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:58 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -758,13 +808,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid6s">
+	    <widget class="GtkButton" id="bid6spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♠</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:03 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -776,31 +827,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid5s">
-	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">5♠</property>
-	      <property name="use_underline">True</property>
-	      <property name="relief">GTK_RELIEF_NONE</property>
-	      <property name="focus_on_click">True</property>
-	    </widget>
-	    <packing>
-	      <property name="left_attach">3</property>
-	      <property name="right_attach">4</property>
-	      <property name="top_attach">4</property>
-	      <property name="bottom_attach">5</property>
-	      <property name="y_options"></property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkButton" id="btnCallBid5h">
+	    <widget class="GtkButton" id="bid5heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:32 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -812,13 +846,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid5d">
+	    <widget class="GtkButton" id="bid5diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:28 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -830,13 +865,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid5c">
+	    <widget class="GtkButton" id="bid5club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:22 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -848,13 +884,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid4c">
+	    <widget class="GtkButton" id="bid4club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:35:53 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -866,13 +903,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid4d">
+	    <widget class="GtkButton" id="bid4diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♦</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:35:58 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -884,13 +922,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid4h">
+	    <widget class="GtkButton" id="bid4heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:02 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -902,13 +941,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid4s">
+	    <widget class="GtkButton" id="bid4spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♠</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:08 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -920,13 +960,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid3h">
+	    <widget class="GtkButton" id="bid3heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:34:45 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -938,13 +979,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid3c">
+	    <widget class="GtkButton" id="bid3club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♣</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:34:31 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -956,13 +998,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid2h">
+	    <widget class="GtkButton" id="bid2heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♥</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:34:02 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -974,13 +1017,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid2s">
+	    <widget class="GtkButton" id="bid2spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♠</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:34:09 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -992,13 +1036,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallBid3s">
+	    <widget class="GtkButton" id="bid3spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♠</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:35:13 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -1009,11 +1054,30 @@
 	      <property name="y_options"></property>
 	    </packing>
 	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="bid5spade">
+	      <property name="visible">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label" translatable="yes">5♠</property>
+	      <property name="use_underline">True</property>
+	      <property name="relief">GTK_RELIEF_NONE</property>
+	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:36:37 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">3</property>
+	      <property name="right_attach">4</property>
+	      <property name="top_attach">4</property>
+	      <property name="bottom_attach">5</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
 	</widget>
 	<packing>
 	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">False</property>
+	  <property name="expand">True</property>
+	  <property name="fill">True</property>
 	</packing>
       </child>
 
@@ -1029,56 +1093,42 @@
       </child>
 
       <child>
-	<widget class="GtkHBox" id="calls_other">
+	<widget class="GtkHBox" id="doubles">
 	  <property name="visible">True</property>
 	  <property name="homogeneous">False</property>
 	  <property name="spacing">0</property>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallPass">
-	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">Pass</property>
-	      <property name="use_underline">True</property>
-	      <property name="relief">GTK_RELIEF_NONE</property>
-	      <property name="focus_on_click">True</property>
-	    </widget>
-	    <packing>
-	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkButton" id="btnCallDouble">
+	    <widget class="GtkButton" id="double">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">Double</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:44 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
+	      <property name="expand">True</property>
+	      <property name="fill">True</property>
 	    </packing>
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="btnCallRedouble">
+	    <widget class="GtkButton" id="redouble">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">Redouble</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NONE</property>
 	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_call_clicked" last_modification_time="Tue, 28 Mar 2006 11:37:50 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
+	      <property name="expand">True</property>
+	      <property name="fill">True</property>
 	    </packing>
 	  </child>
 	</widget>
@@ -1596,8 +1646,8 @@
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">False</property>
-  <property name="skip_pager_hint">False</property>
+  <property name="skip_taskbar_hint">True</property>
+  <property name="skip_pager_hint">True</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_EAST</property>
   <property name="focus_on_map">True</property>
