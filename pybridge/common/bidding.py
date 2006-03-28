@@ -16,74 +16,24 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from enumeration import CallType, Denomination, Level, Seat
+from call import Call, Bid, Pass, Double, Redouble
 
-
-class Call:
-	"""A call represents a bid, a pass, a double or a redouble."""
-
-
-	# TODO: decide if call types would be better implemented by inheritance.
-
-	def __init__(self, type, bidLevel=False, bidDenom=False):
-		"""
-		pre:
-			type in CallType.CallTypes
-			(type == CallType.Bid) => (bidLevel in Level.Levels and bidDenom in Denomination.Denominations)
-		"""
-		self.callType = type
-		self.bidLevel = bidLevel
-		self.bidDenom = bidDenom
-
-
-	def __cmp__(self, other):
-		"""Compares two bids.
-		
-		Returns:
-		- 1, if self call is greater than other call.
-		- 0, if self call is same as other call.
-		- -1, if self call is less than other call.
-
-		pre:
-			isinstance(other, Call)
-		"""
-		if self.callType == other.callType == CallType.Bid:
-			# Compare bids by their level and then their denomination.
-			selfIndex = (self.bidLevel * 5) + Denomination.Denominations.index(self.bidDenom)
-			otherIndex = (other.bidLevel * 5) + Denomination.Denominations.index(other.bidDenom)
-			return cmp(selfIndex, otherIndex)
-		else:
-			return 1  # Comparing non-bid call types returns true.
-
-
-	def __eq__(self, other):
-		if self.callType == other.callType == CallType.Bid:
-			return self.bidLevel == other.bidLevel and self.bidDenom == other.bidDenom
-		return self.callType == other.callType
-
-
-	def __str__(self):
-		if self.callType is CallType.Bid:
-			return "%s %s" % (self.bidLevel, self.bidDenom)
-		else:
-			return self.callType
+from call import Level, Strain
+from deck import Seat
 
 
 class Bidding:
 	"""A bidding session is a list of Call objects and the dealer."""
 
 	# Enumeration of all available calls.
-	BIDS     = [Call(CallType.Bid, l, d) for l, d in zip(5*Level.Levels, 7*Denomination.Denominations)]
-	DOUBLE   = Call(CallType.Double)
-	REDOUBLE = Call(CallType.Redouble)
-	PASS     = Call(CallType.Pass)
+	BIDS     = [Bid(l, s) for l, s in zip(5*[l for l in Level], 7*[s for s in Strain])]
+	DOUBLE   = Double()
+	REDOUBLE = Redouble()
+	PASS     = Pass()
 
 
 	def __init__(self, dealer):
-		"""
-		pre:
-			dealer in Seat.Seats
-		"""
+		assert(dealer in Seat)
 		self.calls  = []
 		self.dealer = dealer
 
@@ -109,13 +59,13 @@ class Bidding:
 
 	def contract(self):
 		"""A contract is the final state of the bidding."""
-		bid = self.currentCall(CallType.Bid)
+		bid = self.currentCall(Bid)
 		if bid and self.isComplete() and not self.isPassedOut():
 			
-			double, doubleBy = self.currentCall(CallType.Double), None
+			double, doubleBy = self.currentCall(Double), None
 			if double:
 				doubleBy = self.whoseCall(double)
-			redouble, redoubleBy = self.currentCall(CallType.Redouble), None
+			redouble, redoubleBy = self.currentCall(Redouble), None
 			if redouble:
 				redoubleBy = self.whoseCall(redouble)
 			
@@ -129,59 +79,27 @@ class Bidding:
 
 
 	def currentCall(self, type):
-		"""Returns most recent current call of type calltype, or None.
-
-		pre:
-			type in CallType.CallTypes
-		"""
+		"""Returns most recent current call of specified class type, or None."""
+		assert(issubclass(type, Call))
 		for call in self.calls[::-1]:
-			if call.callType == type:
+			if isinstance(call, type):
 				return call
-			elif call.callType == CallType.Bid:
+			elif isinstance(call, Bid):
 				break
 		return None
 
 
-#	def currentBid(self):
-#		"""Returns most recent bid, or False if no bids made."""
-#		bids = [call for call in self.calls if call in self.BIDS]
-#		return len(bids) > 0 and bids[-1]
-#
-#
-#	def currentDoubleLevel(self):
-#		"""Returns:
-#
-#		- 0, if current bid is not doubled.
-#		- 1, if current bid is doubled.
-#		- 2, if current bid is redoubled.
-#		"""
-#		for call in self.calls[::-1]:
-#			if call in self.BIDS:
-#				break
-#			elif call == self.DOUBLE:
-#				return 1
-#			elif call == self.REDOUBLE:
-#				return 2
-#		return 0
-
-
 	def validCall(self, call):
-		"""Check a given call for validity against the previous calls.
-		
-		pre:
-			isinstance(call, Call)
-		"""
+		"""Check a given call for validity against the previous calls."""
+		assert(isinstance(call, Call))
 		return call in self.listAvailableCalls()
 
 
 	def addCall(self, call):
-		"""Add call to the calls list.
-		
-		pre:
-			isinstance(call, Call)
-			self.validCall(call)
-		"""
-		if self.validCall(call):
+		"""Add call to the calls list."""
+		assert(isinstance(call, Call))
+		assert(self.validCall(call))
+		if self.validCall(call):  # In case asserts are disabled.
 			self.calls.append(call)
 
 
@@ -189,7 +107,7 @@ class Bidding:
 		"""Returns a tuple of all calls available to current seat."""
 		calls = []
 		if not self.isComplete():
-			currentBid = self.currentCall(CallType.Bid)
+			currentBid = self.currentCall(Bid)
 
 			# If bidding is not complete, a pass is always available.
 			calls.append(self.PASS)
@@ -200,10 +118,10 @@ class Bidding:
 				partnership = (self.whoseTurn(0), self.whoseTurn(2))
 				bidder = self.whoseCall(currentBid)
 				# Check if double (on opposition's bid) is available.
-				if not self.currentCall(CallType.Double) and bidder in opposition:
+				if not self.currentCall(Double) and bidder in opposition:
 					calls.append(self.DOUBLE)
 				# Check if redouble (on partnership's bid) is available.
-				elif self.currentCall(CallType.Double) and bidder in partnership:
+				elif self.currentCall(Double) and bidder in partnership:
 					calls.append(self.REDOUBLE)
 
 			# Bids are available only if they are stronger than the current bid.
@@ -213,20 +131,15 @@ class Bidding:
 
 
 	def whoseTurn(self, offset=0):
-		"""Returns the seat that is next to call.
-
-		pre:
-			isinstance(offset, int)
-		"""
-		seat = Seat.Seats[(len(self.calls) + Seat.Seats.index(self.dealer) + offset) % 4]
+		"""Returns the seat that is next to call."""
+		assert(isinstance(offset, int))
+		seat = Seat[(len(self.calls) + self.dealer.index + offset) % 4]
 		return not(self.isComplete()) and seat
 
 
 	def whoseCall(self, call):
-		"""Returns the seat from which the call was made.
-		
-		pre:
-			isinstance(call, Call)
-			call in self.calls
-		"""
-		return Seat.Seats[(self.calls.index(call) + Seat.Seats.index(self.dealer)) % 4]
+		"""Returns the seat from which the call was made."""
+		assert(isinstance(call, Call))
+		assert(call in self.calls)
+		return Seat[(self.calls.index(call) + self.dealer.index) % 4]
+
