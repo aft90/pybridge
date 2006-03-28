@@ -33,6 +33,8 @@ class PybridgeClientProtocol(LineOnlyReceiver, ProtocolCommands, ProtocolEvents)
 	def __init__(self):
 		self.pending  = {}	# Requests pending a response.
 		self.tagIndex = 0
+		self.username = None
+		self.table = None
 
 
 	def connectionMade(self):

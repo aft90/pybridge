@@ -29,10 +29,12 @@ class ProtocolCommands:
 
 
 	def cmdLogin(self, username, password, callback=None):
+		self.username = username
 		self.sendCommand(Command.USER_LOGIN, callback, username, password)
 
 
 	def cmdLogout(self, callback=None):
+		self.username = None
 		self.sendCommand(Command.USER_LOGOUT, callback)
 
 
