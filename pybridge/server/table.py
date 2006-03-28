@@ -17,9 +17,11 @@
 
 
 from pybridge.common.deck import Deck
-from pybridge.common.enumeration import Seat
 from pybridge.common.game import Game, GameError
 from pybridge.common.scoring import scoreDuplicate
+
+# Enumerations.
+from pybridge.common.deck import Seat
 
 from pybridge.strings import Event, Error
 
@@ -38,7 +40,7 @@ class BridgeTable:
 		self.game     = None
 		self.name     = name
 		self.observers = {}  # For each watching user name, its Listener object.
-		self.players  = dict.fromkeys(Seat.Seats, None)
+		self.players  = dict.fromkeys(Seat, None)
 		self.scoring  = scoreDuplicate  # A function.
 
 
@@ -78,7 +80,7 @@ class BridgeTable:
 	def gameStart(self, dealer=None, deal=None):
 		"""Called to start a game."""
 		deal = deal or self.deck.dealRandom()
-		self.dealer = dealer or Seat.Seats[(Seat.Seats.index(self.dealer) + 1) % 4]
+		self.dealer = dealer or Seat[(self.dealer.index + 1) % 4]
 		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
 		self.informWatchers(Event.GAME_STARTED)
 
@@ -106,7 +108,7 @@ class BridgeTable:
 				return self.game.deal[seat]
 			# We now consider viewpoint, provided that bidding is complete.
 			if self.game.bidding.isComplete():
-				dummy = Seat.Seats[(Seat.Seats.index(self.game.play.declarer) + 2) % 4]
+				dummy = Seat[(self.game.play.declarer.index + 2) % 4]
 				if viewpoint is dummy:
 					# Dummy can see all hands in play.
 					return self.game.deal[seat]

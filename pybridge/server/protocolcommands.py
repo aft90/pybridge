@@ -16,9 +16,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from pybridge.common.bidding import Call
+from pybridge.common.call import Bid, Pass, Double, Redouble
 from pybridge.common.deck import Card
-from pybridge.common.enumeration import CallType, Denomination, Level, Rank, Seat, Suit
+
+# Enumerations.
+from pybridge.common.call import Level, Strain
+from pybridge.common.deck import Rank, Seat, Suit
 
 from pybridge.strings import Command, Error
 
@@ -27,6 +30,11 @@ from table import TableError
 
 # States that a client may be in.
 UNVERIFIED, LOGGEDOUT, LOGGEDIN, TABLE, PLAYER, INGAME = range(6)
+
+SEATS = {}
+for seat in Seat:
+	SEATS[str(seat)] = seat
+
 
 
 class ProtocolCommands:
@@ -152,9 +160,9 @@ class ProtocolCommands:
 
 	def cmdSit(self, seat):
 		self._checkStates(required=(TABLE,), forbidden=(PLAYER,))
-		if seat not in Seat.Seats:
+		if seat not in SEATS:
 			raise self.IllegalCommand(Error.COMMAND_PARAMSPEC)
-		result = self.table.playerAdd(self.username, seat)
+		result = self.table.playerAdd(self.username, SEATS[seat])
 		if result:
 			raise self.DeniedCommand(result)
 
@@ -183,18 +191,22 @@ class ProtocolCommands:
 # Game player commands.
 
 
-	def cmdCall(self, callType, bidLevel=None, bidDenom=None):
+	def cmdCall(self, callType, level=None, strain=None):
 		self._checkStates(required=(PLAYER, INGAME))
 		
-		if callType == CallType.Bid:
-			if not (int(bidLevel) in Level.Levels and bidDenom in Denomination.Denominations):
+		if callType == 'Bid':
+			if not (level in Level and strain in Strain):
 				raise self.IllegalCommand(Error.COMMAND_PARAMSPEC)
-			call = Call(CallType.Bid, int(bidLevel), bidDenom)
-		elif callType in CallType.CallTypes:
-			call = Call(callType)  # Double, redouble or pass.
+			call = Bid(level, strain)
+		elif callType == 'Pass':
+			call = Pass()
+		elif callType == 'Double':
+			call = Double()
+		elif callType == 'Redouble':
+			call = Redouble()
 		else:
 			raise self.IllegalCommand(Error.COMMAND_PARAMSPEC)
-
+		
 		try:
 			self.table.gameMakeCall(self.username, call)
 		except TableError, error:
@@ -207,9 +219,11 @@ class ProtocolCommands:
 			self._checkStates(required=(PLAYER,), error=Error.COMMAND_UNAVAILABLE)
 			seat = self.table.getSeatForPlayer(self.username)
 			viewer = None
-		elif seat in Seat.Seats and PLAYER in self._getStates():
+		elif seat in SEATS and PLAYER in self._getStates():
+			seat = SEATS[seat]
 			viewer = self.table.getSeatForPlayer(self.username)
-		elif seat in Seat.Seats:  # An observer can view all hands.
+		elif seat in SEATS:  # An observer can view all hands.
+			seat = SEATS[seat]
 			viewer = None
 		else:
 			raise self.IllegalCommand(Error.COMMAND_PARAMSPEC)
@@ -223,7 +237,7 @@ class ProtocolCommands:
 
 	def cmdPlay(self, rank, suit):
 		self._checkStates(required=(PLAYER, INGAME))
-		if rank not in Rank.Ranks or suit not in Suit.Suits:
+		if rank not in Rank or suit not in Suit:
 			raise self.IllegalCommand(Error.COMMAND_PARAMSPEC)
 		card = Card(rank, suit)
 		try:
