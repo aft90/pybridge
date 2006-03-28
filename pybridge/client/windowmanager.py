@@ -27,34 +27,42 @@ class WindowManager:
 
 
 	def __init__(self):
-		self.instances = {}
+		self._instances = {}
+
+
+	def get(self, windowname):
+		return self._instances.get(windowname, None)
 
 
 	def launch(self, windowname):
 		"""Launches specified window."""
-		
-		if windowname == 'dialog_connection':
-			from dialog_connection import DialogConnection
-			instance = DialogConnection()
-		elif windowname == 'dialog_newtable':
-			from dialog_newtable import DialogNewtable
-			instance = DialogNewtable()
-		elif windowname == 'window_bidbox':
-			from window_bidbox import WindowBidbox
-			instance = WindowBidbox()
-		elif windowname == 'window_calls':
-			from window_calls import WindowCalls
-			instance = WindowCalls()
-		elif windowname == 'window_main':
-			from window_main import WindowMain
-			instance = WindowMain()
-		
-		self.instances[windowname] = instance
+		if windowname not in self._instances:
+			
+			if windowname == 'dialog_connection':
+				from dialog_connection import DialogConnection
+				instance = DialogConnection()
+			elif windowname == 'dialog_newtable':
+				from dialog_newtable import DialogNewtable
+				instance = DialogNewtable()
+			elif windowname == 'window_bidbox':
+				from window_bidbox import WindowBidbox
+				instance = WindowBidbox()
+			elif windowname == 'window_calls':
+				from window_calls import WindowCalls
+				instance = WindowCalls()
+			elif windowname == 'window_main':
+				from window_main import WindowMain
+				instance = WindowMain()
+			elif windowname == 'window_tablelisting':
+				from window_tablelisting import WindowTablelisting
+				instance = WindowTablelisting()
+			
+			self._instances[windowname] = instance
 
 
 	def terminate(self, windowname):
-		self.instances[windowname].window.destroy()
-		del self.instances[windowname]
+		self._instances[windowname].window.destroy()
+		del self._instances[windowname]
 
 
 	def shutdown(self):
