@@ -17,7 +17,28 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
+
 import os, sys
+
+
+PYTHON_VERSION = sys.version_info[:2]
+
+# Some version dependencies.
+PYTHON_REQUIRED = (2, 3)
+PYGTK_REQUIRED = '2.0'
+TWISTED_REQUIRED = '1.3.0'
+
+# Check version requirements.
+if PYTHON_VERSION < PYTHON_REQUIRED:
+	raise SystemExit("Error: Python %d.%d or higher required" % PYTHON_REQUIRED)
+
+import pygtk
+pygtk.require(PYGTK_REQUIRED)
+
+import twisted.copyright
+if twisted.copyright.version < TWISTED_REQUIRED:
+	raise SystemExit("Error: Twisted Core %s or higher required" % TWISTED_REQUIRED)
+
 
 # Determine the base directory.
 currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -25,8 +46,7 @@ basedir = os.path.abspath(os.path.join(currentdir, '..'))
 
 # Find the Python module path, relative to the base directory.
 if os.path.exists(os.path.join(basedir, 'lib')):
-	pythonver = 'python%d.%d' % sys.version_info[:2]
-	pythonpath = os.path.join(basedir, 'lib', pythonver, 'site-packages')
+	pythonpath = os.path.join(basedir, 'lib', 'python%d.%d' % PYTHON_VERSION, 'site-packages')
 else:
 	pythonpath = basedir
 
@@ -44,5 +64,7 @@ from twisted.internet import reactor
 from pybridge.client.windowmanager import windowmanager
 windowmanager.launch("dialog_connection")
 
-reactor.run()	# Start Twisted layer.
-gtk.main()	# Start PyGTK main loop.
+# Start the program.
+reactor.run()
+gtk.main()
+
