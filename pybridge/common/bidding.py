@@ -25,12 +25,6 @@ from deck import Seat
 class Bidding:
 	"""A bidding session is a list of Call objects and the dealer."""
 
-	# Enumeration of all available calls.
-	BIDS     = [Bid(l, s) for l, s in zip(5*[l for l in Level], 7*[s for s in Strain])]
-	DOUBLE   = Double()
-	REDOUBLE = Redouble()
-	PASS     = Pass()
-
 
 	def __init__(self, dealer):
 		assert(dealer in Seat)
@@ -44,7 +38,7 @@ class Bidding:
 		- at least 4 calls made.
 		- last 3 calls are passes.
 		"""
-		passes = len([call for call in self.calls[-3:] if call==self.PASS])
+		passes = len([call for call in self.calls[-3:] if isinstance(call, Pass)])
 		return len(self.calls) >= 4 and passes == 3
 
 
@@ -53,7 +47,7 @@ class Bidding:
 		
 		This is a special case of isComplete; it implies no contract has been established.
 		"""
-		passes = len([call for call in self.calls if call==self.PASS])
+		passes = len([call for call in self.calls if isinstance(call, Pass)])
 		return len(self.calls) == 4 and passes == 4
 
 
@@ -61,18 +55,13 @@ class Bidding:
 		"""A contract is the final state of the bidding."""
 		bid = self.currentCall(Bid)
 		if bid and self.isComplete() and not self.isPassedOut():
+			double = self.currentCall(Double)
+			redouble = self.currentCall(Redouble)
 			
-			double, doubleBy = self.currentCall(Double), None
-			if double:
-				doubleBy = self.whoseCall(double)
-			redouble, redoubleBy = self.currentCall(Redouble), None
-			if redouble:
-				redoubleBy = self.whoseCall(redouble)
-			
-			return {'bid' : bid,
-			   'declarer' : self.whoseCall(bid),
-			   'doubleBy' : doubleBy,
-			 'redoubleBy' : redoubleBy, }
+			return {'bid'        : bid,
+			        'declarer'   : self.whoseCall(bid),
+			        'doubleBy'   : double and self.whoseCall(double),
+			        'redoubleBy' : redouble and self.whoseCall(redouble) }
 		
 		else:
 			return None
@@ -92,7 +81,38 @@ class Bidding:
 	def validCall(self, call):
 		"""Check a given call for validity against the previous calls."""
 		assert(isinstance(call, Call))
-		return call in self.listAvailableCalls()
+		
+		# The bidding must not be passed out.
+		if self.isComplete():
+			return False
+		
+		# Bidding is not complete; a pass is always available.
+		elif isinstance(call, Pass):
+			return True
+		
+		currentBid = self.currentCall(Bid)
+		
+		# A bid must be greater than the current bid.
+		if isinstance(call, Bid):
+			return not currentBid or call > currentBid
+		
+		# Doubles and redoubles only when a bid has been made.
+		if currentBid:
+			bidder = self.whoseCall(currentBid)
+			
+			# A double must be made on the current bid from opponents,
+			# with has not been already doubled by partnership.
+			if isinstance(call, Double):
+				opposition = (self.whoseTurn(1), self.whoseTurn(3))
+				return not self.currentCall(Double) and bidder in opposition
+			
+			# A redouble must be made on the current bid from partnership,
+			# which has been doubled by an opponent.
+			elif isinstance(call, Redouble):
+				partnership = (self.whoseTurn(0), self.whoseTurn(2))
+				return self.currentCall(Double) and bidder in partnership
+		
+		return False  # Otherwise unavailable.
 
 
 	def addCall(self, call):
@@ -101,33 +121,6 @@ class Bidding:
 		assert(self.validCall(call))
 		if self.validCall(call):  # In case asserts are disabled.
 			self.calls.append(call)
-
-
-	def listAvailableCalls(self):
-		"""Returns a tuple of all calls available to current seat."""
-		calls = []
-		if not self.isComplete():
-			currentBid = self.currentCall(Bid)
-
-			# If bidding is not complete, a pass is always available.
-			calls.append(self.PASS)
-
-			# There must be an existing bid for a double or redouble.
-			if currentBid:
-				opposition = (self.whoseTurn(1), self.whoseTurn(3))
-				partnership = (self.whoseTurn(0), self.whoseTurn(2))
-				bidder = self.whoseCall(currentBid)
-				# Check if double (on opposition's bid) is available.
-				if not self.currentCall(Double) and bidder in opposition:
-					calls.append(self.DOUBLE)
-				# Check if redouble (on partnership's bid) is available.
-				elif self.currentCall(Double) and bidder in partnership:
-					calls.append(self.REDOUBLE)
-
-			# Bids are available only if they are stronger than the current bid.
-			calls += [bid for bid in self.BIDS if (not currentBid) or bid > currentBid]
-
-		return calls
 
 
 	def whoseTurn(self, offset=0):

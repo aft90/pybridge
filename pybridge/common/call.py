@@ -29,8 +29,8 @@ class Call:
 	"""Superclass for bids, passes, doubles and redoubles."""
 
 
-	def __eq__(self, other):
-		return self.__class__ == other.__class__
+	def __str__(self):
+		return str(self.__class__)
 
 
 class Bid(Call):
@@ -44,7 +44,7 @@ class Bid(Call):
 
 
 	def __cmp__(self, other):
-		if self.__class__ == other.__class__:  # Comparing two bids.
+		if isinstance(other, Bid):  # Comparing two bids.
 			selfVal = self.level.index*len(Strain) + self.strain.index
 			otherVal = other.level.index*len(Strain) + other.strain.index
 			return cmp(selfVal, otherVal)
@@ -52,31 +52,15 @@ class Bid(Call):
 			return 1
 
 
-	def __eq__(self, other):
-		return self.__cmp__(other) == 0
-
-
 	def __str__(self):
-		return "bid %s %s" % (self.level, self.strain)
+		return "%s %s" % (self.level, self.strain)
 
 
-class Pass(Call):
+class Pass(Call): pass
 
 
-	def __str__(self):
-		return "pass"
+class Double(Call): pass
 
 
-class Double(Call):
-
-
-	def __str__(self):
-		return "double"
-
-
-class Redouble(Call):
-
-
-	def __str__(self):
-		return "redouble"
+class Redouble(Call): pass
 
