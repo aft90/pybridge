@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
+
 import os, sys
 
 # Determine the base directory.
@@ -33,13 +34,28 @@ else:
 sys.path.insert(0, pythonpath)
 
 
-from twisted.internet import protocol, reactor
+from twisted.cred import checkers, credentials, portal
+from twisted.internet import reactor
+from twisted.python import log
+from twisted.spread import pb
 
 from pybridge.conf import TCP_PORT
-from pybridge.server.factory import PybridgeServerFactory
+from pybridge.environment import environment
 
-# TODO: Replace with a service.
+from pybridge.server.checker import Checker
+from pybridge.server.realm import Realm
+from pybridge.server.server import Server
 
-factory = PybridgeServerFactory()
-reactor.listenTCP(TCP_PORT, factory)
+
+realm = Realm()
+realm.server = Server()
+checker = Checker()
+
+p = portal.Portal(realm)
+p.registerChecker(checker)
+
+# TODO: replace with a service.
+log.startLogging(sys.stdout)  # Log to stdout.
+reactor.listenTCP(TCP_PORT, pb.PBServerFactory(p))
 reactor.run()
+

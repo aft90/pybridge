@@ -16,6 +16,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.spread import pb
+
+from pybridge.common.call import Call
 from pybridge.common.deck import Deck
 from pybridge.common.game import Game, GameError
 from pybridge.common.scoring import scoreDuplicate
@@ -23,147 +26,187 @@ from pybridge.common.scoring import scoreDuplicate
 # Enumerations.
 from pybridge.common.deck import Seat
 
-from pybridge.strings import Event, Error
+from pybridge.strings import Error
 
 
-class TableError(Exception): pass
+class DeniedTableRequest(pb.Error): pass
+class IllegalTableRequest(pb.Error): pass
 
 
-class BridgeTable:
+class BridgeTable(pb.Viewable):
 	"""A bridge table sits four players."""
 	# TODO: perhaps subclass BridgeTable, facilitating tables for different card games.
 
 
-	def __init__(self, name):
-		self.dealer   = Seat.North  # Rotate around the table for each deal.
-		self.deck     = Deck()
-		self.game     = None
-		self.name     = name
-		self.observers = {}  # For each watching user name, its Listener object.
-		self.players  = dict.fromkeys(Seat, None)
-		self.scoring  = scoreDuplicate  # A function.
-
-
-	def playerAdd(self, username, seat):
-		"""Allocates seat to player if:
+	def __init__(self, name, server):
+		self.name = name
+		self.server = server
 		
-		- player is watching the table.
-		- player is not already playing at the table.
-		- the specified seat is empty.
-		"""
-		if username not in self.observers:	# Not watching table.
-			raise TableError(Error.COMMAND_UNAVAILABLE)
-		elif username in self.players.values():	# Already playing at table.
-			raise TableError(Error.COMMAND_UNAVAILABLE)
-		elif self.players[seat] is not None:	# Seat occupied.
-			raise TableError(Error.COMMAND_UNAVAILABLE)
-		else:
-			self.players[seat] = username
-			self.informWatchers(Event.TABLE_PLAYERSITS, username, seat)
-		# TODO: find somewhere better to put this code.
-		if self.game is None:
-			playerCount = len([p for p in self.players.values() if p != None])
-			if playerCount == 4:
-				self.gameStart()
+		# Set up bridge-related stuff.
+		self.dealer    = Seat.North  # Rotate around the table for each deal.
+		self.deck      = Deck()
+		self.game      = None
+		self.observers = {}  # For each observing user name, its remote listener object.
+		self.players   = dict.fromkeys(Seat, None)
+		self.scoring   = scoreDuplicate  # A function.
 
 
-	def playerRemove(self, username):
-		"""Removes player from seat."""
-		if username not in self.players.values():
-			raise TableError(Error.COMMAND_UNAVAILABLE)
-		else:
-			seat = self.getSeatForPlayer(username)
+# Observer and player methods.
+
+
+	def addObserver(self, username, listener):
+		"""Adds user to list of observers."""
+		self.observers[username] = listener
+		self.informObservers('userJoins', username=username)
+
+
+	def removeObserver(self, username):
+		"""Removes user from list of observers."""
+		del self.observers[username]
+		
+		# If user was a player, then unseat player.
+		seat = self.getSeatForPlayer(username)
+		if seat:
 			self.players[seat] = None
-			self.informWatchers(Event.TABLE_PLAYERSTANDS, username, seat)
+			self.informObservers('playerStands', username=username, seat=seat)
+		
+		self.informObservers('userLeaves', username=username)
+		# If there are no remaining observers, we should close table.
+		if len(self.observers) == 0:
+			self.server.tableClose(self.name)
 
 
-	def gameStart(self, dealer=None, deal=None):
+	def startGame(self, dealer=None, deal=None):
 		"""Called to start a game."""
 		deal = deal or self.deck.dealRandom()
 		self.dealer = dealer or Seat[(self.dealer.index + 1) % 4]
 		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
-		self.informWatchers(Event.GAME_STARTED)
+		self.informObservers('gameStarted', self.dealer)
 
 
-	def gameEnd(self):
+	def endGame(self):
 		"""Called to terminate a game, when:
 		
 		- the bidding has been passed out without a contract.
 		- the play has been completed.
 		"""
 		# TODO: get score.
-		self.informWatchers(Event.GAME_FINISHED)
+		self.informObservers('gameEnded')
 		self.game = None
 
 
-	def gameGetHand(self, seat, viewpoint=None):
-		"""Returns the hand of seat, or False if hand is unavailable or hidden.
+# Remote methods.
 
-		If viewing player's seat is specified, then that player's ability to
-		view the hand of seat will be examined.
+
+	def view_sitPlayer(self, user, seat):
+		"""Allocates seat to user if:
+		
+		- user is not already playing at the table.
+		- the specified seat is empty.
 		"""
-		if self.game:
-			if viewpoint in (seat, None):
-				# No viewpoint specified, or viewpoint is seat.
-				return self.game.deal[seat]
-			# We now consider viewpoint, provided that bidding is complete.
-			if self.game.bidding.isComplete():
-				dummy = Seat[(self.game.play.declarer.index + 2) % 4]
-				if viewpoint is dummy:
-					# Dummy can see all hands in play.
-					return self.game.deal[seat]
-				elif seat is dummy and self.game.play.tricks[0].cardsPlayed() > 0:
-					# Declarer and defenders can see dummy's hand after first card is played.
-					return self.game.deal[seat]
-			raise TableError(Error.GAME_UNAVAILABLE)  # Hidden hand.
+		self.validateType(seat, Seat)
+		if perspective.name in self.players.values():  # User already playing.
+			raise DeniedTableRequest()
+		elif self.players[seat] is not None:  # Seat occupied.
+			raise DeniedTableRequest()
+		
+		self.players[seat] = user.name
+		self.informObservers('playerSits', username=user.name, seat=seat)
+		
+		# If all seats filled, and no game is currently running, start a game.
+		if self.game is None and len([p for p in self.players.values() if p != None]) == 4:
+			self.gameStart()
+
+
+	def view_standPlayer(self, user):
+		"""Removes user from seat, provided user occupies seat."""
+		seat = self.getSeatForPlayer(user.name)
+		if seat is None:  # User not playing.
+			raise DeniedTableRequest()
+		
+		self.players[seat] = None
+		self.informObservers('playerStands', username=user.name, seat=seat)
+
+
+	def view_getHand(self, user, seat):
+		"""Returns the hand of player at seat, or DeniedRequest if hand is hidden.
+		
+		If user is a player, then their ability to view the hand will be examined.
+		"""
+		self.validateType(seat, Seat)
+		if self.game is None:
+			raise DeniedTableRequest()  # unavailable
+		
+		# If user is not a player, then userSeat == None.
+		userSeat = self.getSeatForPlayer(user.name)
+		
+		if userSeat == None or userSeat == seat:
+			return self.game.deal[seat]  # Player can see their own hand.
+		if not self.game.bidding.isComplete():
+			raise TableDeniedRequest()  # Bidding; no player can see another hand.
+		
+		dummy = Seat[(self.game.play.declarer.index + 2) % 4]
+		if userSeat == dummy:
+			return self.game.deal[seat]  # Play; dummy can see all hands.
+		elif seat == dummy and len(self.game.play.tricks[0].cardsPlayed()) > 0:
+			# Declarer and defenders can see dummy's hand after first card played.
+			return self.game.deal[seat]
 		else:
-			raise TableError(Error.COMMAND_UNAVAILABLE)
+			raise TableDeniedRequest()
 
 
-	def gameMakeCall(self, player, call):
-		"""Player makes call."""
-		seat = self.getSeatForPlayer(player)
-		if not seat:  # Invalid player.
-			raise TableError(Error.COMMAND_UNAVAILABLE)
-
-		try:  # Trap a GameError.
+	def view_makeCall(self, user, call):
+		""""""
+		self.validateType(call, Call)
+		if self.game is None:
+			raise TableDeniedRequest()
+		seat = self.getSeatForPlayer(user.name)
+		if seat is None:  # User not playing.
+			raise DeniedTableRequest()
+		
+		try:
 			self.game.makeCall(seat, call)
 		except GameError, error:
-			raise TableError(error)
-
-		self.informWatchers(Event.GAME_CALLMADE, seat, call)
+			raise TableDeniedRequest(error)
+		
+		self.informObservers('gameCallMade', seat=seat, call=call)
 		# Check for contract or end of game.
 		if self.game.bidding.isPassedOut():
 			self.gameEnd()
 		elif self.game.bidding.isComplete():
 			contract = self.game.bidding.contract()
-			self.informWatchers(Event.GAME_CONTRACTAGREED, contract)
+			self.informObservers('gameContract', contract=contract)
 
 
-	def gamePlayCard(self, player, card):
-		"""Player plays card."""
-		if player not in self.players.values() or self.game is None:
-			raise TableError(Error.COMMAND_UNAVAILABLE)
-		seat = self.getSeatForPlayer(player)
+	def view_playCard(self, user, card):
+		"""Player in seat plays card."""
+		self.validateType(card, Card)
+		if self.game is None:
+			raise TableDeniedRequest()
+		seat = self.getSeatForPlayer(user.name)
+		if seat is None:  # User not playing.
+			raise DeniedTableRequest()
+		
 		try:
 			self.game.playCard(seat, card)
-			self.informWatchers(Event.GAME_CARDPLAYED, seat, card)
-			# Check for end of game.
-			if self.game.play.isComplete():
-				self.gameEnd()
 		except GameError, error:
-			raise TableError(error)
+			raise TableDeniedRequest(error)
+		
+		self.informObservers('gameCardPlayed', seat=seat, card=card)
+		# Check for end of game.
+		if self.game.play.isComplete():
+			self.gameEnd()
 
 
-	def gameTurn(self):
+	def view_whoseTurn(self, user):
 		"""Return the seat that is next to play."""
 		if self.game:
 			return self.game.whoseTurn()
 		else:
-			raise TableError(Error.COMMAND_UNAVAILABLE)
+			raise TableDeniedRequest() #Error.COMMAND_UNAVAILABLE)
 
 
-# Utility functions.
+# Utility methods.
 
 
 	def getSeatForPlayer(self, username):
@@ -171,8 +214,17 @@ class BridgeTable:
 		return ([seat for seat, player in self.players.items() if player==username] or [None])[0]
 
 
-	def informWatchers(self, eventName, *args):
-		"""For each given user, calls specified event with provided args."""
+	def informObservers(self, eventName, **kwargs):
+		"""For each observer, calls event handler with provided kwargs."""
+		# Filter out observers with lost connections.
 		for observer in self.observers.values():
-			event = getattr(observer, eventName)
-			event(*args)
+			observer.callRemote(eventName, **kwargs)
+
+
+	def validateType(self, object, expected):
+		"""Validates the type of a given parameter against what is expected."""
+		if isinstance(object, expected) or object in expected:
+			return
+		else:
+			raise IllegalTableRequest(Error.COMMAND_PARAMSPEC)
+
