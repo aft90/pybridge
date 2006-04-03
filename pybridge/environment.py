@@ -28,7 +28,14 @@ if os.path.exists(os.path.join(BASEDIR, 'share')):
 else:
 	DATADIR = BASEDIR
 
-CLIENT_SETTINGS_PATH = os.path.join(HOME, '.pybridge', 'client.cfg')
+# TODO: This will fail on Win32!
+
+CONFIG_DIR = os.path.join(HOME, '.pybridge')
+CLIENT_SETTINGS_PATH = os.path.join(CONFIG_DIR, 'client.cfg')
+USER_DB = os.path.join(CONFIG_DIR, 'users.db')
+
+if not os.path.isdir(CONFIG_DIR):
+	os.makedirs(CONFIG_DIR)
 
 DOCS_DIR = "."
 GLADE_DIR = "glade"
@@ -36,6 +43,9 @@ PIXMAPS_DIR = "pixmaps"
 
 
 class Environment:
+
+	def find_datafile(self, name):
+		return os.path.join(HOME, '.pybridge', name)
 
 	def find_doc(self, name):
 		return os.path.join(DATADIR, DOCS_DIR, name)
