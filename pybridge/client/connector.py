@@ -16,63 +16,68 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.cred import credentials
 from twisted.internet import reactor
-from twisted.internet.protocol import ClientCreator
+from twisted.spread import pb
 
-from protocol import PybridgeClientProtocol
+from events import ClientEvents, TableEvents
 
 
 class Connector:
 	""""""
 
-	connection = None
-
 	callbackSuccess = None
 	callbackFailure = None
 
 
-	def connect(self, host, port):
-		"""Attempt to connect to PyBridge server."""
-		if self.connection is None:
-			creator = ClientCreator(reactor, PybridgeClientProtocol)
-			defer = creator.connectTCP(host, port)
-			defer.addCallbacks(self._connectSuccess, self._connectFailure)
+	def __init__(self):
+		self.avatar = None
+		self.factory = pb.PBClientFactory()
+		self.tables = {}
 
 
-	def disconnect(self):
-		"""Disconnect from PyBridge server."""
-		if self.connection is not None:
-			self.connection.cmdQuit()
-			self.connection = None
-
-
-	def setSuccess(self, callback):
-		"""Set a method to be called when connecting succeeds."""
-		self.callbackSuccess = callback
-
-
-	def setFailure(self, callback):
-		"""Sets a method to be called when connecting fails."""
-		self.callbackFailure = callback
-
-
-	def _connectSuccess(self, connection):
-		self.connection = connection
+	def _connect(self, host, port, username, password):
+		"""Connect to server."""
 		
-		def protocolResult(signal, reply):
-			from pybridge.strings import CommandReply
-			if signal == CommandReply.ACKNOWLEDGE:
-				self.callbackSuccess()
-			else:
-				self.callbackFailure("Protocol verification failed.")
+		def connected(avatar):
+			self.avatar = avatar
+#			return avatar
+	
+		reactor.connectTCP(host, port, self.factory)
+		creds = credentials.UsernamePassword(username, password)
+		d = self.factory.login(creds, ClientEvents())
+		d.addCallback(connected)
 		
-		# Verify protocol version transparently.
-		self.connection.cmdProtocol(protocolResult)
+		return d		
 
 
-	def _connectFailure(self, reason):
-		error = reason.getErrorMessage()
-		self.callbackFailure(error)
+	def login(self, host, port, username, password):
+		""""""
+		d = self._connect(host, port, username, password)
+		return d
+
+
+	def register(self, host, port, username, password):
+		"""Registers username/password on server."""
+		
+		def try_register(avatar):
+			d = self.avatar.callRemote('register', username, password)
+			return d
+		
+		d = self._connect(host, port, '', '')  # Anonymous login.
+		d.addCallback(try_register)
+		return d
+
+
+	def getTableEventHandler(self):
+		return TableEvents
+
+
+	def send(self, command, **kwargs):  # request
+		"""Issues request to server."""
+		if self.avatar:
+			defer = self.avatar.callRemote(command, **kwargs)
+			return defer
 
 
 connector = Connector()
