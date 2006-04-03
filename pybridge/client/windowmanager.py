@@ -47,9 +47,9 @@ class WindowManager:
 			elif windowname == 'window_bidbox':
 				from window_bidbox import WindowBidbox
 				instance = WindowBidbox()
-			elif windowname == 'window_calls':
-				from window_calls import WindowCalls
-				instance = WindowCalls()
+			elif windowname == 'window_game':
+				from window_game import WindowGame
+				instance = WindowGame()
 			elif windowname == 'window_main':
 				from window_main import WindowMain
 				instance = WindowMain()
@@ -58,6 +58,7 @@ class WindowManager:
 				instance = WindowTablelisting()
 			
 			self._instances[windowname] = instance
+			return instance
 
 
 	def terminate(self, windowname):
@@ -67,7 +68,6 @@ class WindowManager:
 
 	def shutdown(self):
 		"""Bring everything to a stop, in a clean fashion."""
-		
 		# Save settings.
 		settings.write(file(CLIENT_SETTINGS_PATH, 'w'))
 		

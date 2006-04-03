@@ -17,14 +17,20 @@
 
 
 import gtk
-from wrapper import WindowWrapper
+from wrapper import GladeWrapper
 
-from pybridge.common.bidding import Call
+#from pybridge.common.bidding import Call
+#from pybridge.common.enumeration import CallType, Denomination, Level
 
 
-class WindowBidbox(WindowWrapper):
+#LEVELS = {'1' : Level.One, '2' : Level.Two, '3' : Level.Three, '4' : Level.Four, '5' : Level.Five, '6' : Level.Six, '7' : Level.Seven}
 
-	window_name = 'window_bidbox'
+#DENOMS = {}
+
+
+class WindowBidbox(GladeWrapper):
+
+	glade_name = 'window_bidbox'
 
 
 	def new(self):
@@ -33,9 +39,20 @@ class WindowBidbox(WindowWrapper):
 
 	def update_from_bidding(self, bidding):
 		"""Enables/disables call buttons based on bidding object."""
-		
+		pass
 
 
-	def make_call(self, *args):
+	def on_call_clicked(self, widget, *args):
 		"""Builds a call object and submits."""
-		print args
+		calltext = widget.get_name()
+		if calltext == 'pass':
+			call = Call(CallType.Pass)
+		elif calltext == 'double':
+			call = Call(CallType.Double)
+		elif calltext == 'redouble':
+			call = Call(CallType.Redouble)
+		else:  # Call is a bid, and calltext starts with 'bid'.
+			bidLevel = int(calltext[3])
+			bidDenom = None
+		
+		print widget, args

@@ -44,7 +44,13 @@ class WindowTablelisting(GladeWrapper):
 				self.add_table(tablename)
 		
 		# Get list of open tables.
-		connector.connection.cmdList('tables', callback)
+		defer = connector.send('listTables')
+		defer.addCallback(self.build_listing)
+
+
+	def build_listing(self, tablenames):
+		for tablename in tablenames:
+			self.add_table(tablename)
 
 
 	def add_table(self, tablename):
@@ -73,9 +79,16 @@ class WindowTablelisting(GladeWrapper):
 
 
 	def on_table_listing_row_activated(self, widget, *args):
+		
+		def success(reference):
+			connector.tables[tablename] = reference
+			windowmanager.get('window_main').join_table(tablename)
+		
 		iter = self.table_store.get_iter(args[0])
 		tablename = self.table_store.get_value(iter, 0)
-		connector.connection.cmdObserve(tablename)
+		events = connector.getTableEventHandler()(tablename)
+		defer = connector.send('joinTable', tablename=tablename, listener=events)
+		defer.addCallback(success)
 
 
 	def on_table_listing_show(self, widget, *args):
