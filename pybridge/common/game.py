@@ -20,10 +20,7 @@ from deck import Card, Deck
 from bidding import Call, Bidding
 from play import Trick, Play
 
-from pybridge.strings import Error
-
-
-class GameError(Exception): pass
+from pybridge.failure import *
 
 
 class Game:
@@ -53,30 +50,30 @@ class Game:
 	def makeCall(self, seat, call):
 		"""Makes call from seat."""
 		if self.bidding.isComplete():
-			raise GameError(Error.GAME_UNAVAILABLE)
-
+			raise RequestUnavailableError()
+		
 		if self.bidding.whoseTurn() is not seat:
-			raise GameError(Error.GAME_OUTOFTURN)
+			raise GameOutOfTurnError()
 		elif not self.bidding.validCall(call):
-			raise GameError(Error.GAME_INVALIDCALL)
-
+			raise GameInvalidCallError()
+		
 		self.bidding.addCall(call)
 			
 
 	def playCard(self, seat, card):
 		"""Plays card from seat."""
 		if not self.bidding.isComplete() or self.bidding.isPassedOut():
-			raise GameError(Error.GAME_UNAVAILABLE)
+			raise RequestUnavailableError()
 		elif not self.play:
 			self._startPlay()  # Kickstart play session.
 		elif self.play.isComplete():
-			raise GameError(Error.GAME_UNAVAILABLE)
-
+			raise RequestUnavailableError()
+		
 		hand = self.deal[seat]
 		if self.play.whoseTurn() is not seat:
-			raise GameError(Error.GAME_OUTOFTURN)
+			raise GameOutOfTurnError()
 		elif not self.play.validCard(card, hand, seat):
-			raise GameError(Error.GAME_INVALIDCARD)
+			raise GameInvalidCardError()
 		
 		self.play.playCard(card)
 
@@ -88,17 +85,18 @@ class Game:
 		- play stage is complete.
 		"""
 		if not self.isComplete():
-			raise GameError(Error.GAME_UNAVAILABLE)
+			raise RequestUnavailableError()
 		elif self.bidding.isPassedOut():
 			return 0  # A passed out deal does not score.
 		else:
 			contract = self.bidding.contract()
-			declarer, dummy = contract['declarer'], Seat.Seats[(Seat.Seats.index(contract['declarer']) + 2) % 4]
-			vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + (self.vulnEW and declarer in (Seat.West, Seat.East))
+			declarer, dummy = contract['declarer'], Seat[(contract['declarer'].index+2)%4]
+			vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + \
+			             (self.vulnEW and declarer in (Seat.West, Seat.East))
 			
-			result = {'contract' : self.bidding.contract(),
-			        'tricksMade' : self.play.wonTricks(declarer) + self.play.wonTricks(dummy),
-			        'vulnerable' : vulnerable, }
+			result = {'contract'   : self.bidding.contract(),
+			          'tricksMade' : self.play.wonTricks(declarer) + self.play.wonTricks(dummy),
+			          'vulnerable' : vulnerable, }
 			return self.scoring(result)
 
 

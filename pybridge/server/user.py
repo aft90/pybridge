@@ -21,15 +21,10 @@ from twisted.spread import pb
 
 from database import database
 from pybridge.enum import Enum
-from pybridge.strings import Error
-
-class DeniedRequest(pb.Error): pass
-class IllegalRequest(pb.Error): pass
+from pybridge.failure import *
 
 
 class User(pb.Avatar):
-
-#	__implements__ = IPerspective
 
 
 	def __init__(self, name):
@@ -70,12 +65,12 @@ class User(pb.Avatar):
 
 	def perspective_hostTable(self, tablename, listener):
 		"""Creates a new table."""
-		self.validateType(tablename, str)
-
-		if tablename in self.server.tables:
-			raise DeniedRequest(Error.TABLE_EXISTS)
+		if not isinstance(tablename, str):
+			raise IllegalParameterError()
 		elif not(0 < len(tablename) <= 20) or re.search("[^A-Za-z0-9_ ]", tablename):
-			raise DeniedRequest(Error.TABLE_BADNAME)
+			raise IllegalNameError()
+		elif tablename in self.server.tables:
+			raise TableNameExistsError()
 		
 		self.server.tableOpen(tablename)
 		return self.perspective_joinTable(tablename, listener)  # Force join.
@@ -83,12 +78,12 @@ class User(pb.Avatar):
 
 	def perspective_joinTable(self, tablename, listener):
 		"""Joins an existing table."""
-		self.validateType(tablename, str)
-		
-		if tablename not in self.server.tables:
-			raise DeniedRequest(Error.TABLE_UNKNOWN)
-		elif tablename in self.tables:
-			raise DeniedRequest()
+		if not isinstance(tablename, str):
+			raise IllegalParameterError()
+		elif tablename not in self.server.tables:
+			raise TableNameUnknownError()
+		elif tablename in self.tables:  # Already watching table.
+			raise TableObservingError()
 		
 		table = self.server.tables[tablename]
 		table.addObserver(self.name, listener)
@@ -98,10 +93,10 @@ class User(pb.Avatar):
 
 	def perspective_leaveTable(self, tablename):
 		"""Leaves a table."""
-		self.validateType(tablename, str)
-		
-		if tablename not in self.tables:
-			raise DeniedRequest()
+		if not isinstance(tablename, str):
+			raise IllegalParameterError()
+		elif tablename not in self.tables:  # Not watching table.
+			raise TableObservingError()
 		
 		table = self.tables[tablename]
 		table.removeObserver(self.name)
@@ -114,10 +109,10 @@ class User(pb.Avatar):
 
 	def perspective_getTableInfo(self, tablename):
 		"""Request information on the state of a specified table."""
-		self.validateType(tablename, str)
-
+		if not isinstance(tablename, str):
+			raise IllegalParameterError()
 		if tablename not in self.server.tables:
-			raise DeniedRequest(Error.TABLE_UNKNOWN)
+			raise TableNameUnknownError()
 		
 		table = self.server.tables[tablename]
 		return {'players'   : [(str(k), v) for k, v in table.players.items()],
@@ -125,24 +120,15 @@ class User(pb.Avatar):
 		        'inGame'    : table.game != None, }
 
 
-# Utility methods.
-
-
-	def validateType(self, object, expected):
-		"""Validates the type of a given parameter against what is expected."""
-		if isinstance(object, expected) or object in expected:
-			return
-		else:
-			raise IllegalRequest(Error.COMMAND_PARAMSPEC)
-
-
-
 class AnonymousUser(pb.Avatar):
-
-#	__implements__ = IPerspective
 
 
 	def perspective_register(self, username, password):
 		"""Register a user account with given username and password."""
+		if not isinstance(username, str):
+			raise IllegalParameterError()
+		elif not isinstance(password, str):
+			raise IllegalParameterError()
+		# TODO: should this be mediated through the server?
 		return database.addUser(username, password=password)
 

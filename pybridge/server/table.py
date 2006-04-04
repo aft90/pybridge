@@ -20,22 +20,18 @@ from twisted.spread import pb
 
 from pybridge.common.call import Call
 from pybridge.common.deck import Deck
-from pybridge.common.game import Game, GameError
+from pybridge.common.game import Game
 from pybridge.common.scoring import scoreDuplicate
 
 # Enumerations.
 from pybridge.common.deck import Seat
 
-from pybridge.strings import Error
-
-
-class DeniedTableRequest(pb.Error): pass
-class IllegalTableRequest(pb.Error): pass
+from pybridge.failure import *
 
 
 class BridgeTable(pb.Viewable):
 	"""A bridge table sits four players."""
-	# TODO: perhaps subclass BridgeTable, facilitating tables for different card games.
+	# TODO: perhaps subclass Table, facilitating tables for different card games.
 
 
 	def __init__(self, name, server):
@@ -104,11 +100,12 @@ class BridgeTable(pb.Viewable):
 		- user is not already playing at the table.
 		- the specified seat is empty.
 		"""
-		self.validateType(seat, Seat)
-		if perspective.name in self.players.values():  # User already playing.
-			raise DeniedTableRequest()
+		if seat not in Seat:
+			raise InvalidParameterError()
+		elif user.name in self.players.values():  # User already playing.
+			raise TablePlayingError()
 		elif self.players[seat] is not None:  # Seat occupied.
-			raise DeniedTableRequest()
+			raise TableSeatOccupiedError()
 		
 		self.players[seat] = user.name
 		self.informObservers('playerSits', username=user.name, seat=seat)
@@ -122,7 +119,7 @@ class BridgeTable(pb.Viewable):
 		"""Removes user from seat, provided user occupies seat."""
 		seat = self.getSeatForPlayer(user.name)
 		if seat is None:  # User not playing.
-			raise DeniedTableRequest()
+			raise TablePlayingError()
 		
 		self.players[seat] = None
 		self.informObservers('playerStands', username=user.name, seat=seat)
@@ -133,9 +130,10 @@ class BridgeTable(pb.Viewable):
 		
 		If user is a player, then their ability to view the hand will be examined.
 		"""
-		self.validateType(seat, Seat)
-		if self.game is None:
-			raise DeniedTableRequest()  # unavailable
+		if seat not in Seat:
+			raise InvalidParameterError()
+		elif self.game is None:
+			raise RequestUnavailableError()
 		
 		# If user is not a player, then userSeat == None.
 		userSeat = self.getSeatForPlayer(user.name)
@@ -143,7 +141,7 @@ class BridgeTable(pb.Viewable):
 		if userSeat == None or userSeat == seat:
 			return self.game.deal[seat]  # Player can see their own hand.
 		if not self.game.bidding.isComplete():
-			raise TableDeniedRequest()  # Bidding; no player can see another hand.
+			raise GameHandHiddenError()  # Bidding; no player can see another hand.
 		
 		dummy = Seat[(self.game.play.declarer.index + 2) % 4]
 		if userSeat == dummy:
@@ -152,22 +150,20 @@ class BridgeTable(pb.Viewable):
 			# Declarer and defenders can see dummy's hand after first card played.
 			return self.game.deal[seat]
 		else:
-			raise TableDeniedRequest()
+			raise GameHandHiddenError()
 
 
 	def view_makeCall(self, user, call):
 		""""""
-		self.validateType(call, Call)
+		if not isinstance(call, Call):
+			raise IllegalParameterError()
 		if self.game is None:
-			raise TableDeniedRequest()
+			raise RequestUnavailableError()
 		seat = self.getSeatForPlayer(user.name)
 		if seat is None:  # User not playing.
-			raise DeniedTableRequest()
+			raise TablePlayingError()
 		
-		try:
-			self.game.makeCall(seat, call)
-		except GameError, error:
-			raise TableDeniedRequest(error)
+		self.game.makeCall(seat, call)  # May raise a game error.
 		
 		self.informObservers('gameCallMade', seat=seat, call=call)
 		# Check for contract or end of game.
@@ -180,17 +176,16 @@ class BridgeTable(pb.Viewable):
 
 	def view_playCard(self, user, card):
 		"""Player in seat plays card."""
-		self.validateType(card, Card)
+		if not isinstance(card, Card):
+			raise InvalidParameterError()
+		
 		if self.game is None:
-			raise TableDeniedRequest()
+			raise RequestUnavailableError()
 		seat = self.getSeatForPlayer(user.name)
 		if seat is None:  # User not playing.
-			raise DeniedTableRequest()
+			raise TablePlayingError()
 		
-		try:
-			self.game.playCard(seat, card)
-		except GameError, error:
-			raise TableDeniedRequest(error)
+		self.game.playCard(seat, card)  # May raise a game error.
 		
 		self.informObservers('gameCardPlayed', seat=seat, card=card)
 		# Check for end of game.
@@ -200,10 +195,9 @@ class BridgeTable(pb.Viewable):
 
 	def view_whoseTurn(self, user):
 		"""Return the seat that is next to play."""
-		if self.game:
-			return self.game.whoseTurn()
-		else:
-			raise TableDeniedRequest() #Error.COMMAND_UNAVAILABLE)
+		if self.game is None:
+			raise RequestUnavailableError()
+		return self.game.whoseTurn()
 
 
 # Utility methods.
@@ -219,12 +213,4 @@ class BridgeTable(pb.Viewable):
 		# Filter out observers with lost connections.
 		for observer in self.observers.values():
 			observer.callRemote(eventName, **kwargs)
-
-
-	def validateType(self, object, expected):
-		"""Validates the type of a given parameter against what is expected."""
-		if isinstance(object, expected) or object in expected:
-			return
-		else:
-			raise IllegalTableRequest(Error.COMMAND_PARAMSPEC)
 
