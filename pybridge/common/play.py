@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from call import Strain
 from deck import Seat, Suit
 
 
@@ -82,7 +83,7 @@ class Play:
 		assert(declarer in Seat)
 		self.declarer  = declarer
 		self.tricks    = []
-		assert(trumpSuit in Strains)
+		assert(trumpSuit in Strain)
 		self.trumpSuit = trumpSuit
 		# Leader of first trick is declarer's left-hand opponent.
 		self._newTrick(leader = Seat[(self.declarer.index() + 1) % 4])

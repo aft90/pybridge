@@ -16,8 +16,8 @@
 # Foundation Inc. 51 Franklin Street Fifth Floor Boston MA 02110-1301 USA.
 
 
-from deck import Card, Deck
 from bidding import Call, Bidding
+from deck import Card, Deck, Seat
 from play import Trick, Play
 
 from pybridge.failure import *
