@@ -29,6 +29,7 @@ class User(pb.Avatar):
 
 	def __init__(self, name):
 		self.name = name  # User name.
+		self.server = None  # Set by Realm.
 		self.tables = {}  # For each joined table name, its instance.
 
 
@@ -66,7 +67,7 @@ class User(pb.Avatar):
 	def perspective_hostTable(self, tablename, listener):
 		"""Creates a new table."""
 		if not isinstance(tablename, str):
-			raise IllegalParameterError()
+			raise InvalidParameterError()
 		elif not(0 < len(tablename) <= 20) or re.search("[^A-Za-z0-9_ ]", tablename):
 			raise IllegalNameError()
 		elif tablename in self.server.tables:
@@ -115,7 +116,11 @@ class User(pb.Avatar):
 			raise TableNameUnknownError()
 		
 		table = self.server.tables[tablename]
-		return {'players'   : [(str(k), v) for k, v in table.players.items()],
+		players = {}  # Convert seat enumerations to strings.
+		for seat, username in table.players.items():
+			players[str(seat)] = username
+		
+		return {'players'   : players,
 		        'observers' : table.observers.keys(),
 		        'inGame'    : table.game != None, }
 

@@ -64,7 +64,7 @@ class BridgeTable(pb.Viewable):
 		seat = self.getSeatForPlayer(username)
 		if seat:
 			self.players[seat] = None
-			self.informObservers('playerStands', username=username, seat=seat)
+			self.informObservers('playerStands', username=username, seat=str(seat))
 		
 		self.informObservers('userLeaves', username=username)
 		# If there are no remaining observers, we should close table.
@@ -77,7 +77,7 @@ class BridgeTable(pb.Viewable):
 		deal = deal or self.deck.dealRandom()
 		self.dealer = dealer or Seat[(self.dealer.index + 1) % 4]
 		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
-		self.informObservers('gameStarted', self.dealer)
+		self.informObservers('gameStarted', dealer=str(self.dealer))
 
 
 	def endGame(self):
@@ -104,15 +104,17 @@ class BridgeTable(pb.Viewable):
 			raise InvalidParameterError()
 		elif user.name in self.players.values():  # User already playing.
 			raise TablePlayingError()
-		elif self.players[seat] is not None:  # Seat occupied.
+		
+		seat = getattr(Seat, seat)
+		if self.players[seat] is not None:  # Seat occupied.
 			raise TableSeatOccupiedError()
 		
 		self.players[seat] = user.name
-		self.informObservers('playerSits', username=user.name, seat=seat)
+		self.informObservers('playerSits', username=user.name, seat=str(seat))
 		
 		# If all seats filled, and no game is currently running, start a game.
 		if self.game is None and len([p for p in self.players.values() if p != None]) == 4:
-			self.gameStart()
+			self.startGame()
 
 
 	def view_standPlayer(self, user):
@@ -122,7 +124,7 @@ class BridgeTable(pb.Viewable):
 			raise TablePlayingError()
 		
 		self.players[seat] = None
-		self.informObservers('playerStands', username=user.name, seat=seat)
+		self.informObservers('playerStands', username=user.name, seat=str(seat))
 
 
 	def view_getHand(self, user, seat):
@@ -156,7 +158,7 @@ class BridgeTable(pb.Viewable):
 	def view_makeCall(self, user, call):
 		""""""
 		if not isinstance(call, Call):
-			raise IllegalParameterError()
+			raise InvalidParameterError()
 		if self.game is None:
 			raise RequestUnavailableError()
 		seat = self.getSeatForPlayer(user.name)
@@ -168,7 +170,7 @@ class BridgeTable(pb.Viewable):
 		self.informObservers('gameCallMade', seat=seat, call=call)
 		# Check for contract or end of game.
 		if self.game.bidding.isPassedOut():
-			self.gameEnd()
+			self.endGame()
 		elif self.game.bidding.isComplete():
 			contract = self.game.bidding.contract()
 			self.informObservers('gameContract', contract=contract)
@@ -190,7 +192,7 @@ class BridgeTable(pb.Viewable):
 		self.informObservers('gameCardPlayed', seat=seat, card=card)
 		# Check for end of game.
 		if self.game.play.isComplete():
-			self.gameEnd()
+			self.endGame()
 
 
 	def view_whoseTurn(self, user):
@@ -205,7 +207,10 @@ class BridgeTable(pb.Viewable):
 
 	def getSeatForPlayer(self, username):
 		"""Returns seat of player username, or None."""
-		return ([seat for seat, player in self.players.items() if player==username] or [None])[0]
+		for seat, player in self.players.items():
+			if player == username:
+				return seat
+		return None
 
 
 	def informObservers(self, eventName, **kwargs):
