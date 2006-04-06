@@ -65,9 +65,9 @@ class WindowMain(GladeWrapper):
 		self.spacing_y = int(self.card_height * 0.25)
 		
 		self.card_table.set_size_request(width=720, height=540)
-		self.card_table.connect("configure_event", self.card_table_configure)
-		self.card_table.connect("expose_event", self.card_table_expose)
-		self.card_table.connect("button_press_event", self.card_table_button_press)
+		self.card_table.connect('configure_event', self.card_table_configure)
+		self.card_table.connect('expose_event', self.card_table_expose)
+		self.card_table.connect('button_press_event', self.card_table_button_press)
 		self.card_table.add_events(gtk.gdk.BUTTON_PRESS_MASK)
 		
 		windowmanager.launch('window_tablelisting')
@@ -186,17 +186,31 @@ class WindowMain(GladeWrapper):
 		return True  # Button press event is expected to return true.
 
 
+# Some other things.
+
 
 	def join_table(self, tablename):
 		"""Actions to perform when user joins a table."""
 		self.button_newtable.set_property('sensitive', False)
 		self.menuitem_newtable.set_property('sensitive', False)
+		windowmanager.launch('window_game').setup(tablename)
 
 
 	def leave_table(self, tablename):
 		"""Actions to perform when user leaves a table."""
 		self.button_newtable.set_property('sensitive', True)
-		self.menuitem_newtable.set_property('sensitive', True)	
+		self.menuitem_newtable.set_property('sensitive', True)
+		windowmanager.destroy('window_game')
+
+
+	def game_started(self):
+		""""""
+		
+		def setup_hand(hand):
+			print hand
+		
+		# Are we playing?
+		connection.callTable('getHand').addCallback()
 
 
 	# Signal handlers

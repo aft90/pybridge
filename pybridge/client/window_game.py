@@ -19,12 +19,19 @@
 import gtk
 from wrapper import GladeWrapper
 
+from connector import connector
+
 from pybridge.common.call import Bid, Pass, Double, Redouble
 
 # Enumerations.
 from pybridge.common.call import Level, Strain
 from pybridge.common.deck import Seat
 
+
+SEATS = {Seat.North : 'button_north',
+         Seat.East  : 'button_east',
+         Seat.South : 'button_south',
+         Seat.West  : 'button_west', }
 
 CALLTYPE_SYMBOLS = {Pass : 'pass', Double : 'dbl', Redouble : 'rdbl', }
 
@@ -41,40 +48,46 @@ class WindowGame(GladeWrapper):
 
 
 	def new(self):
+		self.playing = None
+		
 		self.call_store = gtk.ListStore(str, str, str, str)  # Four seats.
 		self.tree_bidding.set_model(self.call_store)
 		
-		# Build columns.
+		# Build columns for bidding view.
 		renderer = gtk.CellRendererText()
-		for index, title in enumerate(Seat):
-			column = gtk.TreeViewColumn(str(title), renderer, text=index)
+		for index, seat in enumerate(Seat):
+			column = gtk.TreeViewColumn(str(seat), renderer, text=index)
 			self.tree_bidding.append_column(column)
+
+
+	def setup(self, tablename):
+		self.tablename = tablename
+#		self.window.set_title(tablename)
 		
-		# TEMP TEMP TEMP
-		from pybridge.common.bidding import Bidding
-		x = Bidding(Seat.West)
-		x.addCall(Pass())
-		x.addCall(Bid(Level.One, Strain.Spade))
-		x.addCall(Bid(Level.One, Strain.NoTrump))
-		x.addCall(Double())
-		x.addCall(Redouble())
-		x.addCall(Bid(Level.Three, Strain.Club))
-		x.addCall(Double())
-		x.addCall(Pass())
-		x.addCall(Pass())
-		x.addCall(Pass())
-		# TEMP TEMP TEMP.
-		self.update_bidding(x)
+		def setup_players(info):
+			for seat, username in info['players'].items():
+				seat = getattr(Seat, seat)
+				getattr(self, SEATS[seat]).set_property('sensitive', username==None)
+		
+		connector.callServer('getTableInfo', tablename=tablename).addCallback(setup_players)
 
 
-	def add_call(self, call):
-		""""""
-		pass
+	def player_sits(self, username, seat):
+		button = getattr(self, SEATS[seat])
+		button.set_active(True)
+		button.set_property('sensitive', False)
+
+
+	def player_stands(self, username, seat):
+		button = getattr(self, SEATS[seat])
+		button.set_active(False)
+		# If we are not a player, enable seat.
+		button.set_property('sensitive', self.playing==None)
 
 
 	def update_bidding(self, bidding):
 		""""""
-		
+		# If not finished, take the last call and add it on.
 		self.call_store.clear()
 		iter = self.call_store.append()  # Add first row.
 		
@@ -96,3 +109,25 @@ class WindowGame(GladeWrapper):
 
 	def on_window_game_delete_event(self, widget, *args):
 		return True
+
+
+	def on_seat_clicked(self, widget, *args):
+
+		def seated(arg):  # Disable all seat buttons except the one clicked.
+			self.playing = seat
+			for buttonname in SEATS.values():
+				button = getattr(self, buttonname)
+				button.set_property('sensitive', button==widget)
+		
+		def unseated(arg):  # Enable all seat buttons that are not seated.
+			self.playing = None
+			for buttonname in SEATS.values():
+				button = getattr(self, buttonname)
+				button.set_property('sensitive', not button.get_active())
+		
+		if widget.get_active():
+			seat = [k for k, v in SEATS.items() if v==widget.get_name()][0]
+			connector.callTable('sitPlayer', seat=str(seat)).addCallback(seated)
+		else:
+			connector.callTable('standPlayer').addCallback(unseated)
+

@@ -39,41 +39,33 @@ class WindowTablelisting(GladeWrapper):
 			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
 			self.table_listing.append_column(column)
 		
-		def callback(signal, data):
-			for tablename in data:
-				self.add_table(tablename)
-		
 		# Get list of open tables.
-		defer = connector.send('listTables')
-		defer.addCallback(self.build_listing)
+		connector.callServer('listTables').addCallback(self.add_tables)
 
 
-	def build_listing(self, tablenames):
-		for tablename in tablenames:
-			self.add_table(tablename)
-
-
-	def add_table(self, tablename):
+	def add_tables(self, tablenames):
 		"""Adds a table to the table listing."""
-		row = (tablename, '')
-		iter = self.table_store.append(row)
+		for tablename in tablenames:
+			row = (tablename, '')
+			iter = self.table_store.append(row)
 
 
-	def remove_table(self, tablename):
+	def remove_table(self, tablenames):
 		"""Removes a table from the table listing."""
-
+		
 		def func(model, path, iter, user_data):
-			if model.get_value(iter, 0) == user_data:
+			if model.get_value(iter, 0) in user_data:
 				model.remove(iter)
-				return True
-
-		self.table_store.foreach(func, tablename)
+			return True
+		
+		self.table_store.foreach(func, tablenames)
 
 
 # Signal handlers.
 
 
 	def on_table_listing_delete_event(self, widget, *args):
+		windowmanager.get('window_main').button_tablelisting.set_active(False)
 		self.window.hide()
 		return True  # Stops deletion taking place.
 
@@ -81,20 +73,14 @@ class WindowTablelisting(GladeWrapper):
 	def on_table_listing_row_activated(self, widget, *args):
 		
 		def success(reference):
+			# Add table reference to global tables dict.
 			connector.tables[tablename] = reference
 			windowmanager.get('window_main').join_table(tablename)
 		
 		iter = self.table_store.get_iter(args[0])
 		tablename = self.table_store.get_value(iter, 0)
 		events = connector.getTableEventHandler()(tablename)
-		defer = connector.send('joinTable', tablename=tablename, listener=events)
+		defer = connector.callServer('joinTable', tablename=tablename,
+		                             listener=events)
 		defer.addCallback(success)
-
-
-	def on_table_listing_show(self, widget, *args):
-		windowmanager.get('window_main').button_tablelisting.set_active(True)
-
-
-	def on_table_listing_hide(self, widget, *args):
-		windowmanager.get('window_main').button_tablelisting.set_active(False)
 

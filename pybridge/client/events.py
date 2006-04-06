@@ -20,6 +20,9 @@ from twisted.spread import pb
 
 from windowmanager import windowmanager
 
+# Enumerations.
+from pybridge.common.deck import Seat
+
 
 class ClientEvents(pb.Referenceable):
 
@@ -31,11 +34,11 @@ class ClientEvents(pb.Referenceable):
 
 
 	def remote_tableOpened(self, tablename):
-		windowmanager.get('window_tablelisting').add_table(tablename)
+		windowmanager.get('window_tablelisting').add_tables((tablename,))
 
 
 	def remote_tableClosed(self, tablename):
-		windowmanager.get('window_tablelisting').remove_table(tablename)
+		windowmanager.get('window_tablelisting').remove_tables((tablename,))
 
 
 	def remote_userLoggedIn(self, username):
@@ -51,29 +54,31 @@ class TableEvents(pb.Referenceable):
 
 	def __init__(self, tablename):
 		self.tablename = tablename
-		self.game_window = windowmanager.launch('window_game')
-		self.game_window.window.set_title(tablename)
 
 
 	def remote_userJoins(self, username):
-		print "%s joins" % username
+		print "%s joins this table" % username
 #		if username == self.name:
-#			self.tablename = tablename
 #			windowmanager.get('window_main').join_table(tablename)
 
 
 	def remote_userLeaves(self, username):
-		print "%s leaves" % username
+		print "%s leaves this table" % username
 #		if username == self.name:
+#			windowmanager.destroy('window_game')
 #			windowmanager.get('window_main').leave_table(tablename)
 
 
 	def remote_playerSits(self, username, seat):
-		pass
+		print "player %s sits %s" % (username, seat)
+		seat = getattr(Seat, seat)
+		windowmanager.get('window_game').player_sits(username, seat)
 
 
 	def remote_playerStands(self, username, seat):
-		pass
+		print "player %s stands %s" % (username, seat)
+		seat = getattr(Seat, seat)
+		windowmanager.get('window_game').player_stands(username, seat)
 
 
 # Game events.
@@ -100,6 +105,6 @@ class TableEvents(pb.Referenceable):
 
 
 	def remote_gameStarted(self, dealer):
-		# Do we want to pass in dealer?
-		print dealer
+		#Game(dealer, deal, None, False, False)
+		print "gamestarted %s" % dealer
 

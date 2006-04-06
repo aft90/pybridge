@@ -42,6 +42,7 @@ class DialogNewtable(GladeWrapper):
 	def on_okbutton_clicked(self, widget, *args):
 		
 		def success(reference):
+			# Add table reference to global tables dict.
 			connector.tables[tablename] = reference
 			windowmanager.terminate('dialog_newtable')
 			windowmanager.get('window_main').join_table(tablename)
@@ -61,7 +62,8 @@ class DialogNewtable(GladeWrapper):
 		from events import TableEvents
 		tablename = self.entry_tablename.get_text()
 		events = connector.getTableEventHandler()(tablename)
-		defer = connector.send('hostTable', tablename=tablename, listener=events)
+		defer = connector.callServer('hostTable', tablename=tablename,
+		                             listener=events)
 		defer.addCallbacks(success, failure)
 
 

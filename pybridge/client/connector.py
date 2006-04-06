@@ -26,14 +26,11 @@ from events import ClientEvents, TableEvents
 class Connector:
 	""""""
 
-	callbackSuccess = None
-	callbackFailure = None
-
 
 	def __init__(self):
 		self.avatar = None
 		self.factory = pb.PBClientFactory()
-		self.tables = {}
+		self.tables = {}  # Remote table objects.
 
 
 	def _connect(self, host, port, username, password):
@@ -48,7 +45,12 @@ class Connector:
 		d = self.factory.login(creds, ClientEvents())
 		d.addCallback(connected)
 		
-		return d		
+		return d
+
+
+	def _failure(self, failure):
+		"""For debugging purposes."""
+		print failure, failure.getErrorMessage()
 
 
 	def login(self, host, port, username, password):
@@ -73,10 +75,20 @@ class Connector:
 		return TableEvents
 
 
-	def send(self, command, **kwargs):  # request
+	def callServer(self, requestName, **kwargs):  # request
 		"""Issues request to server."""
 		if self.avatar:
-			defer = self.avatar.callRemote(command, **kwargs)
+			defer = self.avatar.callRemote(requestName, **kwargs)
+#			defer.addErrback(self._failure)
+			return defer
+
+
+	def callTable(self, requestName, **kwargs):
+		"""Issues request to joined table."""
+		if len(self.tables) > 0:
+			table = self.tables.values()[0]
+			defer = table.callRemote(requestName, **kwargs)
+#			defer.addErrback(self._failure)
 			return defer
 
 
