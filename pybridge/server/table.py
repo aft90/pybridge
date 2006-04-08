@@ -19,6 +19,7 @@
 from twisted.spread import pb
 
 from pybridge.common.call import Call
+from pybridge.common.card import Card
 from pybridge.common.deck import Deck
 from pybridge.common.game import Game
 from pybridge.common.scoring import scoreDuplicate
@@ -27,6 +28,10 @@ from pybridge.common.scoring import scoreDuplicate
 from pybridge.common.deck import Seat
 
 from pybridge.failure import *
+
+# Set up reconstruction of game objects from client.
+pb.setUnjellyableForClass(Call, Call)
+pb.setUnjellyableForClass(Card, Card)
 
 
 class BridgeTable(pb.Viewable):
@@ -94,6 +99,17 @@ class BridgeTable(pb.Viewable):
 # Remote methods.
 
 
+	def view_getState(self, user):
+		"""Produces information about the table."""
+		players = {}  # Convert seat enumerations to strings.
+		for seat, username in self.players.items():
+			players[str(seat)] = username
+		
+		return {'players'   : players,
+		        'observers' : self.observers.keys(),
+		        'inGame'    : self.game != None, }
+
+
 	def view_sitPlayer(self, user, seat):
 		"""Allocates seat to user if:
 		
@@ -136,6 +152,8 @@ class BridgeTable(pb.Viewable):
 			raise InvalidParameterError()
 		elif self.game is None:
 			raise RequestUnavailableError()
+		
+		seat = getattr(Seat, seat)
 		
 		# If user is not a player, then userSeat == None.
 		userSeat = self.getSeatForPlayer(user.name)

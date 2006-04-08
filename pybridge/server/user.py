@@ -108,23 +108,6 @@ class User(pb.Avatar):
 		return self.server.tables.keys()
 
 
-	def perspective_getTableInfo(self, tablename):
-		"""Request information on the state of a specified table."""
-		if not isinstance(tablename, str):
-			raise IllegalParameterError()
-		if tablename not in self.server.tables:
-			raise TableNameUnknownError()
-		
-		table = self.server.tables[tablename]
-		players = {}  # Convert seat enumerations to strings.
-		for seat, username in table.players.items():
-			players[str(seat)] = username
-		
-		return {'players'   : players,
-		        'observers' : table.observers.keys(),
-		        'inGame'    : table.game != None, }
-
-
 class AnonymousUser(pb.Avatar):
 
 
