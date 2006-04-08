@@ -75,12 +75,13 @@ class Connector(pb.Referenceable):
 		def success(table):
 			tableview.remote = table
 			self.table = tableview
-			self.table.setup()
+			return self.table.remote.callRemote('getState')
 		
 		if not self.table:
 			tableview = ClientBridgeTable(tablename)
 			d = self.avatar.callRemote('hostTable', tablename=tablename, listener=tableview)
 			d.addCallback(success)
+			d.addCallback(tableview.setup)  # To initialise the table variables.
 			return d
 
 
