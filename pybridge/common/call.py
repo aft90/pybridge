@@ -16,6 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.spread import pb
+
 from pybridge.enum import Enum
 
 # Bid levels.
@@ -25,12 +27,19 @@ Level = Enum('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven')
 Strain = Enum('Club', 'Diamond', 'Heart', 'Spade', 'NoTrump')
 
 
-class Call:
+class Call(pb.Copyable, pb.RemoteCopy):
 	"""Superclass for bids, passes, doubles and redoubles."""
 
 
 	def __str__(self):
 		return str(self.__class__)
+
+
+class Pass(Call): pass
+
+class Double(Call): pass
+
+class Redouble(Call): pass
 
 
 class Bid(Call):
@@ -56,11 +65,12 @@ class Bid(Call):
 		return "%s %s" % (self.level, self.strain)
 
 
-class Pass(Call): pass
+	def getStateToCopy(self):
+		return {'level' : str(self.level),
+		        'strain' : str(self.strain), }
 
 
-class Double(Call): pass
-
-
-class Redouble(Call): pass
+	def setCopyableState(self, state):
+		self.level = getattr(Level, state['level'])
+		self.strain = getattr(Strain, state['strain'])
 
