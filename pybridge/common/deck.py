@@ -18,49 +18,11 @@
 
 import random  # To shuffle a deck.
 
+from card import Card, Rank, Suit
+
 from pybridge.enum import Enum
 
-Rank = Enum('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-             'Ten', 'Jack', 'Queen', 'King', 'Ace')
-
 Seat = Enum('North', 'East', 'South', 'West')  # Clockwise.
-
-Suit = Enum('Club', 'Diamond', 'Heart', 'Spade')
-
-
-class Card:
-	"""A card has a rank and a suit."""
-
-	def __init__(self, rank, suit):
-		assert(rank in Rank)
-		assert(suit in Suit)
-		self.rank = rank
-		self.suit = suit
-
-
-	def __eq__(self, other):
-		"""Two cards are equivalent if they have the same rank and suit."""
-		assert(isinstance(other, Card))
-		return self.suit == other.suit and self.rank == other.rank
-
-
-	def __cmp__(self, other):
-		"""Compare cards for hand sorting.
-		
-		Care must be taken when comparing cards of different suits.
-		
-		pre:
-			isinstance(other, Card)
-		"""
-		assert(isinstance(other, Card))
-		selfIndex = self.suit.index*13 + self.rank.index
-		otherIndex = other.suit.index*13 + other.rank.index
-		return cmp(selfIndex, otherIndex)
-
-
-	def __str__(self):
-		"""Returns the English name for the card."""
-		return self.rank + " of " + self.suit + "s"
 
 
 class Deck:
@@ -91,5 +53,7 @@ class Deck:
 		         Seat.West  : [], }
 		for index, card in enumerate(self.cards):
 			hands[Seat[index % len(Seat)]].append(card)
+		for hand in hands.values():
+			hand.sort()
 		return hands
 
