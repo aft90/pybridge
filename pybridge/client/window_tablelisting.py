@@ -40,7 +40,7 @@ class WindowTablelisting(GladeWrapper):
 			self.table_listing.append_column(column)
 		
 		# Get list of open tables.
-		connector.callServer('listTables').addCallback(self.add_tables)
+		connector.listTables().addCallback(self.add_tables)
 
 
 	def add_tables(self, tablenames):
@@ -73,14 +73,9 @@ class WindowTablelisting(GladeWrapper):
 	def on_table_listing_row_activated(self, widget, *args):
 		
 		def success(reference):
-			# Add table reference to global tables dict.
-			connector.tables[tablename] = reference
 			windowmanager.get('window_main').join_table(tablename)
 		
 		iter = self.table_store.get_iter(args[0])
 		tablename = self.table_store.get_value(iter, 0)
-		events = connector.getTableEventHandler()(tablename)
-		defer = connector.callServer('joinTable', tablename=tablename,
-		                             listener=events)
-		defer.addCallback(success)
+		connector.joinTable(tablename).addCallback(success)
 

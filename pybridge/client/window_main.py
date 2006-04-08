@@ -90,8 +90,6 @@ class WindowMain(GladeWrapper):
 		"""Returns a pixbuf of card images. Assumes cards are sorted by suit.
 	
 		cards: list of card objects and None objects to be drawn.
-#		space_x: horizontal offset between cards in each row.
-#		space_y: vertical offset between rows.
 		wraparound: tuple of integers, where index of integer = row number
 		            and integer = number of cards to draw in row.
 		transpose: if True, draw cards in columns, otherwise, draw cards in rows.
@@ -193,7 +191,7 @@ class WindowMain(GladeWrapper):
 		"""Actions to perform when user joins a table."""
 		self.button_newtable.set_property('sensitive', False)
 		self.menuitem_newtable.set_property('sensitive', False)
-		windowmanager.launch('window_game').setup(tablename)
+		windowmanager.launch('window_game')
 
 
 	def leave_table(self, tablename):
@@ -205,15 +203,10 @@ class WindowMain(GladeWrapper):
 
 	def game_started(self):
 		""""""
-		
-		def setup_hand(hand):
-			print hand
-		
-		# Are we playing?
-		connection.callTable('getHand').addCallback()
+		pass
 
 
-	# Signal handlers
+# Signal handlers.
 
 
 	def on_window_main_delete_event(self, widget, *args):
@@ -233,7 +226,7 @@ class WindowMain(GladeWrapper):
 
 
 	def on_disconnect_activate(self, widget, *args):
-		connector.disconnect()
+		#connector.disconnect()
 		windowmanager.terminate('window_main')
 		windowmanager.launch('dialog_connection')
 

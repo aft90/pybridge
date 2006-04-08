@@ -48,9 +48,6 @@ class WindowGame(GladeWrapper):
 
 
 	def new(self):
-		self.playing = None
-		self.players = dict.fromkeys(Seat, None)
-		
 		self.call_store = gtk.ListStore(str, str, str, str)  # Four seats.
 		self.tree_bidding.set_model(self.call_store)
 		
@@ -59,30 +56,20 @@ class WindowGame(GladeWrapper):
 		for index, seat in enumerate(Seat):
 			column = gtk.TreeViewColumn(str(seat), renderer, text=index)
 			self.tree_bidding.append_column(column)
-
-
-	def setup(self, tablename):
-		self.tablename = tablename
 		
-		def setup_players(info):
-			for seat, username in info['players'].items():
-				seat = getattr(Seat, seat)
-				getattr(self, SEATS[seat]).set_property('sensitive', username==None)
-		
-		connector.callServer('getTableInfo', tablename=tablename).addCallback(setup_players)
+		for seat, player in connector.table.players.items():
+			getattr(self, SEATS[seat]).set_property('sensitive', player==None)
 
 
 	def player_sits(self, username, seat):
-		self.players[seat] = username
 		button = getattr(self, SEATS[seat])
 		button.set_property('sensitive', False)
 
 
 	def player_stands(self, username, seat):
-		self.players[seat] = None
 		button = getattr(self, SEATS[seat])
 		# If we are not a player, enable seat.
-		button.set_property('sensitive', self.playing==None)
+		button.set_property('sensitive', connector.table.playing==None)
 
 
 	def update_bidding(self, bidding):
@@ -114,20 +101,18 @@ class WindowGame(GladeWrapper):
 	def on_seat_clicked(self, widget, *args):
 		
 		def seated(arg):  # Disable all seat buttons except the one clicked.
-			self.playing = seat
 			for buttonname in SEATS.values():
 				button = getattr(self, buttonname)
 				button.set_property('sensitive', button==widget)
 		
 		def unseated(arg):  # Enable all seat buttons that are not seated.
-			self.playing = None
 			for seat, buttonname in SEATS.items():
 				button = getattr(self, buttonname)
-				button.set_property('sensitive', self.players[seat]==None)
+				button.set_property('sensitive', connector.table.players[seat]==None)
 		
 		if widget.get_active():
 			seat = [k for k, v in SEATS.items() if v==widget.get_name()][0]
-			connector.callTable('sitPlayer', seat=str(seat)).addCallback(seated)
+			connector.table.sitPlayer(seat).addCallback(seated)
 		else:
-			connector.callTable('standPlayer').addCallback(unseated)
+			connector.table.standPlayer().addCallback(unseated)
 

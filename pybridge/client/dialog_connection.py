@@ -95,7 +95,7 @@ class DialogConnection(GladeWrapper):
 		
 		if self.check_registeruser.get_active() == True:  # Register new user.
 			d = connector.register(hostname, port, username, password)
-			d.addCallback(lambda x: connector.login(hostname, port, username, password))
+			d.addCallback(lambda r: connector.login(hostname, port, username, password))
 			d.addCallback(self.connect_success)
 			d.addErrback(self.connect_failure, 'Registration failed.')
 		else:  # Just log in.
