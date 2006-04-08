@@ -17,7 +17,7 @@
 
 
 from call import Strain
-from deck import Seat, Suit
+from deck import Seat
 
 
 class Trick:
@@ -97,7 +97,7 @@ class Play:
 	def playCard(self, card):
 		"""Plays card to current trick, assuming correct seat.
 
-		You should check card validity with validPlay() beforehand.
+		You should check card validity with validCard() beforehand.
 		"""
 		self._currentTrick().playCard(card, self.whoseTurn())
 		if not self.isComplete() and self._currentTrick().isComplete():

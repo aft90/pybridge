@@ -17,7 +17,8 @@
 
 
 from bidding import Call, Bidding
-from deck import Card, Deck, Seat
+from card import Card
+from deck import Deck, Seat
 from play import Trick, Play
 
 from pybridge.failure import *
