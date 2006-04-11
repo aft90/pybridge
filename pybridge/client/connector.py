@@ -31,6 +31,7 @@ class Connector(pb.Referenceable):
 	def __init__(self):
 		self.avatar = None
 		self.factory = pb.PBClientFactory()
+		self.name = None  # User name.
 		self.table = None  # ClientBridgeTable object.
 
 
@@ -39,7 +40,7 @@ class Connector(pb.Referenceable):
 		
 		def connected(avatar):
 			self.avatar = avatar
-#			return avatar
+			self.name = username
 	
 		reactor.connectTCP(host, port, self.factory)
 		creds = credentials.UsernamePassword(username, password)
@@ -70,34 +71,18 @@ class Connector(pb.Referenceable):
 # Client request methods.
 
 
-	def hostTable(self, tablename):
+	def joinTable(self, tablename, host=False):
 		
-		def success(table):
-			tableview.remote = table
-			self.table = tableview
-			return self.table.remote.callRemote('getState')
+		def success(remote):
+			table.remote = remote  # Set pointer to server-side object.
+			self.table = table
+			table.setup()
 		
-		if not self.table:
-			tableview = ClientBridgeTable(tablename)
-			d = self.avatar.callRemote('hostTable', tablename=tablename, listener=tableview)
-			d.addCallback(success)
-			d.addCallback(tableview.setup)  # To initialise the table variables.
-			return d
-
-
-	def joinTable(self, tablename):
-		
-		def success(table):
-			tableview.remote = table
-			self.table = tableview
-			return self.table.remote.callRemote('getState')
-		
-		if not self.table:
-			tableview = ClientBridgeTable(tablename)
-			d = self.avatar.callRemote('joinTable', tablename=tablename, listener=tableview)
-			d.addCallback(success)
-			d.addCallback(tableview.setup)  # To initialise the table variables.
-			return d
+		table = ClientBridgeTable()
+		request = (host and 'hostTable') or 'joinTable'
+		d = self.avatar.callRemote(request, tablename=tablename, listener=table)
+		d.addCallback(success)
+		return d
 
 
 	def leaveTable(self, tablename):
