@@ -19,13 +19,18 @@
 import gtk
 from wrapper import GladeWrapper
 
-#from pybridge.common.bidding import Call
-#from pybridge.common.enumeration import CallType, Denomination, Level
+from connector import connector
 
+from pybridge.common.call import Bid, Pass, Double, Redouble
+from pybridge.common.call import Level, Strain
 
-#LEVELS = {'1' : Level.One, '2' : Level.Two, '3' : Level.Three, '4' : Level.Four, '5' : Level.Five, '6' : Level.Six, '7' : Level.Seven}
+LEVEL_NAMES = {'1' : Level.One, '2' : Level.Two, '3' : Level.Three,
+               '4' : Level.Four, '5' : Level.Five, '6' : Level.Six,
+               '7' : Level.Seven, }
 
-#DENOMS = {}
+STRAIN_NAMES = {'club' : Strain.Club, 'diamond' : Strain.Diamond,
+                'heart' : Strain.Heart, 'spade' : Strain.Spade,
+                'nt' : Strain.NoTrump, }
 
 
 class WindowBidbox(GladeWrapper):
@@ -44,15 +49,19 @@ class WindowBidbox(GladeWrapper):
 
 	def on_call_clicked(self, widget, *args):
 		"""Builds a call object and submits."""
-		calltext = widget.get_name()
-		if calltext == 'pass':
-			call = Call(CallType.Pass)
-		elif calltext == 'double':
-			call = Call(CallType.Double)
-		elif calltext == 'redouble':
-			call = Call(CallType.Redouble)
-		else:  # Call is a bid, and calltext starts with 'bid'.
-			bidLevel = int(calltext[3])
-			bidDenom = None
+		calltext = widget.get_name().replace("button_", "")
 		
-		print widget, args
+		if calltext == 'pass':
+			call = Pass()
+		elif calltext == 'double':
+			call = Double()
+		elif calltext == 'redouble':
+			call = Redouble()
+		else:  # Call is a bid, and calltext starts with 'bid'.
+			level = LEVEL_NAMES[calltext[3]]
+			strain = STRAIN_NAMES[calltext[4:]]
+			call = Bid(level, strain)
+		
+		print call
+		connector.table.makeCall(call)
+

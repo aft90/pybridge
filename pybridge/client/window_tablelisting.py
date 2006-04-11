@@ -50,7 +50,7 @@ class WindowTablelisting(GladeWrapper):
 			iter = self.table_store.append(row)
 
 
-	def remove_table(self, tablenames):
+	def remove_tables(self, tablenames):
 		"""Removes a table from the table listing."""
 		
 		def func(model, path, iter, user_data):
@@ -73,9 +73,11 @@ class WindowTablelisting(GladeWrapper):
 	def on_table_listing_row_activated(self, widget, *args):
 		
 		def success(reference):
+			self.window.hide()
 			windowmanager.get('window_main').join_table(tablename)
 		
-		iter = self.table_store.get_iter(args[0])
-		tablename = self.table_store.get_value(iter, 0)
-		connector.joinTable(tablename).addCallback(success)
+		if connector.table is None:
+			iter = self.table_store.get_iter(args[0])
+			tablename = self.table_store.get_value(iter, 0)
+			connector.joinTable(tablename).addCallback(success)
 

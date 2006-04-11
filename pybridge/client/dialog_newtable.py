@@ -58,7 +58,7 @@ class DialogNewtable(GladeWrapper):
 			error_dialog.destroy()
 		
 		tablename = self.entry_tablename.get_text()
-		connector.hostTable(tablename).addCallbacks(success, failure)
+		connector.joinTable(tablename, host=True).addCallbacks(success, failure)
 
 
 	def on_tablename_changed(self, widget, *args):

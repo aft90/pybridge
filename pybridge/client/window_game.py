@@ -69,7 +69,7 @@ class WindowGame(GladeWrapper):
 	def player_stands(self, username, seat):
 		button = getattr(self, SEATS[seat])
 		# If we are not a player, enable seat.
-		button.set_property('sensitive', connector.table.playing==None)
+		button.set_property('sensitive', connector.table.seated==None)
 
 
 	def update_bidding(self, bidding):
