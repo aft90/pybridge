@@ -36,63 +36,116 @@ class ClientBridgeTable(pb.Referenceable):
 	"""Representation of a table, from a client POV."""
 
 
-	def __init__(self, name):
-		self.name = name
+	def __init__(self):
 		self.remote = None  # Server-side Table object.
 		
 		self.game = None
 		self.observers = []
 		self.players = dict.fromkeys(Seat, None)
-		self.playing = None
+		self.seated = False  # If playing, the seat occupied.
 
 
-	def setup(self, info):
-		print info
-		self.observers.extend(info['observers'])  # OK?
-		for seatname, player in info['players'].items():
-			self.players[getattr(Seat, seatname)] = player
+	def setup(self):
+		""""""
+		windowmanager.launch('window_game')
+		
+		def gotObservers(observers):
+			self.observers = observers
+		
+		def gotPlayers(players):
+			for seat, player in players.items():
+				if player is not None:
+					self.remote_playerSits(player, seat)
+		
+		self.remote.callRemote('listObservers').addCallback(gotObservers)
+		self.remote.callRemote('listPlayers').addCallback(gotPlayers)
+		d = self.setupGame()
+		d.addCallback(lambda r: self.updateCardArea())
+		return d
+
+
+	def setupGame(self):
+		""""""
+		
+		def gotGame(info):
+			print "got game", info
+			if info.get('active'):
+				deal = dict.fromkeys(Seat, [None]*13)  # Unknown cards.
+				dealer = getattr(Seat, info['dealer'])
+				self.game = Game(dealer, deal, None, False, False)
+			
+				calls = info.get('calls', [])
+				for call in calls:
+					self.game.bidding.addCall(call)
+				
+				tricks = info.get('tricks', [])
+				for trick in tricks:
+					leader, cards = trick[0], trick[1:]
+					print leader, cards
+					for card in cards:
+						self.game.play.playCard(card)
+		
+		d = self.remote.callRemote('getGame')
+		d.addCallback(gotGame)
+		return d
+
+
+	def getHand(self, seat):
+		""""""
+		
+		def gotHand(hand):
+			self.game.deal[seat] = hand
+			return hand
+		
+		d = self.remote.callRemote('getHand', str(seat))
+		d.addCallback(gotHand)
+		return d
+
+
+	def updateCardArea(self):
+		window = windowmanager.get('window_main')
+		if self.game:
+			for seat, cards in self.game.deal.items():
+				window.cardarea.build_hand_pixbuf(seat, cards)
 
 
 # Client request methods.
 
 
 	def sitPlayer(self, seat):
-		if not self.playing:
-			d = self.remote.callRemote('sitPlayer', seat=str(seat))
-			d.addCallback(lambda r: setattr(self, 'playing', seat))
-			return d
+		d = self.remote.callRemote('sitPlayer', seat=str(seat))
+		self.seated = seat
+		if self.game:
+			d.addCallback(lambda r: self.getHand(seat))
+			d.addCallback(lambda r: self.updateCardArea())
+		return d
 
 
 	def standPlayer(self):
-		if self.playing:
-			d = self.remote.callRemote('standPlayer')
-			d.addCallback(lambda r: setattr(self, 'playing', None))
-			return d
+		d = self.remote.callRemote('standPlayer')
+		self.seated = None
+		return d
 
 
 	def makeCall(self, call):
-		if self.playing and self.game:
-			d = self.remote.callRemote('makeCall', call)
-			return d
+		d = self.remote.callRemote('makeCall', call=call)
+		return d
 
 
 	def playCard(self, card):
-		if self.playing and self.game:
-			d = self.remote.callRemote('playCard', card)
-			return d
+		d = self.remote.callRemote('playCard', card=card)
+		return d
 
 
-# Remote methods, visible by server-side Table object.
+# Remote methods, callable by server-side Table object.
 
 
 	def remote_userJoins(self, username):
 		self.observers.append(username)
-		print "%s joins this table" % username
 
 
 	def remote_userLeaves(self, username):
 		self.observers.remove(username)
-		print "%s leaves this table" % username
 
 
 	def remote_playerSits(self, username, seat):
@@ -134,13 +187,14 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameStarted(self, dealer):
-		deal = {Seat.North : [], Seat.East : [], Seat.South : [], Seat.West : []}
-		self.game = Game(dealer, deal, None, False, False)
-		
-		if self.playing:  # Get my hand.
-			d = self.remote.callRemote('getHand', str(self.playing))
-			d.addCallback(lambda hand: deal.__setitem__(self.playing, hand))  # Will this work?
-		
-		windowmanager.get('window_main').gameStarted()
-		print "gamestarted %s" % dealer
+		d = self.setupGame()
+		if self.seated:
+			d.addCallback(lambda r: self.getHand(self.seated))
+			windowmanager.launch('window_bidbox')
+		d.addCallback(lambda r: self.updateCardArea())
+
+
+# Utility.
+
+
 

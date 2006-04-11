@@ -99,15 +99,17 @@ class BridgeTable(pb.Viewable):
 # Remote methods.
 
 
-	def view_getState(self, user):
-		"""Produces information about the table."""
+	def view_listObservers(self, user):
+		"""Returns a list of all observer names at table."""
+		return self.observers.keys()
+
+
+	def view_listPlayers(self, user):
+		"""Returns a dict of player names, keyed by seat."""
 		players = {}  # Convert seat enumerations to strings.
 		for seat, username in self.players.items():
 			players[str(seat)] = username
-		
-		return {'players'   : players,
-		        'observers' : self.observers.keys(),
-		        'inGame'    : self.game != None, }
+		return players
 
 
 	def view_sitPlayer(self, user, seat):
@@ -141,6 +143,24 @@ class BridgeTable(pb.Viewable):
 		
 		self.players[seat] = None
 		self.informObservers('playerStands', username=user.name, seat=str(seat))
+
+
+	def view_getGame(self, user):
+		"""Returns sufficient information to reconstruct a Game object."""
+		info = {}
+		info['active'] = self.game != None
+		if self.game:
+			info['turn'] = str(self.game.whoseTurn())
+			if self.game.bidding:
+				info['calls'] = self.game.bidding.calls
+				info['dealer'] = str(self.game.bidding.dealer)
+			if self.game.play:
+				info['declarer'] = str(self.game.play.declarer)
+				# Convert trick to a list of cards, in the order played.
+				info['tricks'] = []
+				for trick in self.play.tricks:
+					info['tricks'].append([trick.leader, trick.cardsPlayed()])
+		return info
 
 
 	def view_getHand(self, user, seat):
