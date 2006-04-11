@@ -26,13 +26,16 @@ class Trick:
 
 	def __init__(self, leader):
 		assert(leader in Seat)
-		self.cards  = dict.fromkeys(Seat.Seat, None)
+		self.cards  = dict.fromkeys(Seat, None)
 		self.leader = leader
 
 
 	def cardsPlayed(self):
-		"""Returns a list of played cards."""
-		return [card for card in self.cards.values() if card]
+		"""Returns a list of played cards, in order of play."""
+		cards = [None]*4
+		for seat, card in self.cards.items():
+			cards[(seat.index - self.leader.index) % 4] = card
+		return cards
 
 
 	def isComplete(self):
@@ -81,9 +84,9 @@ class Play:
 
 	def __init__(self, declarer, trumpSuit):
 		assert(declarer in Seat)
-		self.declarer  = declarer
-		self.tricks    = []
 		assert(trumpSuit in Strain)
+		self.tricks    = []
+		self.declarer  = declarer
 		self.trumpSuit = trumpSuit
 		# Leader of first trick is declarer's left-hand opponent.
 		self._newTrick(leader = Seat[(self.declarer.index() + 1) % 4])
@@ -134,9 +137,9 @@ class Play:
 		if self.isComplete():
 			return False
 		else:
-			leaderIndex = Seat.Seat.index(self._currentTrick().leader)
+			leaderIndex = Seat.index(self._currentTrick().leader)
 			cardCount   = len(self._currentTrick().cardsPlayed())
-			return Seat.Seat[(leaderIndex + cardCount + offset) % 4]
+			return Seat[(leaderIndex + cardCount + offset) % 4]
 
 
 	def wonTricks(self, seat):
