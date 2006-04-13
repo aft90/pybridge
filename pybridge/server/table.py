@@ -18,7 +18,7 @@
 
 from twisted.spread import pb
 
-from pybridge.common.call import Call
+from pybridge.common.call import Call, Bid, Pass, Double, Redouble
 from pybridge.common.card import Card
 from pybridge.common.deck import Deck
 from pybridge.common.game import Game
@@ -30,8 +30,11 @@ from pybridge.common.deck import Seat
 from pybridge.failure import *
 
 # Set up reconstruction of game objects from client.
-pb.setUnjellyableForClass(Call, Call)
 pb.setUnjellyableForClass(Card, Card)
+pb.setUnjellyableForClass(Bid, Bid)
+pb.setUnjellyableForClass(Pass, Pass)
+pb.setUnjellyableForClass(Double, Double)
+pb.setUnjellyableForClass(Redouble, Redouble)
 
 
 class BridgeTable(pb.Viewable):
@@ -205,7 +208,7 @@ class BridgeTable(pb.Viewable):
 		
 		self.game.makeCall(seat, call)  # May raise a game error.
 		
-		self.informObservers('gameCallMade', seat=seat, call=call)
+		self.informObservers('gameCallMade', seat=str(seat), call=call)
 		# Check for contract or end of game.
 		if self.game.bidding.isPassedOut():
 			self.endGame()
@@ -227,7 +230,7 @@ class BridgeTable(pb.Viewable):
 		
 		self.game.playCard(seat, card)  # May raise a game error.
 		
-		self.informObservers('gameCardPlayed', seat=seat, card=card)
+		self.informObservers('gameCardPlayed', seat=str(seat), card=card)
 		# Check for end of game.
 		if self.game.play.isComplete():
 			self.endGame()
