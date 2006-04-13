@@ -20,13 +20,16 @@ from twisted.spread import pb
 
 from windowmanager import windowmanager
 
-from pybridge.common.call import Call
+from pybridge.common.call import Call, Bid, Pass, Double, Redouble
 from pybridge.common.card import Card
 from pybridge.common.game import Game
 
 # Set up reconstruction of objects from server.
-pb.setUnjellyableForClass(Call, Call)
 pb.setUnjellyableForClass(Card, Card)
+pb.setUnjellyableForClass(Bid, Bid)
+pb.setUnjellyableForClass(Pass, Pass)
+pb.setUnjellyableForClass(Double, Double)
+pb.setUnjellyableForClass(Redouble, Redouble)
 
 # Enumerations.
 from pybridge.common.deck import Seat
@@ -118,6 +121,7 @@ class ClientBridgeTable(pb.Referenceable):
 		if self.game:
 			d.addCallback(lambda r: self.getHand(seat))
 			d.addCallback(lambda r: self.updateCardArea())
+			windowmanager.launch('window_bidbox')
 		return d
 
 
@@ -128,13 +132,17 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def makeCall(self, call):
-		d = self.remote.callRemote('makeCall', call=call)
-		return d
+		if self.game.whoseTurn() == self.seated and \
+		   self.game.bidding.validCall(call):
+			d = self.remote.callRemote('makeCall', call=call)
+			return d
 
 
 	def playCard(self, card):
-		d = self.remote.callRemote('playCard', card=card)
-		return d
+		if self.game.whoseTurn() == self.seated and \
+		   self.game.play.validCard(card, self.game.deal[seat], self.seated):
+			d = self.remote.callRemote('playCard', card=card)
+			return d
 
 
 # Remote methods, callable by server-side Table object.
@@ -165,7 +173,14 @@ class ClientBridgeTable(pb.Referenceable):
 	def remote_gameCallMade(self, seat, call):
 		seat = getattr(Seat, seat)
 		self.game.makeCall(seat, call)
+		windowmanager.get('window_game').add_call(call, seat)
+		if self.seated:
+			bidbox = windowmanager.get('window_bidbox')
+			bidbox.set_available_calls(self.seated, self.game.bidding)
+		
 		print seat, call
+		if self.game.whoseTurn() == self.seated:
+			print "my turn"
 
 
 	def remote_gameCardPlayed(self, seat, card):
@@ -187,14 +202,10 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameStarted(self, dealer):
+		windowmanager.get('window_game').reset_bidding()
 		d = self.setupGame()
 		if self.seated:
 			d.addCallback(lambda r: self.getHand(self.seated))
 			windowmanager.launch('window_bidbox')
 		d.addCallback(lambda r: self.updateCardArea())
-
-
-# Utility.
-
-
 

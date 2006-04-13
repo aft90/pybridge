@@ -24,6 +24,9 @@ from connector import connector
 from pybridge.common.call import Bid, Pass, Double, Redouble
 from pybridge.common.call import Level, Strain
 
+CALL_NAMES = {'bid' : Bid, 'pass' : Pass,
+              'double' : Double, 'redouble' : Redouble, }
+
 LEVEL_NAMES = {'1' : Level.One, '2' : Level.Two, '3' : Level.Three,
                '4' : Level.Four, '5' : Level.Five, '6' : Level.Six,
                '7' : Level.Seven, }
@@ -31,6 +34,9 @@ LEVEL_NAMES = {'1' : Level.One, '2' : Level.Two, '3' : Level.Three,
 STRAIN_NAMES = {'club' : Strain.Club, 'diamond' : Strain.Diamond,
                 'heart' : Strain.Heart, 'spade' : Strain.Spade,
                 'nt' : Strain.NoTrump, }
+
+ALL_CALLS = [Pass(), Double(), Redouble()] + \
+            [Bid(l, s) for l, s in zip(list(Level)*5, list(Strain)*7)]
 
 
 class WindowBidbox(GladeWrapper):
@@ -42,26 +48,44 @@ class WindowBidbox(GladeWrapper):
 		pass
 
 
-	def update_from_bidding(self, bidding):
-		"""Enables/disables call buttons based on bidding object."""
-		pass
+	def set_available_calls(self, seat, bidding):
+		"""Enables buttons representing the given calls."""
+		if bidding.whoseTurn() == seat:
+			self.window.set_property('sensitive', True)
+			for call in ALL_CALLS:
+				button = self.get_button_from_call(call)
+				button.set_property('sensitive', bidding.validCall(call))
+		else:
+			self.window.set_property('sensitive', False)
 
 
 	def on_call_clicked(self, widget, *args):
 		"""Builds a call object and submits."""
-		calltext = widget.get_name().replace("button_", "")
-		
-		if calltext == 'pass':
-			call = Pass()
-		elif calltext == 'double':
-			call = Double()
-		elif calltext == 'redouble':
-			call = Redouble()
-		else:  # Call is a bid, and calltext starts with 'bid'.
-			level = LEVEL_NAMES[calltext[3]]
-			strain = STRAIN_NAMES[calltext[4:]]
-			call = Bid(level, strain)
-		
+		call = self.get_call_from_button(widget)
 		print call
 		connector.table.makeCall(call)
+
+
+	def get_button_from_call(self, call):
+		"""Returns a pointer to GtkButton object representing given call."""
+		callname = [k for k,v in CALL_NAMES.items() if isinstance(call, v)][0]
+		print callname
+		if isinstance(call, Bid):
+			level = [k for k,v in LEVEL_NAMES.items() if v==call.level][0]
+			strain = [k for k,v in STRAIN_NAMES.items() if v==call.strain][0]
+			print level, strain
+			return getattr(self, 'button_%s_%s_%s' % (callname, level, strain))
+		else:
+			return getattr(self, 'button_%s' % callname)
+
+
+	def get_call_from_button(self, widget):
+		"""Returns an instance of the call represented by given GtkButton."""
+		text = widget.get_name().split('_')  # "button", calltype, level, strain
+		calltype = CALL_NAMES[text[1]]
+		if calltype == Bid:
+			level = LEVEL_NAMES[text[2]]
+			strain = STRAIN_NAMES[text[3]]
+			return calltype(level, strain)
+		return calltype()
 

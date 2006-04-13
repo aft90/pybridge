@@ -72,23 +72,29 @@ class WindowGame(GladeWrapper):
 		button.set_property('sensitive', connector.table.seated==None)
 
 
-	def update_bidding(self, bidding):
-		""""""
-		# If not finished, take the last call and add it on.
+	def reset_bidding(self):
+		"""Clears all calls from the bidding tab."""
 		self.call_store.clear()
-		iter = self.call_store.append()  # Add first row.
+
+
+	def add_call(self, call, seat):
+		"""Adds call from specified player, to bidding tab."""
+		column = seat.index
+		if column == 0 or self.call_store.get_iter_first() == None:
+			print "creating first iter"
+			iter = self.call_store.append()
+		else:  # Get bottom row. There must be a better way than this...
+			iter = self.call_store.get_iter_first()
+			while self.call_store.iter_next(iter) != None:
+				print "next iter is", iter
+				iter = self.call_store.iter_next(iter)
 		
-		for call in bidding.calls:
-			column = bidding.whoseCall(call).index
-			if column == 0:
-				iter = self.call_store.append()  # Add new row.
-			
-			if isinstance(call, Bid):
-				format = "%s%s" % (call.level.index+1, STRAIN_SYMBOLS[call.strain])
-			else:
-				format = CALLTYPE_SYMBOLS[call.__class__]
-			
-			self.call_store.set(iter, column, format)
+		if isinstance(call, Bid):
+			format = "%s%s" % (call.level.index+1, STRAIN_SYMBOLS[call.strain])
+		else:
+			format = CALLTYPE_SYMBOLS[call.__class__]
+		
+		self.call_store.set(iter, column, format)
 
 
 # Signal handlers.
