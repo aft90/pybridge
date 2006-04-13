@@ -368,8 +368,8 @@
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">True</property>
-  <property name="skip_pager_hint">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_EAST</property>
   <property name="focus_on_map">False</property>
@@ -411,7 +411,7 @@
       </child>
 
       <child>
-	<widget class="GtkTable" id="button_bids">
+	<widget class="GtkTable" id="table_bids">
 	  <property name="visible">True</property>
 	  <property name="n_rows">7</property>
 	  <property name="n_columns">5</property>
@@ -420,7 +420,7 @@
 	  <property name="column_spacing">0</property>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid1nt">
+	    <widget class="GtkButton" id="button_bid_1_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1NT</property>
@@ -439,7 +439,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid1spade">
+	    <widget class="GtkButton" id="button_bid_1_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♠</property>
@@ -458,7 +458,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid1heart">
+	    <widget class="GtkButton" id="button_bid_1_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♥</property>
@@ -477,7 +477,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid1diamond">
+	    <widget class="GtkButton" id="button_bid_1_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♦</property>
@@ -496,7 +496,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid1club">
+	    <widget class="GtkButton" id="button_bid_1_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">1♣</property>
@@ -515,7 +515,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid3diamond">
+	    <widget class="GtkButton" id="button_bid_3_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♦</property>
@@ -534,7 +534,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid2diamond">
+	    <widget class="GtkButton" id="button_bid_2_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♦</property>
@@ -553,7 +553,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid2club">
+	    <widget class="GtkButton" id="button_bid_2_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♣</property>
@@ -572,7 +572,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid2nt">
+	    <widget class="GtkButton" id="button_bid_2_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2NT</property>
@@ -591,7 +591,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid3nt">
+	    <widget class="GtkButton" id="button_bid_3_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3NT</property>
@@ -610,7 +610,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid4nt">
+	    <widget class="GtkButton" id="button_bid_4_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4NT</property>
@@ -629,7 +629,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid5nt">
+	    <widget class="GtkButton" id="button_bid_5_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5NT</property>
@@ -648,7 +648,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid6nt">
+	    <widget class="GtkButton" id="button_bid_6_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6NT</property>
@@ -667,7 +667,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid7nt">
+	    <widget class="GtkButton" id="button_bid_7_nt">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7NT</property>
@@ -686,7 +686,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid7spade">
+	    <widget class="GtkButton" id="button_bid_7_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♠</property>
@@ -705,7 +705,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid7heart">
+	    <widget class="GtkButton" id="button_bid_7_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♥</property>
@@ -724,7 +724,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid7diamond">
+	    <widget class="GtkButton" id="button_bid_7_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♦</property>
@@ -743,7 +743,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid7club">
+	    <widget class="GtkButton" id="button_bid_7_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">7♣</property>
@@ -762,7 +762,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid6club">
+	    <widget class="GtkButton" id="button_bid_6_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♣</property>
@@ -781,7 +781,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid6diamond">
+	    <widget class="GtkButton" id="button_bid_6_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♦</property>
@@ -800,7 +800,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid6heart">
+	    <widget class="GtkButton" id="button_bid_6_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♥</property>
@@ -819,7 +819,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid6spade">
+	    <widget class="GtkButton" id="button_bid_6_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">6♠</property>
@@ -838,7 +838,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid5heart">
+	    <widget class="GtkButton" id="button_bid_5_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♥</property>
@@ -857,7 +857,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid5diamond">
+	    <widget class="GtkButton" id="button_bid_5_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♦</property>
@@ -876,7 +876,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid5club">
+	    <widget class="GtkButton" id="button_bid_5_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♣</property>
@@ -895,7 +895,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid4club">
+	    <widget class="GtkButton" id="button_bid_4_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♣</property>
@@ -914,7 +914,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid4diamond">
+	    <widget class="GtkButton" id="button_bid_4_diamond">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♦</property>
@@ -933,7 +933,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid4heart">
+	    <widget class="GtkButton" id="button_bid_4_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♥</property>
@@ -952,7 +952,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid4spade">
+	    <widget class="GtkButton" id="button_bid_4_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">4♠</property>
@@ -971,7 +971,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid3heart">
+	    <widget class="GtkButton" id="button_bid_3_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♥</property>
@@ -990,7 +990,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid3club">
+	    <widget class="GtkButton" id="button_bid_3_club">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♣</property>
@@ -1009,7 +1009,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid2heart">
+	    <widget class="GtkButton" id="button_bid_2_heart">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♥</property>
@@ -1028,7 +1028,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid2spade">
+	    <widget class="GtkButton" id="button_bid_2_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">2♠</property>
@@ -1047,7 +1047,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid3spade">
+	    <widget class="GtkButton" id="button_bid_3_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">3♠</property>
@@ -1067,7 +1067,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button_bid5spade">
+	    <widget class="GtkButton" id="button_bid_5_spade">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label" translatable="yes">5♠</property>
@@ -1465,8 +1465,8 @@
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">True</property>
-  <property name="skip_pager_hint">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_CENTER</property>
   <property name="focus_on_map">True</property>
@@ -1614,8 +1614,8 @@
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">True</property>
-  <property name="skip_pager_hint">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_SOUTH_WEST</property>
   <property name="focus_on_map">False</property>
@@ -1664,8 +1664,8 @@
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">True</property>
-  <property name="skip_pager_hint">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_SOUTH_EAST</property>
   <property name="focus_on_map">False</property>
