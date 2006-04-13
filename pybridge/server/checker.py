@@ -34,34 +34,34 @@ class Checker:
 
 	def __init__(self):
 		self.database = database
+		self.users = {}  # Users online, from Server object.
 
 
 	def requestAvatarId(self, credentials):
 		
 		def gotUser(user):
-			password = user.get('password')
-			if password:
-				d = defer.maybeDeferred(credentials.checkPassword, password)
-				d.addCallback(passwordMatch)
-				return d
-			else:
-				return unauthorized(None)
+			password = user.get('password', '')
+			d = defer.maybeDeferred(credentials.checkPassword, password)
+			d.addCallback(passwordMatch)
+			return d
 		
 		def passwordMatch(matched):
 			if matched:
-				return credentials.username
+				if credentials.username in self.users.keys():
+					raise unauthorized('Already logged in')
+				else:
+					return credentials.username
 			else:
-				return unauthorized(None)
+				return unauthorized('Password mismatch')
 		
-		def unauthorized(f):
-			log.msg('Login failed for user %s' % credentials.username)
-			return failure.Failure(error.UnauthorizedLogin())
+		def unauthorized(reason):
+			log.msg('Login failed for %s: %s' % (credentials.username, reason))
+			return failure.Failure(error.UnauthorizedLogin(reason))
 		
 		if credentials.username == '':
 			return checkers.ANONYMOUS
 		else:
 			d = self.database.getUser(credentials.username)
-			d.addCallback(gotUser)
-			d.addErrback(unauthorized)
+			d.addCallbacks(gotUser, lambda e: unauthorized('No such user'))
 			return d
 

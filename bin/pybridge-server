@@ -47,9 +47,12 @@ from pybridge.server.realm import Realm
 from pybridge.server.server import Server
 
 
+server = Server()
 realm = Realm()
-realm.server = Server()
 checker = Checker()
+
+realm.server = server
+checker.users = server.users
 
 p = portal.Portal(realm)
 p.registerChecker(checker)
