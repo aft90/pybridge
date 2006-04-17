@@ -47,7 +47,7 @@ class BridgeTable(pb.Viewable):
 		self.server = server
 		
 		# Set up bridge-related stuff.
-		self.dealer    = Seat.North  # Rotate around the table for each deal.
+		self.dealer    = None  # Rotate around the table for each deal.
 		self.deck      = Deck()
 		self.game      = None
 		self.observers = {}  # For each observing user name, its remote listener object.
@@ -83,9 +83,10 @@ class BridgeTable(pb.Viewable):
 	def startGame(self, dealer=None, deal=None):
 		"""Called to start a game."""
 		deal = deal or self.deck.dealRandom()
-		self.dealer = dealer or Seat[(self.dealer.index + 1) % 4]
-		self.game = Game(self.dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
+		dealer = dealer or self.dealer
+		self.game = Game(dealer, deal, self.scoring, vulnNS=False, vulnEW=False)
 		self.informObservers('gameStarted', dealer=str(self.dealer))
+		self.dealer = Seat[(dealer.index + 1) % 4]  # For next game.
 
 
 	def endGame(self):
@@ -132,9 +133,14 @@ class BridgeTable(pb.Viewable):
 		
 		self.players[seat] = user.name
 		self.informObservers('playerSits', username=user.name, seat=str(seat))
+
+		playerCount = len([p for p in self.players.values() if p != None])
+		# If player is first person to sit at table, then make player dealer.
+		if self.dealer is None or playerCount == 1:
+			self.dealer = seat
 		
 		# If all seats filled, and no game is currently running, start a game.
-		if self.game is None and len([p for p in self.players.values() if p != None]) == 4:
+		elif self.game is None and playerCount == 4:
 			self.startGame()
 
 
@@ -157,12 +163,12 @@ class BridgeTable(pb.Viewable):
 			if self.game.bidding:
 				info['calls'] = self.game.bidding.calls
 				info['dealer'] = str(self.game.bidding.dealer)
-			if self.game.play:
-				info['declarer'] = str(self.game.play.declarer)
+			if self.game.playing:
+				info['declarer'] = str(self.game.playing.declarer)
 				# Convert trick to a list of cards, in the order played.
-				info['tricks'] = []
-				for trick in self.play.tricks:
-					info['tricks'].append([trick.leader, trick.cardsPlayed()])
+				info['played'] = {}
+				for seat, cards in self.game.playing.played.items():
+					info['played'][str(seat)] = cards
 		return info
 
 
@@ -177,23 +183,23 @@ class BridgeTable(pb.Viewable):
 			raise RequestUnavailableError()
 		
 		seat = getattr(Seat, seat)
+		# If user is not a player, then player == None.
+		player = self.getSeatForPlayer(user.name)
+		return self.game.getHand(seat, player)
 		
-		# If user is not a player, then userSeat == None.
-		userSeat = self.getSeatForPlayer(user.name)
-		
-		if userSeat == None or userSeat == seat:
-			return self.game.deal[seat]  # Player can see their own hand.
-		if not self.game.bidding.isComplete():
-			raise GameHandHiddenError()  # Bidding; no player can see another hand.
-		
-		dummy = Seat[(self.game.play.declarer.index + 2) % 4]
-		if userSeat == dummy:
-			return self.game.deal[seat]  # Play; dummy can see all hands.
-		elif seat == dummy and len(self.game.play.tricks[0].cardsPlayed()) > 0:
-			# Declarer and defenders can see dummy's hand after first card played.
-			return self.game.deal[seat]
-		else:
-			raise GameHandHiddenError()
+#		if userSeat == None or userSeat == seat:
+#			return self.game.deal[seat]  # Player can see their own hand.
+#		if not self.game.bidding.isComplete():
+#			raise GameHandHiddenError()  # Bidding; no player can see another hand.
+#		
+#		dummy = Seat[(self.game.playing.declarer.index + 2) % 4]
+#		if userSeat == dummy:
+#			return self.game.deal[seat]  # Play; dummy can see all hands.
+#		elif seat == dummy and len(self.game.playing.tricks[0].cardsPlayed()) > 0:
+#			# Declarer and defenders can see dummy's hand after first card played.
+#			return self.game.deal[seat]
+#		else:
+#			raise GameHandHiddenError()
 
 
 	def view_makeCall(self, user, call):
@@ -214,6 +220,8 @@ class BridgeTable(pb.Viewable):
 			self.endGame()
 		elif self.game.bidding.isComplete():
 			contract = self.game.bidding.contract()
+			for key in ['declarer', 'doubleBy', 'redoubleBy']:
+				contract[key] = str(contract[key]) or None
 			self.informObservers('gameContract', contract=contract)
 
 
@@ -232,7 +240,7 @@ class BridgeTable(pb.Viewable):
 		
 		self.informObservers('gameCardPlayed', seat=str(seat), card=card)
 		# Check for end of game.
-		if self.game.play.isComplete():
+		if self.game.isComplete():
 			self.endGame()
 
 
@@ -240,7 +248,7 @@ class BridgeTable(pb.Viewable):
 		"""Return the seat that is next to play."""
 		if self.game is None:
 			raise RequestUnavailableError()
-		return self.game.whoseTurn()
+		return str(self.game.whoseTurn())
 
 
 # Utility methods.
