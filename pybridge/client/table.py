@@ -50,7 +50,6 @@ class ClientBridgeTable(pb.Referenceable):
 
 	def setup(self):
 		""""""
-		windowmanager.launch('window_game')
 		
 		def gotObservers(observers):
 			self.observers = observers
@@ -62,8 +61,9 @@ class ClientBridgeTable(pb.Referenceable):
 		
 		self.remote.callRemote('listObservers').addCallback(gotObservers)
 		self.remote.callRemote('listPlayers').addCallback(gotPlayers)
+		
+		windowmanager.launch('window_game')
 		d = self.setupGame()
-		d.addCallback(lambda r: self.updateCardArea())
 		return d
 
 
@@ -73,7 +73,7 @@ class ClientBridgeTable(pb.Referenceable):
 		def gotGame(info):
 			print "got game", info
 			if info.get('active'):
-				deal = dict.fromkeys(Seat, [None]*13)  # Unknown cards.
+				deal = dict.fromkeys(Seat, [])  # Unknown cards.
 				dealer = getattr(Seat, info['dealer'])
 				self.game = Game(dealer, deal, None, False, False)
 			
@@ -81,12 +81,15 @@ class ClientBridgeTable(pb.Referenceable):
 				for call in calls:
 					self.game.bidding.addCall(call)
 				
-				tricks = info.get('tricks', [])
-				for trick in tricks:
-					leader, cards = trick[0], trick[1:]
-					print leader, cards
-					for card in cards:
-						self.game.play.playCard(card)
+				tricks = info.get('played', {})
+				for seat in tricks:
+					pass
+#					leader, cards = trick[0], trick[1:]
+#					print leader, cards
+#					for card in cards:
+#						self.game.playing.playCard(card)
+				for seat in Seat:
+					self.updateCardArea(seat)
 		
 		d = self.remote.callRemote('getGame')
 		d.addCallback(gotGame)
@@ -100,16 +103,34 @@ class ClientBridgeTable(pb.Referenceable):
 			self.game.deal[seat] = hand
 			return hand
 		
-		d = self.remote.callRemote('getHand', str(seat))
+		d = self.remote.callRemote('getHand', seat=str(seat))
 		d.addCallback(gotHand)
 		return d
 
 
-	def updateCardArea(self):
+	def updateCardArea(self, seat):
+		"""Redraws cards of seat.
+		
+		Cards played are omitted.
+		Unknown cards are drawn face-down.
+		"""
+		print "building cards for ", seat
+		hand = self.game.deal[seat]
+		if hand and self.game.playing:  # Some cards may be played.
+			cards = []
+			for card in hand:
+				if card in self.game.playing.played[seat]:
+					cards.append(None)
+				else:
+					cards.append(card)
+		elif hand:  # Bidding; no cards played.
+			cards = hand
+		else:  # Unknown hands.
+			unplayed = 13
+			cards = [None] * unplayed
+		
 		window = windowmanager.get('window_main')
-		if self.game:
-			for seat, cards in self.game.deal.items():
-				window.cardarea.build_hand_pixbuf(seat, cards)
+		window.cardarea.draw_hand(seat, cards)
 
 
 # Client request methods.
@@ -120,14 +141,18 @@ class ClientBridgeTable(pb.Referenceable):
 		self.seated = seat
 		if self.game:
 			d.addCallback(lambda r: self.getHand(seat))
-			d.addCallback(lambda r: self.updateCardArea())
-			windowmanager.launch('window_bidbox')
+			d.addCallback(lambda r: self.updateCardArea(seat))
+			if not self.game.bidding.isComplete():
+				bidbox = windowmanager.launch('window_bidbox')
+				bidbox.set_available_calls(self.seated, self.game.bidding)
 		return d
 
 
 	def standPlayer(self):
 		d = self.remote.callRemote('standPlayer')
 		self.seated = None
+		if self.game and not self.game.bidding.isComplete():
+			windowmanager.terminate('window_bidbox')
 		return d
 
 
@@ -139,8 +164,8 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def playCard(self, card):
-		if self.game.whoseTurn() == self.seated and \
-		   self.game.play.validCard(card, self.game.deal[seat], self.seated):
+		if self.game and self.game.playing and self.game.whoseTurn() == self.seated and \
+		   self.game.playing.isValidPlay(card, self.seated, self.game.deal[self.seated]):
 			d = self.remote.callRemote('playCard', card=card)
 			return d
 
@@ -172,25 +197,37 @@ class ClientBridgeTable(pb.Referenceable):
 
 	def remote_gameCallMade(self, seat, call):
 		seat = getattr(Seat, seat)
-		self.game.makeCall(seat, call)
-		windowmanager.get('window_game').add_call(call, seat)
-		if self.seated:
-			bidbox = windowmanager.get('window_bidbox')
-			bidbox.set_available_calls(self.seated, self.game.bidding)
-		
-		print seat, call
-		if self.game.whoseTurn() == self.seated:
-			print "my turn"
+		if self.game:
+			self.game.makeCall(seat, call)
+			windowmanager.get('window_game').add_call(call, seat)
+			if self.seated:
+				bidbox = windowmanager.get('window_bidbox')
+				bidbox.set_available_calls(self.seated, self.game.bidding)
+			
+			if self.game.whoseTurn() == self.seated:
+				print "my turn"
 
 
 	def remote_gameCardPlayed(self, seat, card):
+		print "%s plays %s" % (seat, card)
 		seat = getattr(Seat, seat)
-		self.game.playCard(seat, card)
-		print seat, card
+		if self.game:
+			play = self.game.playing
+			play.playCard(card)  # Manipulate play directly.
+			
+			# Redraw current trick.
+			trick = play.getTrick(play.currentTrick())[1]
+			window = windowmanager.get('window_main')
+			window.cardarea.draw_trick(trick)
+			
+			self.updateCardArea(seat)
+			# Dummy's hand becomes visible after the first card is played.
 
 
 	def remote_gameContract(self, contract):
 		print contract
+		if self.seated:
+			windowmanager.terminate('window_bidbox')
 
 
 	def remote_gameEnded(self):
@@ -207,5 +244,5 @@ class ClientBridgeTable(pb.Referenceable):
 		if self.seated:
 			d.addCallback(lambda r: self.getHand(self.seated))
 			windowmanager.launch('window_bidbox')
-		d.addCallback(lambda r: self.updateCardArea())
+		d.addCallback(lambda r: self.updateCardArea(self.seated))
 
