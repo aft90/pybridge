@@ -69,7 +69,7 @@ class WindowGame(GladeWrapper):
 	def player_stands(self, username, seat):
 		button = getattr(self, SEATS[seat])
 		# If we are not a player, enable seat.
-		button.set_property('sensitive', connector.table.seated==None)
+		button.set_property('sensitive', not(connector.table.seated))
 
 
 	def reset_bidding(self):
@@ -81,12 +81,10 @@ class WindowGame(GladeWrapper):
 		"""Adds call from specified player, to bidding tab."""
 		column = seat.index
 		if column == 0 or self.call_store.get_iter_first() == None:
-			print "creating first iter"
 			iter = self.call_store.append()
 		else:  # Get bottom row. There must be a better way than this...
 			iter = self.call_store.get_iter_first()
 			while self.call_store.iter_next(iter) != None:
-				print "next iter is", iter
 				iter = self.call_store.iter_next(iter)
 		
 		if isinstance(call, Bid):

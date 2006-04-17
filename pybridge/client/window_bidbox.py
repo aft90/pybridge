@@ -69,11 +69,9 @@ class WindowBidbox(GladeWrapper):
 	def get_button_from_call(self, call):
 		"""Returns a pointer to GtkButton object representing given call."""
 		callname = [k for k,v in CALL_NAMES.items() if isinstance(call, v)][0]
-		print callname
 		if isinstance(call, Bid):
 			level = [k for k,v in LEVEL_NAMES.items() if v==call.level][0]
 			strain = [k for k,v in STRAIN_NAMES.items() if v==call.strain][0]
-			print level, strain
 			return getattr(self, 'button_%s_%s_%s' % (callname, level, strain))
 		else:
 			return getattr(self, 'button_%s' % callname)
