@@ -51,7 +51,7 @@ class WindowMain(GladeWrapper):
 		"""Actions to perform when user leaves a table."""
 		self.button_newtable.set_property('sensitive', True)
 		self.menuitem_newtable.set_property('sensitive', True)
-		windowmanager.destroy('window_game')
+		windowmanager.terminate('window_game')
 
 
 # Signal handlers.
@@ -59,6 +59,7 @@ class WindowMain(GladeWrapper):
 
 	def card_clicked(self, card):
 		print card
+		connector.table.playCard(card)
 
 
 	def on_window_main_delete_event(self, widget, *args):
