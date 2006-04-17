@@ -17,8 +17,10 @@
 
 
 from bidding import Bidding
-from play import Play
+from playing import Playing
 
+# Enumerations.
+from card import Suit
 from deck import Seat
 
 from pybridge.failure import *
@@ -36,14 +38,17 @@ class Game:
 		self.vulnNS, self.vulnEW = vulnNS, vulnEW
 		self.contract = None
 		self.deal = deal
-		self.bidding, self.play, self.scoring = None, None, scoring
-		self._startBidding(dealer)
+		self.playing = None
+		self.scoring = scoring
+		
+		# Start bidding.
+		self.bidding = Bidding(dealer)
 
 
 	def isComplete(self):
 		"""Returns True if game is complete, False otherwise."""
-		if self.play:
-			return self.play.isComplete()
+		if self.playing:
+			return self.playing.isComplete()
 		else:
 			return self.bidding.isPassedOut()
 
@@ -59,24 +64,55 @@ class Game:
 			raise GameInvalidCallError()
 		
 		self.bidding.addCall(call)
-			
+		
+		# If bidding is complete, start playing.
+		if self.bidding.isComplete() and not self.bidding.isPassedOut():
+			contract = self.bidding.contract()
+			trumpSuit = getattr(Suit, str(contract['bid'].strain), None)  # Convert.
+			self.playing = Playing(contract['declarer'], trumpSuit)
+
 
 	def playCard(self, seat, card):
 		"""Plays card from seat."""
 		if not self.bidding.isComplete() or self.bidding.isPassedOut():
 			raise RequestUnavailableError()
-		elif not self.play:
-			self._startPlay()  # Kickstart play session.
-		elif self.play.isComplete():
+		elif self.playing.isComplete():
 			raise RequestUnavailableError()
 		
 		hand = self.deal[seat]
-		if self.play.whoseTurn() is not seat:
+		if self.playing.whoseTurn() is not seat:
 			raise GameOutOfTurnError()
-		elif not self.play.validCard(card, hand, seat):
+		elif not self.playing.isValidPlay(card, seat, hand):
 			raise GameInvalidCardError()
 		
-		self.play.playCard(card)
+		self.playing.playCard(card)
+
+
+	def getHand(self, seat, viewer=None):
+		"""Returns the hand of player specified by seat.
+		
+		If viewer player is specified, then the ability of viewer
+		to "see" the hand will be examined.
+		"""
+		if viewer is None or viewer == seat:
+			return self.deal[seat]  # Player can see their own hand.
+		
+		# During bidding, no player may see another player's hand.
+		if not self.bidding.isComplete():
+			raise GameHandHiddenError()
+		
+		# During play, the dummy player can see all hands.
+		dummy = Seat[(self.playing.declarer.index + 2) % 4]
+		if viewer == dummy:
+			return self.deal[seat]
+
+		# All players can see dummy's hand after first card played.
+		trick = self.playing.getTrick(0)[1]
+		if seat == dummy and len(trick) >= 1:
+			return self.deal[seat]
+		
+		# Hand is not visible.
+		raise GameHandHiddenError()
 
 
 	def score(self):
@@ -91,31 +127,30 @@ class Game:
 			return 0  # A passed out deal does not score.
 		else:
 			contract = self.bidding.contract()
-			declarer, dummy = contract['declarer'], Seat[(contract['declarer'].index+2)%4]
+			declarer = contract['declarer']
+			dummy = Seat[(declarer.index + 2) % 4]
 			vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + \
 			             (self.vulnEW and declarer in (Seat.West, Seat.East))
 			
+			tricksMade = 0  # Count of tricks won by declarer or dummy.
+			for trickindex in range(len(self.playing.winners)):
+				trick = self.playing.getTrick(trickindex)
+				winner = self.playing.whoPlayed(self.playing.winningCard(trick))
+				trickCount += winner in (declarer, dummy)
+			
 			result = {'contract'   : self.bidding.contract(),
-			          'tricksMade' : self.play.wonTricks(declarer) + self.play.wonTricks(dummy),
+			          'tricksMade' : trickCount,
 			          'vulnerable' : vulnerable, }
 			return self.scoring(result)
 
 
 	def whoseTurn(self):
 		"""Returns the seat that is next to call or play card."""
-		if not self.bidding.isComplete():
-			return self.bidding.whoseTurn()
-		elif not self.play:
-			self._startPlay()  # Kickstart play session.
-		return self.play.whoseTurn()
+		if not self.isComplete():
+			if self.bidding.isComplete():
+				return self.playing.whoseTurn()
+			else:
+				return self.bidding.whoseTurn()
+		else:
+			raise RequestUnavailableError()
 
-
-	def _startBidding(self, dealer):
-		self.bidding = Bidding(dealer)
-
-
-	def _startPlay(self):
-		contract  = self.bidding.contract()
-		declarer  = contract['declarer']
-		trumpSuit = contract['bid'].bidDenom
-		self.play = Play(declarer, trumpSuit)
