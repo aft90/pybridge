@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+import sha
 from twisted.cred import credentials
 from twisted.internet import reactor
 from twisted.spread import pb
@@ -52,7 +53,8 @@ class Connector(pb.Referenceable):
 
 	def login(self, host, port, username, password):
 		"""Attempt to log in to server with username and password."""
-		d = self._connect(host, port, username, password)
+		hash = sha.new(password).hexdigest()
+		d = self._connect(host, port, username, hash)
 		return d
 
 
@@ -60,7 +62,8 @@ class Connector(pb.Referenceable):
 		"""Registers username/password on server."""
 		
 		def try_register(avatar):
-			d = self.avatar.callRemote('register', username, password)
+			hash = sha.new(password).hexdigest()
+			d = self.avatar.callRemote('register', username, hash)
 			return d
 		
 		d = self._connect(host, port, '', '')  # Anonymous login.
