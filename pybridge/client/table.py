@@ -78,7 +78,7 @@ class ClientBridgeTable(pb.Referenceable):
 				setupBidding(info.get('calls', []))
 				setupPlaying(info.get('played', {}))
 				for seat in Seat:
-					self.updateCardArea(seat)
+					self.redrawHand(seat)
 		
 		def setupBidding(calls):
 			for call in calls:
@@ -93,6 +93,7 @@ class ClientBridgeTable(pb.Referenceable):
 				seat = self.game.whoseTurn()
 				card = played[str(seat)].pop(0)
 				self.game.playCard(seat, card)
+			self.redrawTrick(self.game.playing.currentTrick())
 		
 		d = self.remote.callRemote('getGame')
 		d.addCallback(gotGame)
@@ -111,34 +112,33 @@ class ClientBridgeTable(pb.Referenceable):
 		return d
 
 
-	def updateCardArea(self, seat):
-		"""Redraws cards of seat.
+	def redrawHand(self, seat):
+		"""Redraws cards making up the hand of player at seat.
 		
-		Cards played are omitted.
-		Unknown cards are drawn face-down.
+		Cards played are omitted. Unknown cards are drawn face-down.
 		"""
-		print "building cards for ", seat
 		hand = self.game.deal[seat]
-		if hand and self.game.playing:  # Some cards may be played.
+		played = self.game.playing and self.game.playing.played[seat] or []
+		
+		if hand:  # Own, or known, hand.
 			cards = []
-			for card in hand:
-				if card in self.game.playing.played[seat]:
-					cards.append(None)
-				else:
-					cards.append(card)
-		elif hand:  # Bidding; no cards played.
-			cards = hand
-		else:  # Unknown hands.
-			if self.game.playing:
-				played = len(self.game.playing.played[seat])
-			else:
-				played = 0
-			unplayed = 13 - played
-			cards = ['facedown']*unplayed + [None]*played
+			for card in hand:  # Filter out cards played.
+				cards.append((card not in played and card) or None)
+		else:  # Unknown hand.
+			cards = ['facedown']*(13-len(played)) + [None]*len(played)
 		
 		window = windowmanager.get('window_main')
 		window.cardarea.build_hand(seat, cards)
 		window.cardarea.draw_hand(seat)
+
+
+	def redrawTrick(self, trickindex):
+		"""Draws trick."""
+		trick = self.game.playing.getTrick(trickindex)
+		
+		window = windowmanager.get('window_main')
+		window.cardarea.build_trick(trick)
+		window.cardarea.draw_trick()
 
 
 # Client request methods.
@@ -149,7 +149,7 @@ class ClientBridgeTable(pb.Referenceable):
 		self.seated = seat
 		if self.game:
 			d.addCallback(lambda r: self.getHand(seat))
-			d.addCallback(lambda r: self.updateCardArea(seat))
+			d.addCallback(lambda r: self.redrawHand(seat))
 			if not self.game.bidding.isComplete():
 				bidbox = windowmanager.launch('window_bidbox')
 				bidbox.set_available_calls(self.seated, self.game.bidding)
@@ -214,10 +214,11 @@ class ClientBridgeTable(pb.Referenceable):
 	def remote_gameCardPlayed(self, seat, card):
 		seat = getattr(Seat, seat)
 		play = self.game.playing
+		trickindex = play.currentTrick()  # Preserve trick index.
 		
 		# Since hands may be unknown, bypass isValidCard() check.
 		play.playCard(card)
-		trick = play.getTrick(play.currentTrick())
+		trick = play.getTrick(trickindex)
 		dummy = Seat[(play.declarer.index + 2) % 4]
 		
 		# Dummy's hand becomes visible after the first card is played.
@@ -225,10 +226,8 @@ class ClientBridgeTable(pb.Referenceable):
 			self.getHand(dummy)
 		
 		# Redraw current trick.
-		window = windowmanager.get('window_main')
-		self.updateCardArea(seat)
-		window.cardarea.build_trick(trick)
-		window.cardarea.draw_trick()
+		self.redrawHand(seat)
+		self.redrawTrick(trickindex)  # Using preserved trick index.
 		
 		# Update trick counters in window_game.
 		dclWon, dclReq = 0, 0  # Declarer won and required tricks.
@@ -267,5 +266,5 @@ class ClientBridgeTable(pb.Referenceable):
 		if self.seated:
 			d.addCallback(lambda r: self.getHand(self.seated))
 			windowmanager.launch('window_bidbox')
-		d.addCallback(lambda r: self.updateCardArea(self.seated))
+		d.addCallback(lambda r: self.redrawHand(self.seated))
 

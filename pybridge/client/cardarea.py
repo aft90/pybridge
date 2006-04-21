@@ -233,7 +233,7 @@ class CardArea(gtk.DrawingArea):
 			hand_xy = get_hand_xy()
 			if hand_xy:
 				card = get_card_in_hand(*hand_xy)
-				if card is not None:
+				if isinstance(card, Card):
 					self.on_card_clicked(card)  # External handler.
 		
 		return True  # Button press event is expected to return true.
