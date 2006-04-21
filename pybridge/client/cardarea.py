@@ -72,7 +72,7 @@ class CardArea(gtk.DrawingArea):
 		self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
 
 
-	def draw_card(self, dest_pixbuf, pos_x, pos_y, card=None):
+	def draw_card(self, dest_pixbuf, pos_x, pos_y, card):
 		"""Draws graphic of specified card to dest_pixbuf at (pos_x, pos_y)."""
 		if isinstance(card, Card):  # Determine coordinates of graphic in card_mask.
 			src_x = CARD_MASK_RANKS.index(card.rank) * self.card_width
@@ -84,7 +84,7 @@ class CardArea(gtk.DrawingArea):
 		                         dest_pixbuf, pos_x, pos_y)
 
 
-	def draw_hand(self, seat, hand, transpose=False, dummy=False):
+	def build_hand(self, seat, hand, transpose=False, dummy=False):
 		"""Builds and saves a pixbuf of card images. Assumes cards are sorted by suit.
 	
 		hand: list of card objects and None objects to be drawn.
@@ -106,58 +106,30 @@ class CardArea(gtk.DrawingArea):
 		else:
 			wraparound = WRAPAROUNDS[seat]
 		
-		# Setup pixbuf with appropriate dimensions.
+		# Setup hand pixbuf with appropriate dimensions.
 		alpha, beta = max(wraparound)-1, len(wraparound)-1
 		width = self.card_width + self.spacing_x*(transpose*beta + (not transpose)*alpha)
 		height = self.card_height + self.spacing_y*(transpose*alpha + (not transpose)*beta)
 		self.hand_pixbufs[seat] = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
+#		self.hand_pixbufs[seat].fill(0x00000000)  # Clear pixbuf.
 
-		# Draw cards to pixbuf.
+		# Draw cards to hand pixbuf.
 		self.card_coords[seat] = []
-		for index, card in [pair for pair in enumerate(hand)]:
-			factor_y = 0
-			while sum(wraparound[0:factor_y+1]) <= index:
-				factor_y += 1
-			factor_x = index - sum(wraparound[0:factor_y])
-			pos_x = self.spacing_x * (transpose*factor_y + (not transpose)*factor_x)
-			pos_y = self.spacing_y * (transpose*factor_x + (not transpose)*factor_y)
-			self.draw_card(self.hand_pixbufs[seat], pos_x, pos_y, card)
-			self.card_coords[seat].append((card, pos_x, pos_y))
-		
-		# Refresh card table.
-		self.emit('configure_event', gtk.gdk.Event(gtk.gdk.CONFIGURE))
-		self.window.invalidate_rect(self.get_allocation(), False)
+		for index, card in enumerate(hand):
+			if card is not None:  # None represents a space.
+				factor_y = 0
+				while sum(wraparound[0:factor_y+1]) <= index:
+					factor_y += 1
+				factor_x = index - sum(wraparound[0:factor_y])
+				pos_x = self.spacing_x * (transpose*factor_y + (not transpose)*factor_x)
+				pos_y = self.spacing_y * (transpose*factor_x + (not transpose)*factor_y)
+				self.draw_card(self.hand_pixbufs[seat], pos_x, pos_y, card)
+				self.card_coords[seat].append((card, pos_x, pos_y))
 
 
-	def draw_trick(self, trick):
-		"""Builds and saves a pixbuf of trick."""
-		
-		# Setup pixbuf with appropriate dimensions.
-		width, height = 250, 250
-		self.trick_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
-		
-		# When called, returns (x, y) start point to draw card.
-		coords = {Seat.North : lambda: ((width-self.card_width)/2, 0),
-		          Seat.East  : lambda: (width-self.card_width, (height-self.card_height)/2),
-		          Seat.South : lambda: ((width-self.card_width)/2, height-self.card_height),
-		          Seat.West  : lambda: (0, (height-self.card_height)/2), }
-		
-		for seat, card in trick.items():
-			pos_x, pos_y = coords[seat]()
-			print "drawing %s %s at (%s, %s)" % (seat, card, pos_x, pos_y)
-			self.draw_card(self.trick_pixbuf, pos_x, pos_y, card)
-		
-		# Refresh card table.
-		self.emit('configure_event', gtk.gdk.Event(gtk.gdk.CONFIGURE))
-		self.window.invalidate_rect(self.get_allocation(), False)
-
-
-	def configure(self, widget, event):
-		"""Creates backing pixmap of the appropriate size, containing hand pixbufs."""
-		x, y, width, height = widget.get_allocation()
-		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
-		backgroundGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)
-		self.backing.draw_rectangle(backgroundGC, True, 0, 0, width, height)
+	def draw_hand(self, seat):
+		""""""
+		x, y, width, height = self.get_allocation()
 		
 		# When called with (w, h) of hand pixbuf, returns (x, y) start point to draw hand.
 		coords = {Seat.North : lambda w, h: ((width-w)/2, BORDER_Y),
@@ -165,20 +137,70 @@ class CardArea(gtk.DrawingArea):
 		          Seat.South : lambda w, h: ((width-w)/2, height-h-BORDER_Y),
 		          Seat.West  : lambda w, h: (BORDER_X, (height-h)/2), }
 		
-		for seat, hand_pixbuf in self.hand_pixbufs.items():
-			# Determine co-ordinates to draw hand mask on table.
-			hand_width = hand_pixbuf.get_width()
-			hand_height = hand_pixbuf.get_height()
-			pos_x, pos_y = coords[seat](hand_width, hand_height)
-			self.backing.draw_pixbuf(backgroundGC, hand_pixbuf, 0, 0, pos_x, pos_y)
-			self.hand_coords[seat] = (pos_x, pos_y, pos_x+hand_width, pos_y+hand_height)
+		# Determine coordinates in backing pixmap to draw hand pixbuf.
+		hand_pixbuf = self.hand_pixbufs[seat]
+		hand_width = hand_pixbuf.get_width()
+		hand_height = hand_pixbuf.get_height()
+		pos_x, pos_y = coords[seat](hand_width, hand_height)
 		
-		if self.trick_pixbuf:  # Draw current trick at centre.
-			print "drawing trick"
-			pos_x = (width - self.trick_pixbuf.get_width()) / 2
-			pos_y = (height - self.trick_pixbuf.get_height()) / 2
-			self.backing.draw_pixbuf(backgroundGC, self.trick_pixbuf, 0, 0, pos_x, pos_y)
+		# Draw hand pixbuf and save hand coordinates.
+		self.backing.draw_rectangle(self.backingGC, True, pos_x, pos_y, hand_width, hand_height)
+		self.backing.draw_pixbuf(self.backingGC, hand_pixbuf, 0, 0, pos_x, pos_y)
+		self.hand_coords[seat] = (pos_x, pos_y, pos_x+hand_width, pos_y+hand_height)
 		
+		# Redraw modified area of backing pixbuf.
+		self.window.invalidate_rect((pos_x, pos_y, hand_width, hand_height), False)
+
+
+	def build_trick(self, trick):
+		"""Builds and saves a pixbuf of trick."""
+		width = self.card_width + self.spacing_x*2
+		height = self.card_height + self.spacing_y*2
+		self.trick_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
+		self.trick_pixbuf.fill(0x00000000)  # Clear pixbuf.
+
+		# When called, returns (x, y) start point to draw card.
+		coords = {Seat.North : lambda: ((width-self.card_width)/2, 0),
+		          Seat.East  : lambda: (width-self.card_width, (height-self.card_height)/2),
+		          Seat.South : lambda: ((width-self.card_width)/2, height-self.card_height),
+		          Seat.West  : lambda: (0, (height-self.card_height)/2), }
+		
+		# Draw cards in order of play, to permit overlapping of cards.
+		leader, cards = trick
+		seatorder = Seat[leader.index:] + Seat[:leader.index]
+		for seat in [s for s in seatorder if s in cards]:
+			pos_x, pos_y = coords[seat]()
+			self.draw_card(self.trick_pixbuf, pos_x, pos_y, cards[seat])
+
+
+	def draw_trick(self):
+		""""""
+		x, y, width, height = self.get_allocation()
+		
+		trick_width = self.trick_pixbuf.get_width()
+		trick_height = self.trick_pixbuf.get_height()
+		pos_x = (width - trick_width) / 2
+		pos_y = (height - trick_height) / 2
+		self.backing.draw_rectangle(self.backingGC, True, pos_x, pos_y, trick_width, trick_height)
+		self.backing.draw_pixbuf(self.backingGC, self.trick_pixbuf, 0, 0, pos_x, pos_y)
+		
+		# Redraw modified area of backing pixbuf.
+		rect = (pos_x, pos_y, trick_width, trick_height)
+		self.window.invalidate_rect(rect, False)
+
+
+	def configure(self, widget, event):
+		"""Creates backing pixmap of the appropriate size, containing hand pixbufs."""
+		x, y, width, height = widget.get_allocation()
+		self.backing = gtk.gdk.Pixmap(widget.window, width, height)
+		self.backingGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)
+		self.backing.draw_rectangle(self.backingGC, True, 0, 0, width, height)
+		
+		for seat in self.hand_pixbufs:
+			self.draw_hand(seat)
+		if self.trick_pixbuf:
+			self.draw_trick()
+
 		gc.collect()  # Manual garbage collection. See PyGTK FAQ, section 8.4.
 		return True   # Configure event is expected to return true.
 
@@ -194,7 +216,7 @@ class CardArea(gtk.DrawingArea):
 	def button_press(self, widget, event):
 		"""Determines which card was clicked, then calls external handler method."""
 		
-		def get_hand():
+		def get_hand_xy():
 			for seat, hand in self.hand_coords.items():
 				start_x, start_y, finish_x, finish_y = hand
 				if (start_x <= event.x <= finish_x) and (start_y <= event.y <= finish_y):
@@ -205,13 +227,14 @@ class CardArea(gtk.DrawingArea):
 			pos_y = event.y - start_y
 			for card, x, y in self.card_coords[seat][::-1]:  # Iterate backwards.
 				if (x <= pos_x <= x+self.card_width) and (y <= pos_y <= y+self.card_height):
-					self.on_card_clicked(card)  # Call external handler.
-					return True
+					return card
 		
-		if event.button == 1 and self.on_card_clicked:#self.backing != None:
-			hand = get_hand()
-			if hand:
-				get_card_in_hand(*hand)
+		if event.button == 1 and self.on_card_clicked:
+			hand_xy = get_hand_xy()
+			if hand_xy:
+				card = get_card_in_hand(*hand_xy)
+				if card is not None:
+					self.on_card_clicked(card)  # External handler.
 		
 		return True  # Button press event is expected to return true.
 
