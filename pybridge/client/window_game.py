@@ -95,6 +95,40 @@ class WindowGame(GladeWrapper):
 		self.call_store.set(iter, column, format)
 
 
+	def set_contract(self, contract):
+		"""Sets the contract label from contract."""
+		self.frame_contract.set_property('sensitive', True)
+		format = (contract['bid'].level.index+1,
+		          STRAIN_SYMBOLS[contract['bid'].strain],
+		          (contract['redoubleBy'] and 'XX') or (contract['doubleBy'] and 'X') or '',
+		          str(contract['declarer']), )
+		self.label_contract.set_markup('<b>%s%s%s by %s</b>' % format)
+
+
+	def reset_contract(self):
+		""""""
+		self.frame_contract.set_property('sensitive', False)
+		self.label_contract.set_markup('<b>Not established</b>')
+
+
+	def set_wontricks(self, declarer, defence):
+		"""Sets the trick counter labels for declarer and defence.
+		
+		declarer: (# obtained, # remaining to make contract)
+		defence: (# obtained, # remaining to defeat contract)
+		"""
+		self.frame_declarer.set_property('sensitive', True)
+		self.label_declarer.set_markup('<b>%s (%s)</b>' % declarer)
+		self.frame_defence.set_property('sensitive', True)
+		self.label_defence.set_markup('<b>%s (%s)</b>' % defence)
+
+
+	def reset_wontricks(self):
+		""""""
+		self.frame_declarer.set_property('sensitive', False)
+		self.frame_defence.set_property('sensitive', False)
+		
+
 # Signal handlers.
 
 
