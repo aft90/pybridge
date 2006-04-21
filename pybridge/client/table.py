@@ -71,25 +71,28 @@ class ClientBridgeTable(pb.Referenceable):
 		""""""
 		
 		def gotGame(info):
-			print "got game", info
 			if info.get('active'):
 				deal = dict.fromkeys(Seat, [])  # Unknown cards.
 				dealer = getattr(Seat, info['dealer'])
 				self.game = Game(dealer, deal, None, False, False)
-			
-				calls = info.get('calls', [])
-				for call in calls:
-					self.game.bidding.addCall(call)
-				
-				tricks = info.get('played', {})
-				for seat in tricks:
-					pass
-#					leader, cards = trick[0], trick[1:]
-#					print leader, cards
-#					for card in cards:
-#						self.game.playing.playCard(card)
+				setupBidding(info.get('calls', []))
+				setupPlaying(info.get('played', {}))
 				for seat in Seat:
 					self.updateCardArea(seat)
+		
+		def setupBidding(calls):
+			for call in calls:
+				seat = self.game.whoseTurn()
+				self.game.makeCall(seat, call)
+			if self.game.bidding.contract():
+				window = windowmanager.get('window_game')
+				window.set_contract(self.game.bidding.contract())
+		
+		def setupPlaying(played):
+			while sum([len(cards) for cards in played.values()]) > 0:
+				seat = self.game.whoseTurn()
+				card = played[str(seat)].pop(0)
+				self.game.playCard(seat, card)
 		
 		d = self.remote.callRemote('getGame')
 		d.addCallback(gotGame)
@@ -126,11 +129,16 @@ class ClientBridgeTable(pb.Referenceable):
 		elif hand:  # Bidding; no cards played.
 			cards = hand
 		else:  # Unknown hands.
-			unplayed = 13
-			cards = [None] * unplayed
+			if self.game.playing:
+				played = len(self.game.playing.played[seat])
+			else:
+				played = 0
+			unplayed = 13 - played
+			cards = ['facedown']*unplayed + [None]*played
 		
 		window = windowmanager.get('window_main')
-		window.cardarea.draw_hand(seat, cards)
+		window.cardarea.build_hand(seat, cards)
+		window.cardarea.draw_hand(seat)
 
 
 # Client request methods.
@@ -184,14 +192,12 @@ class ClientBridgeTable(pb.Referenceable):
 	def remote_playerSits(self, username, seat):
 		seat = getattr(Seat, seat)
 		self.players[seat] = username
-		print "player %s sits %s" % (username, seat)
 		windowmanager.get('window_game').player_sits(username, seat)
 
 
 	def remote_playerStands(self, username, seat):
 		seat = getattr(Seat, seat)
 		self.players[seat] = None
-		print "player %s stands %s" % (username, seat)
 		windowmanager.get('window_game').player_stands(username, seat)
 
 
@@ -203,35 +209,52 @@ class ClientBridgeTable(pb.Referenceable):
 			if self.seated:
 				bidbox = windowmanager.get('window_bidbox')
 				bidbox.set_available_calls(self.seated, self.game.bidding)
-			
-			if self.game.whoseTurn() == self.seated:
-				print "my turn"
 
 
 	def remote_gameCardPlayed(self, seat, card):
-		print "%s plays %s" % (seat, card)
 		seat = getattr(Seat, seat)
-		if self.game:
-			play = self.game.playing
-			play.playCard(card)  # Manipulate play directly.
-			
-			# Redraw current trick.
-			trick = play.getTrick(play.currentTrick())[1]
-			window = windowmanager.get('window_main')
-			window.cardarea.draw_trick(trick)
-			
-			self.updateCardArea(seat)
-			# Dummy's hand becomes visible after the first card is played.
+		play = self.game.playing
+		
+		# Since hands may be unknown, bypass isValidCard() check.
+		play.playCard(card)
+		trick = play.getTrick(play.currentTrick())
+		dummy = Seat[(play.declarer.index + 2) % 4]
+		
+		# Dummy's hand becomes visible after the first card is played.
+		if play.currentTrick() == 0 and len(trick[1]) == 1:
+			self.getHand(dummy)
+		
+		# Redraw current trick.
+		window = windowmanager.get('window_main')
+		self.updateCardArea(seat)
+		window.cardarea.build_trick(trick)
+		window.cardarea.draw_trick()
+		
+		# Update trick counters in window_game.
+		dclWon, dclReq = 0, 0  # Declarer won and required tricks.
+		defWon, defReq = 0, 0  # Defence won and required tricks.
+		for index in range(play.currentTrick()):
+			winner = play.whoPlayed(play.winningCard(index))
+			dclWon += int(winner in (play.declarer, dummy))
+			defWon += int(winner not in (play.declarer, dummy))
+		required = self.game.bidding.contract()['bid'].level.index + 7
+		dclReq = int(required > dclWon and required - dclWon)
+		defReq = int(13-required+1 > defWon and 13 - required - defWon + 1)
+		window = windowmanager.get('window_game')
+		window.set_wontricks((dclWon, dclReq), (defWon, defReq))
 
 
 	def remote_gameContract(self, contract):
-		print contract
 		if self.seated:
 			windowmanager.terminate('window_bidbox')
+		contract = self.game.bidding.contract()
+		windowmanager.get('window_game').set_contract(contract)
 
 
 	def remote_gameEnded(self):
-		print "ended"
+		window = windowmanager.get('window_game')
+		window.reset_contract()
+		window.reset_wontricks()
 
 
 	def remote_gameResult(self, result):
