@@ -93,7 +93,8 @@ class ClientBridgeTable(pb.Referenceable):
 				seat = self.game.whoseTurn()
 				card = played[str(seat)].pop(0)
 				self.game.playCard(seat, card)
-			self.redrawTrick(self.game.playing.currentTrick())
+			if self.game.playing:
+				self.redrawTrick(self.game.playing.currentTrick())
 		
 		d = self.remote.callRemote('getGame')
 		d.addCallback(gotGame)
