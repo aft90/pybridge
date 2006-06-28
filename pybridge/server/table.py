@@ -165,7 +165,6 @@ class BridgeTable(pb.Viewable):
 				info['dealer'] = str(self.game.bidding.dealer)
 			if self.game.playing:
 				info['declarer'] = str(self.game.playing.declarer)
-				# Convert trick to a list of cards, in the order played.
 				info['played'] = {}
 				for seat, cards in self.game.playing.played.items():
 					info['played'][str(seat)] = cards
@@ -186,20 +185,6 @@ class BridgeTable(pb.Viewable):
 		# If user is not a player, then player == None.
 		player = self.getSeatForPlayer(user.name)
 		return self.game.getHand(seat, player)
-		
-#		if userSeat == None or userSeat == seat:
-#			return self.game.deal[seat]  # Player can see their own hand.
-#		if not self.game.bidding.isComplete():
-#			raise GameHandHiddenError()  # Bidding; no player can see another hand.
-#		
-#		dummy = Seat[(self.game.playing.declarer.index + 2) % 4]
-#		if userSeat == dummy:
-#			return self.game.deal[seat]  # Play; dummy can see all hands.
-#		elif seat == dummy and len(self.game.playing.tricks[0].cardsPlayed()) > 0:
-#			# Declarer and defenders can see dummy's hand after first card played.
-#			return self.game.deal[seat]
-#		else:
-#			raise GameHandHiddenError()
 
 
 	def view_makeCall(self, user, call):
