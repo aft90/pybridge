@@ -33,8 +33,12 @@ class Playing:
 	def __init__(self, declarer, trumps):
 		assert declarer in Seat
 		assert trumps in Suit or trumps is None  # (None = No Trumps)
-		self.declarer = declarer
 		self.trumps = trumps
+		
+		self.declarer = declarer
+		self.dummy = Seat[(declarer.index + 2) % 4]
+		self.lho = Seat[(declarer.index + 1) % 4]
+		self.rho = Seat[(declarer.index + 3) % 4]
 		
 		# Each trick corresponds to a cross-section of lists.
 		self.played = {Seat.North : [], Seat.East : [],
@@ -45,7 +49,7 @@ class Playing:
 
 	def isComplete(self):
 		"""Returns true for 13 complete tricks."""
-                return len(self.winners) == 13
+		return len(self.winners) == 13
 
 
 	def currentTrick(self):
@@ -59,10 +63,10 @@ class Playing:
 		- the leader seat.
 		- a dict containing seat : card pairs, for each card in trick.
 		"""
-		if trickindex == 0:  # Leader is declarer's left-hand opponent.
-			leader = Seat[(self.declarer.index + 1) % 4]
+		if trickindex == 0:  # First trick.
+			leader = self.lho  # Leader is declarer's left-hand opponent.
 		else:  # Leader is winner of previous trick.
-			leader = self.winners[trickindex-1]
+			leader = self.winners[trickindex - 1]
 		trick = {}
 		for seat in Seat:
 			if len(self.played[seat]) > trickindex:
@@ -72,8 +76,8 @@ class Playing:
 
 	def playCard(self, card):
 		"""Plays card to current trick. Assumes correct seat.
-
-                Card validity should be checked with isValidPlay() beforehand.
+		
+		Card validity should be checked with isValidPlay() beforehand.
 		"""
 		assert isinstance(card, Card)
 		# Skip the seat and hand checks here.
@@ -99,7 +103,7 @@ class Playing:
 		card must follow lead suit OR hand must be void in lead suit.
 		
 		Specification of seat and hand  required for verification.
-                """
+		"""
 		if self.isComplete():
 			return False
 		elif hand and card not in hand:
@@ -142,7 +146,7 @@ class Playing:
 		
 		- In a trump contract, the highest ranked trump card wins.
 		- Otherwise, the highest ranked card of the lead suit wins.
-                """
+		"""
 		leader, trick = self.getTrick(trickindex)
 		if len(trick) == 4:  # Trick is complete.
 			if self.trumps:  # Suit contract.

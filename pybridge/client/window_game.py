@@ -129,6 +129,10 @@ class WindowGame(GladeWrapper):
 		self.frame_defence.set_property('sensitive', False)
 		
 
+	def set_result(self, result):
+		print "result is:", result
+
+
 # Signal handlers.
 
 

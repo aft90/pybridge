@@ -142,7 +142,8 @@ class DummyBot(pb.Referenceable):
 		print "%s plays %s" % (seat, card)
 		
 		if self.game.whoseTurn() == self.seat:
-			reactor.callLater(0.5, self.playCard)
+			if self.game.playing.dummy != self.seat:  # Dummy cannot play
+				reactor.callLater(0.5, self.playCard)
 
 
 	def makeCall(self):

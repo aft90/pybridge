@@ -221,6 +221,13 @@ class BridgeTable(pb.Viewable):
 		if seat is None:  # User not playing.
 			raise TablePlayingError()
 		
+		# Declarer can play dummy's cards, dummy cannot play own cards.
+		if self.game.whoseTurn() == self.game.playing.dummy:
+			if seat == self.game.playing.declarer:
+				seat = self.game.playing.dummy  # Declarer commands dummy.
+			elif seat == self.game.playing.dummy:
+				raise TablePlayingError()  # Dummy cannot play own cards.
+		
 		self.game.playCard(seat, card)  # May raise a game error.
 		
 		self.informObservers('gameCardPlayed', seat=str(seat), card=card)

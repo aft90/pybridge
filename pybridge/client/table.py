@@ -45,7 +45,7 @@ class ClientBridgeTable(pb.Referenceable):
 		self.game = None
 		self.observers = []
 		self.players = dict.fromkeys(Seat, None)
-		self.seated = False  # If playing, the seat occupied.
+		self.seated = False  # If playing, the seat we occupy.
 
 
 	def setup(self):
@@ -166,17 +166,21 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def makeCall(self, call):
-		if self.game.whoseTurn() == self.seated and \
-		   self.game.bidding.validCall(call):
+		if self.game.whoseTurn() == self.seated and self.game.bidding.validCall(call):
 			d = self.remote.callRemote('makeCall', call=call)
 			return d
 
 
 	def playCard(self, card):
-		if self.game and self.game.playing and self.game.whoseTurn() == self.seated and \
-		   self.game.playing.isValidPlay(card, self.seated, self.game.deal[self.seated]):
-			d = self.remote.callRemote('playCard', card=card)
-			return d
+		seat = self.seated
+		if self.game and self.game.playing:
+			dummy, declarer = self.game.playing.dummy, self.game.playing.declarer
+			# Declarer can play dummy's cards.
+			if self.game.whoseTurn() == dummy and seat == declarer:
+				seat = dummy
+			if self.game.playing.isValidPlay(card, seat, self.game.deal[seat]):
+				d = self.remote.callRemote('playCard', card=card)
+				return d
 
 
 # Remote methods, callable by server-side Table object.
@@ -220,11 +224,11 @@ class ClientBridgeTable(pb.Referenceable):
 		# Since hands may be unknown, bypass isValidCard() check.
 		play.playCard(card)
 		trick = play.getTrick(trickindex)
-		dummy = Seat[(play.declarer.index + 2) % 4]
 		
 		# Dummy's hand becomes visible after the first card is played.
 		if play.currentTrick() == 0 and len(trick[1]) == 1:
-			self.getHand(dummy)
+			d = self.getHand(play.dummy)
+			d.addCallback(lambda r: self.redrawHand(play.dummy))
 		
 		# Redraw current trick.
 		self.redrawHand(seat)
@@ -235,8 +239,8 @@ class ClientBridgeTable(pb.Referenceable):
 		defWon, defReq = 0, 0  # Defence won and required tricks.
 		for index in range(play.currentTrick()):
 			winner = play.whoPlayed(play.winningCard(index))
-			dclWon += int(winner in (play.declarer, dummy))
-			defWon += int(winner not in (play.declarer, dummy))
+			dclWon += int(winner in (play.declarer, play.dummy))
+			defWon += int(winner not in (play.declarer, play.dummy))
 		required = self.game.bidding.contract()['bid'].level.index + 7
 		dclReq = int(required > dclWon and required - dclWon)
 		defReq = int(13-required+1 > defWon and 13 - required - defWon + 1)
@@ -258,7 +262,15 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameResult(self, result):
-		print result
+#		for seat, hand in self.game.deal.items():
+#			# If bidding is passed out, fetch other hands.
+#			if hand is []:
+#				print "fetching hand", seat
+#				self.getHand(seat)
+		for seat in Seat:
+			self.redrawHand(seat)
+		window = windowmanager.get('window_game')
+		window.set_result(result)
 
 
 	def remote_gameStarted(self, dealer):
