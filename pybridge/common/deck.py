@@ -33,10 +33,7 @@ class Deck:
 	"""
 
 	def __init__(self):
-		self.cards = []
-		for suit in Suit:
-			for rank in Rank:
-				self.cards.append(Card(rank, suit))
+		self.cards = [Card(r, s) for r in Rank for s in Suit]
 
 
 	def dealOrdered(self, combination):
