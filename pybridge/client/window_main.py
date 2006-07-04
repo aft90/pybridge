@@ -32,25 +32,56 @@ class WindowMain(GladeWrapper):
 
 
 	def new(self):
-		self.cardarea = CardArea()
-		self.cardarea.on_card_clicked = self.card_clicked
-		self.scrolled_cardarea.add_with_viewport(self.cardarea)
-		self.cardarea.show()
+		# Set up table listing.
+		self.tablelisting_store = gtk.ListStore(str)
+		self.tablelisting.set_model(self.tablelisting_store)
+		cell_renderer = gtk.CellRendererText()
+		for index, title in enumerate( ('Name',) ):
+			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
+			self.tablelisting.append_column(column)
+		# Get list of available tables.
+		d = connector.listTables()
+		d.addCallback(self.add_tables)
+
+
+	def add_tables(self, tablenames):
+		"""Adds a table to the table listing."""
+		for tablename in tablenames:
+			row = (tablename, )
+			iter = self.tablelisting_store.append(row)
+
+
+	def remove_tables(self, tablenames):
+		"""Removes a table from the table listing."""
 		
-		windowmanager.launch('window_tablelisting')
+		def func(model, path, iter, user_data):
+			if model.get_value(iter, 0) in user_data:
+				model.remove(iter)
+			return True
+		
+		self.tablelisting_store.foreach(func, tablenames)
 
 
 	def join_table(self, tablename):
 		"""Actions to perform when user joins a table."""
-		self.button_newtable.set_property('sensitive', False)
-		self.menuitem_newtable.set_property('sensitive', False)
+		for widget in (self.menuitem_newtable, self.toolbutton_newtable, self.toolbutton_jointable):
+			widget.set_property('sensitive', False)
+		
+		# Set up card area widget as new page.
+		tab = gtk.Label(tablename)
+		self.cardarea = CardArea()
+		self.cardarea.on_card_clicked = self.card_clicked
+		self.cardarea.show()
+		index = self.notebook.append_page(self.cardarea, tab)
+		self.notebook.set_current_page(index)
+		
 		windowmanager.launch('window_game')
 
 
 	def leave_table(self, tablename):
 		"""Actions to perform when user leaves a table."""
-		self.button_newtable.set_property('sensitive', True)
-		self.menuitem_newtable.set_property('sensitive', True)
+		for widget in (self.menuitem_newtable, self.toolbutton_newtable, self.toolbutton_jointable):
+			widget.set_property('sensitive', True)
 		windowmanager.terminate('window_game')
 
 
@@ -58,8 +89,15 @@ class WindowMain(GladeWrapper):
 
 
 	def card_clicked(self, card):
-		print card
 		connector.table.playCard(card)
+
+
+	def on_tablelisting_row_activated(self, widget, *args):
+		if connector.table is None:
+			iter = self.tablelisting_store.get_iter(args[0])
+			tablename = self.tablelisting_store.get_value(iter, 0)
+			d = connector.joinTable(tablename)
+			d.addCallback(lambda r: self.join_table(tablename))
 
 
 	def on_window_main_delete_event(self, widget, *args):
@@ -70,18 +108,21 @@ class WindowMain(GladeWrapper):
 		windowmanager.launch('dialog_newtable')
 
 
-	def on_tablelisting_toggled(self, widget, *args):
-		window = windowmanager.get('window_tablelisting').window
-		if self.button_tablelisting.get_active():
-			window.show()
-		else:
-			window.hide()
+	def on_jointable_activate(self, widget, *args):
+		pass
 
 
 	def on_disconnect_activate(self, widget, *args):
 		#connector.disconnect()
 		windowmanager.terminate('window_main')
 		windowmanager.launch('dialog_connection')
+
+
+	def on_fullscreen_activate(self, widget, *args):
+		if self.menu_fullscreen.active:
+			self.window.fullscreen()
+		else:
+			self.window.unfullscreen()
 
 
 	def on_quit_activate(self, widget, *args):

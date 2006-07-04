@@ -53,9 +53,6 @@ class WindowManager:
 			elif windowname == 'window_main':
 				from window_main import WindowMain
 				instance = WindowMain()
-			elif windowname == 'window_tablelisting':
-				from window_tablelisting import WindowTablelisting
-				instance = WindowTablelisting()
 			
 			self._instances[windowname] = instance
 			return instance

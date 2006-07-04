@@ -110,11 +110,11 @@ class Connector(pb.Referenceable):
 
 
 	def remote_tableOpened(self, tablename):
-		windowmanager.get('window_tablelisting').add_tables((tablename,))
+		windowmanager.get('window_main').add_tables((tablename,))
 
 
 	def remote_tableClosed(self, tablename):
-		windowmanager.get('window_tablelisting').remove_tables((tablename,))
+		windowmanager.get('window_main').remove_tables((tablename,))
 
 
 	def remote_userLoggedIn(self, username):
