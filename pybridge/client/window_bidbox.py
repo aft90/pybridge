@@ -20,6 +20,7 @@ import gtk
 from wrapper import GladeWrapper
 
 from connector import connector
+from windowmanager import windowmanager
 
 from pybridge.common.call import Bid, Pass, Double, Redouble
 from pybridge.common.call import Level, Strain
@@ -45,7 +46,8 @@ class WindowBidbox(GladeWrapper):
 
 
 	def new(self):
-		pass
+		parent = windowmanager.get('window_main')
+		self.window.set_transient_for(parent.window)
 
 
 	def set_available_calls(self, seat, bidding):

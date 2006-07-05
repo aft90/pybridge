@@ -20,6 +20,7 @@ import gtk
 from wrapper import GladeWrapper
 
 from connector import connector
+from windowmanager import windowmanager
 
 from pybridge.common.call import Bid, Pass, Double, Redouble
 
@@ -48,6 +49,9 @@ class WindowGame(GladeWrapper):
 
 
 	def new(self):
+		parent = windowmanager.get('window_main')
+		self.window.set_transient_for(parent.window)
+		
 		self.call_store = gtk.ListStore(str, str, str, str)  # Four seats.
 		self.tree_bidding.set_model(self.call_store)
 		
