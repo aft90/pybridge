@@ -111,7 +111,7 @@ class CardArea(gtk.DrawingArea):
 		width = self.card_width + self.spacing_x*(transpose*beta + (not transpose)*alpha)
 		height = self.card_height + self.spacing_y*(transpose*alpha + (not transpose)*beta)
 		self.hand_pixbufs[seat] = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
-#		self.hand_pixbufs[seat].fill(0x00000000)  # Clear pixbuf.
+		self.hand_pixbufs[seat].fill(0x00000000)  # Clear pixbuf.
 
 		# Draw cards to hand pixbuf.
 		self.card_coords[seat] = []
