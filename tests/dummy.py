@@ -93,7 +93,11 @@ class DummyBot(pb.Referenceable):
 			free = [seat for seat, player in players.items() if player==None]
 			if len(free) > 0:
 				self.seat = getattr(Seat, free[0])
-				self.table.callRemote('sitPlayer', str(self.seat))
+				self.table.callRemote('sitPlayer', str(self.seat)).addCallback(setReady)
+
+		def setReady(x):
+			print x
+			self.table.callRemote('setReadyFlag', True)
 
 		if len(tablelist) > 0:
 			command, tablename = 'joinTable', tablelist[0]
@@ -123,7 +127,7 @@ class DummyBot(pb.Referenceable):
 	def remote_gameContract(self, contract):
 		print "contract:", contract
 		if self.game.whoseTurn() == self.seat:
-			reactor.callLater(0.5, self.playCard)
+			reactor.callLater(0.5, self.playCard, self.seat)
 
 
 	def remote_gameCallMade(self, seat, call):
@@ -133,17 +137,32 @@ class DummyBot(pb.Referenceable):
 		
 		if self.game.whoseTurn() == self.seat:
 			if not self.game.bidding.isComplete():
-				reactor.callLater(0.5, self.makeCall)
+				reactor.callLater(0.2, self.makeCall)
 
 
 	def remote_gameCardPlayed(self, seat, card):
+		declarer = self.game.playing.declarer
+		dummy = self.game.playing.dummy
+		
+		def gotDummyHand(hand):
+			self.game.deal[dummy] = hand
+			print "got dummy's hand"
+		
 		seat = getattr(Seat, seat)
 		self.game.playing.playCard(card)
 		print "%s plays %s" % (seat, card)
 		
-		if self.game.whoseTurn() == self.seat:
-			if self.game.playing.dummy != self.seat:  # Dummy cannot play
-				reactor.callLater(0.5, self.playCard)
+		# Dummy's hand becomes visible after the first card is played.
+		if self.game.deal[dummy] == []:
+			print "getting dummy's hand"
+			self.table.callRemote('getHand', str(dummy)).addCallback(gotDummyHand)
+
+		seat = self.seat
+		if self.game.whoseTurn() == dummy and self.seat == declarer:
+			seat = dummy
+		
+		if self.game.whoseTurn() == seat:
+			reactor.callLater(0.2, self.playCard, seat)
 
 
 	def makeCall(self):
@@ -162,16 +181,20 @@ class DummyBot(pb.Referenceable):
 		self.table.callRemote('makeCall', call)
 
 
-	def playCard(self):
-		seat, hand = self.seat, self.game.deal[self.seat]
+	def playCard(self, seat):
+		hand = self.game.deal[seat]
 		valid = []
 		for card in hand:
 			if self.game.playing.isValidPlay(card, seat, hand):
 				valid.append(card)
-		print "valid cards are:", valid
 		
+		print valid
 		card = valid[0]
 		print "my turn: playing %s", card
+		if card in self.game.deal[self.seat]:
+			print "card in my hand"
+		elif card in self.game.deal[self.game.playing.dummy]:
+			print "card in dummy's hand"
 		self.table.callRemote('playCard', card)
 
 
@@ -203,6 +226,8 @@ class DummyBot(pb.Referenceable):
 
 	def remote_gameEnded(self):
 		print "game ended"
+		self.game = None
+		self.table.callRemote('setReadyFlag', True)
 
 	def remote_gameResult(self, result):
 		print "game result", result

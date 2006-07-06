@@ -128,8 +128,10 @@ class ClientBridgeTable(pb.Referenceable):
 		else:  # Unknown hand.
 			cards = ['facedown']*(13-len(played)) + [None]*len(played)
 		
+		# dummy = self.game.playing != None and seat == self.game.playing.dummy
+		# transpose = dummy and seat in (Seat.North, Seat.South)
 		window = windowmanager.get('window_main')
-		window.cardarea.build_hand(seat, cards)
+		window.cardarea.build_hand(seat, cards) # , transpose, dummy)
 		window.cardarea.draw_hand(seat)
 
 
@@ -148,6 +150,7 @@ class ClientBridgeTable(pb.Referenceable):
 	def sitPlayer(self, seat):
 		d = self.remote.callRemote('sitPlayer', seat=str(seat))
 		self.seated = seat
+		d.addCallback(lambda r: self.setReadyFlag())
 		if self.game:
 			d.addCallback(lambda r: self.getHand(seat))
 			d.addCallback(lambda r: self.redrawHand(seat))
@@ -181,6 +184,11 @@ class ClientBridgeTable(pb.Referenceable):
 			if self.game.playing.isValidPlay(card, seat, self.game.deal[seat]):
 				d = self.remote.callRemote('playCard', card=card)
 				return d
+
+
+	def setReadyFlag(self):
+		d = self.remote.callRemote('setReadyFlag', True)
+		return d
 
 
 # Remote methods, callable by server-side Table object.
@@ -256,12 +264,6 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameEnded(self):
-		window = windowmanager.get('window_game')
-		window.reset_contract()
-		window.reset_wontricks()
-
-
-	def remote_gameResult(self, result):
 #		for seat, hand in self.game.deal.items():
 #			# If bidding is passed out, fetch other hands.
 #			if hand is []:
@@ -270,7 +272,9 @@ class ClientBridgeTable(pb.Referenceable):
 		for seat in Seat:
 			self.redrawHand(seat)
 		window = windowmanager.get('window_game')
-		window.set_result(result)
+		window.set_result()
+		window.reset_contract()
+		window.reset_wontricks()
 
 
 	def remote_gameStarted(self, dealer):

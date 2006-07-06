@@ -109,7 +109,7 @@ class WindowMain(GladeWrapper):
 
 
 	def on_jointable_activate(self, widget, *args):
-		pass
+		print self.tablelisting.get_cursor()
 
 
 	def on_disconnect_activate(self, widget, *args):

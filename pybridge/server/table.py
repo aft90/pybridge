@@ -52,6 +52,7 @@ class BridgeTable(pb.Viewable):
 		self.game      = None
 		self.observers = {}  # For each observing user name, its remote listener object.
 		self.players   = dict.fromkeys(Seat, None)
+		self.ready     = dict.fromkeys(Seat, False)
 		self.scoring   = scoreDuplicate  # A function.
 
 
@@ -72,6 +73,7 @@ class BridgeTable(pb.Viewable):
 		seat = self.getSeatForPlayer(username)
 		if seat:
 			self.players[seat] = None
+			self.ready[seat] = False
 			self.informObservers('playerStands', username=username, seat=str(seat))
 		
 		self.informObservers('userLeaves', username=username)
@@ -96,6 +98,8 @@ class BridgeTable(pb.Viewable):
 		- the play has been completed.
 		"""
 		# TODO: get score.
+		for seat in Seat:  # Reset ready flags.
+			self.ready[seat] = False
 		self.informObservers('gameEnded')
 		self.game = None
 
@@ -134,14 +138,14 @@ class BridgeTable(pb.Viewable):
 		self.players[seat] = user.name
 		self.informObservers('playerSits', username=user.name, seat=str(seat))
 
-		playerCount = len([p for p in self.players.values() if p != None])
 		# If player is first person to sit at table, then make player dealer.
+		playerCount = len([p for p in self.players.values() if p != None])
 		if self.dealer is None or playerCount == 1:
 			self.dealer = seat
 		
-		# If all seats filled, and no game is currently running, start a game.
-		elif self.game is None and playerCount == 4:
-			self.startGame()
+#		# If all seats filled, and no game is currently running, start a game.
+#		elif self.game is None and playerCount == 4:
+#			self.startGame()
 
 
 	def view_standPlayer(self, user):
@@ -151,6 +155,7 @@ class BridgeTable(pb.Viewable):
 			raise TablePlayingError()
 		
 		self.players[seat] = None
+		self.ready[seat] = False
 		self.informObservers('playerStands', username=user.name, seat=str(seat))
 
 
@@ -234,6 +239,23 @@ class BridgeTable(pb.Viewable):
 		# Check for end of game.
 		if self.game.isComplete():
 			self.endGame()
+
+
+	def view_setReadyFlag(self, user, ready):
+		""""""
+		if ready not in (True, False):
+			raise InvalidParameterError()
+		
+		seat = self.getSeatForPlayer(user.name)
+		if seat is None:  # User not playing.
+			raise TablePlayingError()
+		
+		self.ready[seat] = ready
+		
+		# If all players ready, and no game is currently running, start a game.
+		readyCount = len([r for r in self.ready.values() if r is True])
+		if self.game is None and readyCount == 4:
+			self.startGame()
 
 
 	def view_whoseTurn(self, user):

@@ -133,15 +133,27 @@ class WindowGame(GladeWrapper):
 		self.frame_defence.set_property('sensitive', False)
 		
 
-	def set_result(self, result):
-		print "result is:", result
+	def set_result(self):
+		result_dialog = gtk.MessageDialog(
+			parent = self.window,
+			flags = gtk.DIALOG_MODAL,
+			type = gtk.MESSAGE_INFO,
+			buttons = gtk.BUTTONS_OK,
+			message_format = "Result is..."
+		)
+		result_dialog.run()
+		result_dialog.destroy()
+		
+		# If playing, indicate readiness to start next game.
+		if connector.table.seated:
+			connector.table.setReadyFlag()
 
 
 # Signal handlers.
 
 
 	def on_window_game_delete_event(self, widget, *args):
-		return True
+		return True  # Stops window deletion taking place.
 
 
 	def on_seat_clicked(self, widget, *args):
