@@ -16,23 +16,23 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from bidding import Strain
+from call import Strain
 
 
 # There are undoubtedly many minor variations of the score values.
 # In the future, score values may be stored in separate XML format files.
 
 
-def scoreDuplicate(self, result):
+def scoreDuplicate(result):
 	"""Scoring algorithm for duplicate bridge."""
 	score = 0
 
-	isDoubled      = result['contract']['doubleLevel'] == 1
-	isRedoubled    = result['contract']['doubleLevel'] == 2
+	isDoubled      = result['contract']['doubleBy']
+	isRedoubled    = result['contract']['redoubleBy']
 	isVulnerable   = result['vulnerable']
 	tricksMade     = result['tricksMade']
-	tricksRequired = result['contract']['bidLevel'] + 6
-	trumpSuit      = result['contract']['bidDenom']
+	tricksRequired = result['contract']['bid'].level.index + 7
+	trumpSuit      = result['contract']['bid'].strain
 
 	if tricksMade >= tricksRequired:
 		# Contract fulfilled.
@@ -55,18 +55,18 @@ def scoreDuplicate(self, result):
 
 		# Calculate premium scores.
 		if score >= 100:
-			if vulnerable:
+			if isVulnerable:
 				score += 500  # Game, vulnerable.
 			else:
 				# Game, not vulnerable.
 				score += 300  # Game, not vulnerable.
 			if tricksRequired == 13:
-				if vulnerable:
+				if isVulnerable:
 					score += 1500  # Grand slam, vulnerable.
 				else:
 					score += 1000  # Grand slam, not vulnerable.
 			elif contractLevel == 12:
-				if vulnerable:
+				if isVulnerable:
 					score += 750  # Small slam, vulnerable.
 				else:
 					score += 500  # Small slam, not vulnerable.
@@ -83,14 +83,14 @@ def scoreDuplicate(self, result):
 		# Calculate scores for overtricks.
 		overTricks = tricksMade - tricksRequired
 		if isDoubled:
-			if vulnerable:
+			if isVulnerable:
 				# Score 200 for each doubled and vulnerable overtrick.
 				score += overTricks * 200
 			else:
 				# Score 100 for each doubled and not vulnerable overtrick.
 				score += overTricks * 100
 		elif isRedoubled:
-			if vulnerable:
+			if isVulnerable:
 				# Score 400 for each redoubled and vulnerable overtrick.
 				score += overTricks * 400
 			else:
@@ -108,7 +108,7 @@ def scoreDuplicate(self, result):
 
 		underTricks = tricksRequired - tricksMade
 		if isDoubled:
-			if vulnerable:
+			if isVulnerable:
 				# Score 200 for the first doubled and vulnerable undertrick.
 				# Score 300 for all other undertricks.
 				score -= 200 + (underTricks - 1) * 300
@@ -120,14 +120,14 @@ def scoreDuplicate(self, result):
 				if underTricks > 3:
 					score -= (underTricks - 3) * 100
 		elif isRedoubled:
-			if vulnerable:
+			if isVulnerable:
 				score -= 400 + (underTricks - 1) * 600
 			else:
 				score -= 200 + (underTricks - 1) * 400
 				if underTricks > 3:
 					score -= (underTricks - 3) * 200
 		else:
-			if vulnerable:
+			if isVulnerable:
 				score -= 100 + (underTricks - 1) * 100
 			else:
 				score -= 50 + (underTricks - 1) * 50
@@ -135,6 +135,6 @@ def scoreDuplicate(self, result):
 	return score
 
 
-def scoreRubber(self, result):
+def scoreRubber(result):
 	pass  # TODO: implement.
 

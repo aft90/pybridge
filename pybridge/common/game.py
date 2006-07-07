@@ -32,7 +32,7 @@ class Game:
 
 	def __init__(self, dealer, deal, scoring, vulnNS, vulnEW):
 		"""Initialises game.
-
+		
 		scoring: instance of scoring class.
 		"""
 		self.vulnNS, self.vulnEW = vulnNS, vulnEW
@@ -134,12 +134,12 @@ class Game:
 			
 			tricksMade = 0  # Count of tricks won by declarer or dummy.
 			for trickindex in range(len(self.playing.winners)):
-				trick = self.playing.getTrick(trickindex)
-				winner = self.playing.whoPlayed(self.playing.winningCard(trick))
-				trickCount += winner in (declarer, dummy)
+				winCard = self.playing.winningCard(trickindex)
+				winPlayer = self.playing.whoPlayed(winCard)
+				tricksMade += winPlayer in (declarer, dummy)
 			
 			result = {'contract'   : self.bidding.contract(),
-			          'tricksMade' : trickCount,
+			          'tricksMade' : tricksMade,
 			          'vulnerable' : vulnerable, }
 			return self.scoring(result)
 
