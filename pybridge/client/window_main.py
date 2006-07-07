@@ -113,7 +113,7 @@ class WindowMain(GladeWrapper):
 
 
 	def on_disconnect_activate(self, widget, *args):
-		#connector.disconnect()
+		connector.disconnect()
 		windowmanager.terminate('window_main')
 		windowmanager.launch('dialog_connection')
 

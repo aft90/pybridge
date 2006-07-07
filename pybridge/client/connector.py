@@ -51,6 +51,10 @@ class Connector(pb.Referenceable):
 		return d
 
 
+	def disconnect(self):
+		self.factory.disconnect()
+
+
 	def login(self, host, port, username, password):
 		"""Attempt to log in to server with username and password."""
 		hash = sha.new(password).hexdigest()
@@ -118,11 +122,11 @@ class Connector(pb.Referenceable):
 
 
 	def remote_userLoggedIn(self, username):
-		print username + " connected"
+		pass
 
 
 	def remote_userLoggedOut(self, username):
-		print username + " disconnected"
+		pass
 
 
 connector = Connector()
