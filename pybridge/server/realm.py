@@ -33,6 +33,7 @@ class Realm:
 		
 		if avatarId == checkers.ANONYMOUS:
 			avatar = AnonymousUser()
+			avatar.server = self.server  # Provide reference to server.
 			return pb.IPerspective, avatar, lambda:None
 		else:
 			avatar = User(avatarId)

@@ -19,7 +19,6 @@
 import re
 from twisted.spread import pb
 
-from database import database
 from pybridge.enum import Enum
 from pybridge.failure import *
 
@@ -51,7 +50,7 @@ class User(pb.Avatar):
 
 
 	def callEvent(self, eventName, **kwargs):
-                """Calls remote event listener with arguments."""
+		"""Calls remote event listener with arguments."""
 		if self.remote:
 			self.remote.callRemote(eventName, **kwargs)
 
@@ -117,6 +116,6 @@ class AnonymousUser(pb.Avatar):
 			raise IllegalParameterError()
 		elif not isinstance(password, str):
 			raise IllegalParameterError()
-		# TODO: should this be mediated through the server?
-		return database.addUser(username, password=password)
+		
+		self.server.userRegister(username, password)
 

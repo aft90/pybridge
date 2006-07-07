@@ -18,6 +18,7 @@
 
 from twisted.python import log
 
+from database import database
 from table import BridgeTable
 
 
@@ -43,7 +44,14 @@ class Server:
 		log.msg("User %s disconnected" % user.name)
 
 
-#  methods.
+# Methods invoked by users.
+
+
+	def userRegister(self, username, password):
+		""""""
+		d = database.addUser(username, password=password)
+		log.msg("New user %s registered" % username)
+		return d
 
 
 	def userTalk(self, talktype, sender, recipients, message):
