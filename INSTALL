@@ -1,1 +1,15 @@
-TODO: provide installation instructions.
+Installing PyBridge
+===================
+
+If you want to install PyBridge, change to the directory where you unpacked the
+tarball, then type:
+
+python setup.py install
+
+Alternatively, you can run PyBridge from the extracted tarball. Change to the
+PyBridge "bin/" directory, then type "./pybridge" to run the client, or
+"./pybridge-server" to run the server.
+
+
+Michael Banks (michaelbanks@dsl.pipex.com), ?? July 2006
+
