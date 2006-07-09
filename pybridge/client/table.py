@@ -23,6 +23,7 @@ from windowmanager import windowmanager
 from pybridge.common.call import Call, Bid, Pass, Double, Redouble
 from pybridge.common.card import Card
 from pybridge.common.game import Game
+from pybridge.common.scoring import scoreDuplicate
 
 # Set up reconstruction of objects from server.
 pb.setUnjellyableForClass(Card, Card)
@@ -74,7 +75,7 @@ class ClientBridgeTable(pb.Referenceable):
 			if info.get('active'):
 				deal = dict.fromkeys(Seat, [])  # Unknown cards.
 				dealer = getattr(Seat, info['dealer'])
-				self.game = Game(dealer, deal, None, False, False)
+				self.game = Game(dealer, deal, scoreDuplicate, False, False)
 				setupBidding(info.get('calls', []))
 				setupPlaying(info.get('played', {}))
 				for seat in Seat:
@@ -122,9 +123,11 @@ class ClientBridgeTable(pb.Referenceable):
 		played = self.game.playing and self.game.playing.played[seat] or []
 		
 		if hand:  # Own, or known, hand.
-			cards = []
-			for card in hand:  # Filter out cards played.
-				cards.append((card not in played and card) or None)
+			# Filter out cards played.
+			cards = [((card not in played and card) or None) for card in hand]
+#			cards = []
+#			for card in hand:  # Filter out cards played.
+#				cards.append((card not in played and card) or None)
 		else:  # Unknown hand.
 			cards = ['facedown']*(13-len(played)) + [None]*len(played)
 		
@@ -264,6 +267,10 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameEnded(self):
+		if self.game.playing:  # Display cards in order played.
+			for seat, hand in self.game.playing.played.items():
+				pass
+				
 #		for seat, hand in self.game.deal.items():
 #			# If bidding is passed out, fetch other hands.
 #			if hand is []:
@@ -271,8 +278,19 @@ class ClientBridgeTable(pb.Referenceable):
 #				self.getHand(seat)
 		for seat in Seat:
 			self.redrawHand(seat)
+		
+		contract = self.game.bidding.contract()  # TODO: if passed out?
+		
+		made = 0  # Declarer won and required tricks.
+		for index in range(13):
+			winner = self.game.playing.whoPlayed(self.game.playing.winningCard(index))
+			made += int(winner in (self.game.playing.declarer, self.game.playing.dummy))
+		required = self.game.bidding.contract()['bid'].level.index + 7
+		
+		score = self.game.score()
+		
 		window = windowmanager.get('window_game')
-		window.set_result()
+		window.set_result(contract, made-required, score)
 		window.reset_contract()
 		window.reset_wontricks()
 
@@ -281,7 +299,8 @@ class ClientBridgeTable(pb.Referenceable):
 		windowmanager.get('window_game').reset_bidding()
 		d = self.setupGame()
 		if self.seated:
+			bidbox = windowmanager.launch('window_bidbox')
 			d.addCallback(lambda r: self.getHand(self.seated))
-			windowmanager.launch('window_bidbox')
+			d.addCallback(lambda r: bidbox.set_available_calls(self.seated, self.game.bidding))
 		d.addCallback(lambda r: self.redrawHand(self.seated))
 

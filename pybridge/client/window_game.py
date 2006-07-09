@@ -99,14 +99,20 @@ class WindowGame(GladeWrapper):
 		self.call_store.set(iter, column, format)
 
 
-	def set_contract(self, contract):
-		"""Sets the contract label from contract."""
-		self.frame_contract.set_property('sensitive', True)
-		format = (contract['bid'].level.index+1,
+	def get_contract_format(self, contract):
+		"""Returns a format string representing the contract."""
+		format = (contract['bid'].level.index + 1,
 		          STRAIN_SYMBOLS[contract['bid'].strain],
 		          (contract['redoubleBy'] and 'XX') or (contract['doubleBy'] and 'X') or '',
 		          str(contract['declarer']), )
-		self.label_contract.set_markup('<b>%s%s%s by %s</b>' % format)
+		return "%s%s%s by %s" % format
+
+
+	def set_contract(self, contract):
+		"""Sets the contract label from contract."""
+		format = self.get_contract_format(contract)
+		self.frame_contract.set_property('sensitive', True)
+		self.label_contract.set_markup('<b>%s</b>' % format)
 
 
 	def reset_contract(self):
@@ -133,13 +139,19 @@ class WindowGame(GladeWrapper):
 		self.frame_defence.set_property('sensitive', False)
 		
 
-	def set_result(self):
+	def set_result(self, contract, offset, score):
+		contractformat = self.get_contract_format(contract)
+		trickformat = ((offset > 0) and "made by %s tricks" % offset) or \
+		              ((offset < 0 and "failed by %s tricks" % abs(offset))) or \
+		              "made exactly"
+		scoreformat = ("%s points for " % abs(score)) + \
+		              (((score >= 0) and "declarer") or "defenders")
 		result_dialog = gtk.MessageDialog(
 			parent = self.window,
 			flags = gtk.DIALOG_MODAL,
 			type = gtk.MESSAGE_INFO,
 			buttons = gtk.BUTTONS_OK,
-			message_format = "Result is..."
+			message_format = "Contract %s %s.\n\nScore %s." % (contractformat, trickformat, scoreformat)
 		)
 		result_dialog.run()
 		result_dialog.destroy()
