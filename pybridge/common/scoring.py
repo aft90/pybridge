@@ -30,6 +30,7 @@ def scoreDuplicate(result):
 	isDoubled      = result['contract']['doubleBy']
 	isRedoubled    = result['contract']['redoubleBy']
 	isVulnerable   = result['vulnerable']
+	contractLevel  = result['contract']['bid'].level.index + 1
 	tricksMade     = result['tricksMade']
 	tricksRequired = result['contract']['bid'].level.index + 7
 	trumpSuit      = result['contract']['bid'].strain
@@ -65,7 +66,7 @@ def scoreDuplicate(result):
 					score += 1500  # Grand slam, vulnerable.
 				else:
 					score += 1000  # Grand slam, not vulnerable.
-			elif contractLevel == 12:
+			elif tricksRequired == 12:
 				if isVulnerable:
 					score += 750  # Small slam, vulnerable.
 				else:
