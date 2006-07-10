@@ -29,11 +29,15 @@ PYGTK_REQUIRED = '2.0'
 TWISTED_REQUIRED = '1.3.0'
 
 # Check version requirements.
+
 if PYTHON_VERSION < PYTHON_REQUIRED:
 	raise SystemExit("Error: Python %d.%d or higher required" % PYTHON_REQUIRED)
 
-import pygtk
-pygtk.require(PYGTK_REQUIRED)
+if hasattr(sys, 'frozen'):  # For py2exe distribution.
+	os.environ['PATH'] += ";lib;"
+else:
+	import pygtk
+	pygtk.require(PYGTK_REQUIRED)
 
 import twisted.copyright
 if twisted.copyright.version < TWISTED_REQUIRED:
