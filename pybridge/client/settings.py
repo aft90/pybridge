@@ -16,15 +16,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import ConfigParser
+from ConfigParser import SafeConfigParser
 
 from pybridge.conf import TCP_PORT
 from pybridge.environment import CLIENT_SETTINGS_PATH
 
 
-settings = ConfigParser.ConfigParser()
+settings = SafeConfigParser()
 settings.read([CLIENT_SETTINGS_PATH])
-
 
 # Create sections and options, if they do not exist.
 
