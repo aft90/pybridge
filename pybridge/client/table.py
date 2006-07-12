@@ -234,10 +234,10 @@ class ClientBridgeTable(pb.Referenceable):
 		
 		# Since hands may be unknown, bypass isValidCard() check.
 		play.playCard(card)
-		trick = play.getTrick(trickindex)
+		leader, trick = play.getTrick(trickindex)
 		
 		# Dummy's hand becomes visible after the first card is played.
-		if play.currentTrick() == 0 and len(trick[1]) == 1:
+		if play.currentTrick() == 0 and len(trick) == 1:
 			d = self.getHand(play.dummy)
 			d.addCallback(lambda r: self.redrawHand(play.dummy))
 		
@@ -291,12 +291,12 @@ class ClientBridgeTable(pb.Referenceable):
 		
 		window = windowmanager.get('window_game')
 		window.set_result(contract, made-required, score)
-		window.reset_contract()
-		window.reset_wontricks()
 
 
 	def remote_gameStarted(self, dealer):
-		windowmanager.get('window_game').reset_bidding()
+		window = windowmanager.get('window_game')
+		window.reset_game()
+		
 		d = self.setupGame()
 		if self.seated:
 			bidbox = windowmanager.launch('window_bidbox')

@@ -52,6 +52,7 @@ class WindowGame(GladeWrapper):
 		parent = windowmanager.get('window_main')
 		self.window.set_transient_for(parent.window)
 		
+		# Set up bidding view model.
 		self.call_store = gtk.ListStore(str, str, str, str)  # Four seats.
 		self.tree_bidding.set_model(self.call_store)
 		
@@ -61,8 +62,11 @@ class WindowGame(GladeWrapper):
 			column = gtk.TreeViewColumn(str(seat), renderer, text=index)
 			self.tree_bidding.append_column(column)
 		
+		# Initialise seat buttons.
 		for seat, player in connector.table.players.items():
 			getattr(self, SEATS[seat]).set_property('sensitive', player==None)
+
+		self.reset_game()
 
 
 	def player_sits(self, username, seat):
@@ -76,9 +80,35 @@ class WindowGame(GladeWrapper):
 		button.set_property('sensitive', not(connector.table.seated))
 
 
-	def reset_bidding(self):
-		"""Clears all calls from the bidding tab."""
+	def get_contract_format(self, contract):
+		"""Returns a format string representing the contract."""
+		bidlevel = contract['bid'].level.index + 1
+		bidstrain = STRAIN_SYMBOLS[contract['bid'].strain]
+		double = ''
+		if contract['redoubleBy']:
+			double = CALLTYPE_SYMBOLS[Redouble]
+		elif contract['doubleBy']:
+			double = CALLTYPE_SYMBOLS[Double]
+		declarer = contract['declarer']  # str?
+		
+		return "%s%s%s by %s" % (bidlevel, bidstrain, double, declarer)
+
+
+	def reset_game(self):
+		"""Clears bidding history, contract, trick counts."""
+		
+		# Reset bidding.
 		self.call_store.clear()
+		
+		# Reset contract.
+		self.frame_contract.set_property('sensitive', False)
+		self.label_contract.set_markup('Not established')
+		
+		# Reset trick counts.
+		self.frame_declarer.set_property('sensitive', False)
+		self.label_declarer.set_markup('-')
+		self.frame_defence.set_property('sensitive', False)
+		self.label_defence.set_markup('-')
 
 
 	def add_call(self, call, seat):
@@ -99,26 +129,11 @@ class WindowGame(GladeWrapper):
 		self.call_store.set(iter, column, format)
 
 
-	def get_contract_format(self, contract):
-		"""Returns a format string representing the contract."""
-		format = (contract['bid'].level.index + 1,
-		          STRAIN_SYMBOLS[contract['bid'].strain],
-		          (contract['redoubleBy'] and 'XX') or (contract['doubleBy'] and 'X') or '',
-		          str(contract['declarer']), )
-		return "%s%s%s by %s" % format
-
-
 	def set_contract(self, contract):
 		"""Sets the contract label from contract."""
 		format = self.get_contract_format(contract)
 		self.frame_contract.set_property('sensitive', True)
 		self.label_contract.set_markup('<b>%s</b>' % format)
-
-
-	def reset_contract(self):
-		""""""
-		self.frame_contract.set_property('sensitive', False)
-		self.label_contract.set_markup('<b>Not established</b>')
 
 
 	def set_wontricks(self, declarer, defence):
@@ -132,12 +147,6 @@ class WindowGame(GladeWrapper):
 		self.frame_defence.set_property('sensitive', True)
 		self.label_defence.set_markup('<b>%s (%s)</b>' % defence)
 
-
-	def reset_wontricks(self):
-		""""""
-		self.frame_declarer.set_property('sensitive', False)
-		self.frame_defence.set_property('sensitive', False)
-		
 
 	def set_result(self, contract, offset, score):
 		contractformat = self.get_contract_format(contract)
@@ -164,10 +173,6 @@ class WindowGame(GladeWrapper):
 # Signal handlers.
 
 
-	def on_window_game_delete_event(self, widget, *args):
-		return True  # Stops window deletion taking place.
-
-
 	def on_seat_clicked(self, widget, *args):
 		
 		def seated(arg):  # Disable all seat buttons except the one clicked.
@@ -185,4 +190,8 @@ class WindowGame(GladeWrapper):
 			connector.table.sitPlayer(seat).addCallback(seated)
 		else:
 			connector.table.standPlayer().addCallback(unseated)
+
+
+	def on_window_game_delete_event(self, widget, *args):
+		return True  # Stops window deletion taking place.
 
