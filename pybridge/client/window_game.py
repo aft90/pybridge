@@ -149,18 +149,23 @@ class WindowGame(GladeWrapper):
 
 
 	def set_result(self, contract, offset, score):
-		contractformat = self.get_contract_format(contract)
-		trickformat = ((offset > 0) and "made by %s tricks" % offset) or \
-		              ((offset < 0 and "failed by %s tricks" % abs(offset))) or \
-		              "made exactly"
-		scoreformat = ("%s points for " % abs(score)) + \
-		              (((score >= 0) and "declarer") or "defenders")
+		if contract:
+			contractformat = self.get_contract_format(contract)
+			trickformat = ((offset > 0) and "made by %s tricks" % offset) or \
+			              ((offset < 0 and "failed by %s tricks" % abs(offset))) or \
+			              "made exactly"
+			scoreformat = ("%s points for " % abs(score)) + \
+			              (((score >= 0) and "declarer") or "defenders")
+			message = "Contract %s %s.\n\nScore %s." % (contractformat, trickformat, scoreformat)
+		else:
+			message = "Bidding passed out."
+			
 		result_dialog = gtk.MessageDialog(
 			parent = self.window,
 			flags = gtk.DIALOG_MODAL,
 			type = gtk.MESSAGE_INFO,
 			buttons = gtk.BUTTONS_OK,
-			message_format = "Contract %s %s.\n\nScore %s." % (contractformat, trickformat, scoreformat)
+			message_format = message,
 		)
 		result_dialog.run()
 		result_dialog.destroy()

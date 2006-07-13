@@ -114,7 +114,7 @@ class ClientBridgeTable(pb.Referenceable):
 		return d
 
 
-	def redrawHand(self, seat):
+	def redrawHand(self, seat, all=False):
 		"""Redraws cards making up the hand of player at seat.
 		
 		Cards played are omitted. Unknown cards are drawn face-down.
@@ -122,12 +122,10 @@ class ClientBridgeTable(pb.Referenceable):
 		hand = self.game.deal[seat]
 		played = self.game.playing and self.game.playing.played[seat] or []
 		
-		if hand:  # Own, or known, hand.
-			# Filter out cards played.
+		if hand and all==True:  # Own or known hand: show all cards.
+			cards = hand
+		elif hand:  # Own or known hand: filter out cards played.
 			cards = [((card not in played and card) or None) for card in hand]
-#			cards = []
-#			for card in hand:  # Filter out cards played.
-#				cards.append((card not in played and card) or None)
 		else:  # Unknown hand.
 			cards = ['facedown']*(13-len(played)) + [None]*len(played)
 		
@@ -267,30 +265,34 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameEnded(self):
-		if self.game.playing:  # Display cards in order played.
-			for seat, hand in self.game.playing.played.items():
-				pass
-				
-#		for seat, hand in self.game.deal.items():
-#			# If bidding is passed out, fetch other hands.
-#			if hand is []:
-#				print "fetching hand", seat
-#				self.getHand(seat)
-		for seat in Seat:
-			self.redrawHand(seat)
-		
-		contract = self.game.bidding.contract()  # TODO: if passed out?
-		
-		made = 0  # Declarer won and required tricks.
-		for index in range(13):
-			winner = self.game.playing.whoPlayed(self.game.playing.winningCard(index))
-			made += int(winner in (self.game.playing.declarer, self.game.playing.dummy))
-		required = self.game.bidding.contract()['bid'].level.index + 7
-		
-		score = self.game.score()
-		
 		window = windowmanager.get('window_game')
-		window.set_result(contract, made-required, score)
+		
+		if self.game.playing and self.game.playing.isComplete():
+			# Display cards in order played.
+			for seat, cards in self.game.playing.played.items():
+				self.game.deal[seat] = cards
+				self.redrawHand(seat, all=True)
+			# Determine score.
+			contract = self.game.bidding.contract()
+			offset = -(self.game.bidding.contract()['bid'].level.index + 7)
+			for index in range(13):  # Add on won (made) tricks.
+				winner = self.game.playing.whoPlayed(self.game.playing.winningCard(index))
+				offset += int(winner in (self.game.playing.declarer, self.game.playing.dummy))
+		
+		elif self.game.bidding.isPassedOut():
+			if self.seated:
+				windowmanager.terminate('window_bidbox')
+			# Fetch other hands.
+			for seat in self.game.deal:
+				d = self.getHand(seat)
+				d.addCallback(lambda _: self.redrawHand(seat, all=True))
+			# Null contract and trick offset.
+			contract = None
+			offset = 0
+			
+		score = self.game.score()
+		window = windowmanager.get('window_game')
+		window.set_result(contract, offset, score)
 
 
 	def remote_gameStarted(self, dealer):
