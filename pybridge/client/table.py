@@ -54,6 +54,8 @@ class ClientBridgeTable(pb.Referenceable):
 		
 		def gotObservers(observers):
 			self.observers = observers
+			window = windowmanager.get('window_game')
+			window.add_observers(observers)
 		
 		def gotPlayers(players):
 			for seat, player in players.items():
@@ -196,11 +198,15 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_userJoins(self, username):
-		self.observers.append(username)
+		if self.observers:
+			self.observers.append(username)
+			windowmanager.get('window_game').add_observers((username, ))
 
 
 	def remote_userLeaves(self, username):
-		self.observers.remove(username)
+		if self.observers:
+			self.observers.remove(username)
+			windowmanager.get('window_game').remove_observers((username, ))
 
 
 	def remote_playerSits(self, username, seat):

@@ -66,7 +66,33 @@ class WindowGame(GladeWrapper):
 		for seat, player in connector.table.players.items():
 			getattr(self, SEATS[seat]).set_property('sensitive', player==None)
 
+		# Set up observer listing.
+		self.observerlisting_store = gtk.ListStore(str)
+		self.observerlisting.set_model(self.observerlisting_store)
+		cell_renderer = gtk.CellRendererText()
+		for index, title in enumerate( ('Name',) ):
+			column = gtk.TreeViewColumn(title, cell_renderer, text=index)
+			self.observerlisting.append_column(column)
+		
 		self.reset_game()
+
+
+	def add_observers(self, observers):
+		"""Adds specified observers to listing."""
+		for observername in observers:
+			row = (observername, )
+			iter = self.observerlisting_store.append(row)
+
+
+	def remove_observers(self, observers):
+		"""Removes specified observers from listing."""
+		
+		def func(model, path, iter, user_data):
+			if model.get_value(iter, 0) in user_data:
+				model.remove(iter)
+			return True
+		
+		self.observerlisting_store.foreach(func, observers)
 
 
 	def player_sits(self, username, seat):
