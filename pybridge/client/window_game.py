@@ -224,5 +224,6 @@ class WindowGame(GladeWrapper):
 
 
 	def on_window_game_delete_event(self, widget, *args):
+		connector.leaveTable()
 		return True  # Stops window deletion taking place.
 

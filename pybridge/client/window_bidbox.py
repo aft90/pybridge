@@ -64,7 +64,6 @@ class WindowBidbox(GladeWrapper):
 	def on_call_clicked(self, widget, *args):
 		"""Builds a call object and submits."""
 		call = self.get_call_from_button(widget)
-		print call
 		connector.table.makeCall(call)
 
 
@@ -89,3 +88,6 @@ class WindowBidbox(GladeWrapper):
 			return calltype(level, strain)
 		return calltype()
 
+
+	def on_window_bidbox_delete_event(self, widget, *args):
+		return True  # Stops window deletion taking place.

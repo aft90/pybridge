@@ -83,6 +83,7 @@ class Connector(pb.Referenceable):
 		def success(remote):
 			table.remote = remote  # Set pointer to server-side object.
 			self.table = table
+			self.tablename = tablename
 			table.setup()
 		
 		table = ClientBridgeTable()
@@ -92,9 +93,15 @@ class Connector(pb.Referenceable):
 		return d
 
 
-	def leaveTable(self, tablename):
-		d = self.avatar.callRemote('leaveTable', tablename=tablename)
-		d.addCallback(lambda r: self.tables.pop(tablename))
+	def leaveTable(self):
+		
+		def success(r):
+			windowmanager.get('window_main').leave_table(self.tablename)
+			self.table = None
+			self.tablename = None
+		
+		d = self.avatar.callRemote('leaveTable', tablename=self.tablename)
+		d.addCallback(success)
 		return d
 
 
@@ -110,7 +117,7 @@ class Connector(pb.Referenceable):
 
 
 	def remote_messageReceived(self, type, sender, message):
-		print "message " + message
+		pass  # Not implemented yet.
 
 
 	def remote_tableOpened(self, tablename):

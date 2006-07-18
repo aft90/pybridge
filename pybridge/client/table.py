@@ -84,11 +84,12 @@ class ClientBridgeTable(pb.Referenceable):
 					self.redrawHand(seat)
 		
 		def setupBidding(calls):
+			window = windowmanager.get('window_game')
 			for call in calls:
 				seat = self.game.whoseTurn()
 				self.game.makeCall(seat, call)
+				window.add_call(call, seat)
 			if self.game.bidding.contract():
-				window = windowmanager.get('window_game')
 				window.set_contract(self.game.bidding.contract())
 		
 		def setupPlaying(played):
@@ -97,6 +98,9 @@ class ClientBridgeTable(pb.Referenceable):
 				card = played[str(seat)].pop(0)
 				self.game.playCard(seat, card)
 			if self.game.playing:
+				if len(self.game.playing.getTrick(0)) >= 1:
+					d = self.getHand(self.game.playing.dummy)
+					d.addCallback(lambda r: self.redrawHand(self.game.playing.dummy))
 				self.redrawTrick(self.game.playing.currentTrick())
 		
 		d = self.remote.callRemote('getGame')

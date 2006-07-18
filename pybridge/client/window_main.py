@@ -82,7 +82,10 @@ class WindowMain(GladeWrapper):
 		"""Actions to perform when user leaves a table."""
 		for widget in (self.menuitem_newtable, self.toolbutton_newtable, self.toolbutton_jointable):
 			widget.set_property('sensitive', True)
+		if windowmanager.get('window_bidbox'):
+			windowmanager.terminate('window_bidbox')
 		windowmanager.terminate('window_game')
+		self.notebook.remove_page(self.notebook.get_n_pages() - 1)  # TODO: fix this.
 
 
 # Signal handlers.
@@ -134,8 +137,8 @@ class WindowMain(GladeWrapper):
 		about.set_name('PyBridge')
 		about.set_version(PYBRIDGE_VERSION)
 		about.set_copyright('Copyright (C) 2004-2006 Michael Banks')
-		about.set_comments('Online bridge made easy')
-		about.set_website('http://sourceforge.net/projects/pybridge/')
+		about.set_comments('A free online bridge game.')
+		about.set_website('http://pybridge.sourceforge.net/')
 		license = file(environment.find_doc('COPYING')).read()
 		about.set_license(license)
 		authorsfile = file(environment.find_doc('AUTHORS'))
