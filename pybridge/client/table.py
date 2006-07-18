@@ -230,6 +230,7 @@ class ClientBridgeTable(pb.Referenceable):
 		if self.game:
 			self.game.makeCall(seat, call)
 			windowmanager.get('window_game').add_call(call, seat)
+			windowmanager.get('window_main').set_turn(self.game.whoseTurn())
 			if self.seated:
 				bidbox = windowmanager.get('window_bidbox')
 				bidbox.set_available_calls(self.seated, self.game.bidding)
@@ -265,6 +266,7 @@ class ClientBridgeTable(pb.Referenceable):
 		defReq = int(13-required+1 > defWon and 13 - required - defWon + 1)
 		window = windowmanager.get('window_game')
 		window.set_wontricks((dclWon, dclReq), (defWon, defReq))
+		windowmanager.get('window_main').set_turn(self.game.whoseTurn())
 
 
 	def remote_gameContract(self, contract):
@@ -275,6 +277,7 @@ class ClientBridgeTable(pb.Referenceable):
 
 
 	def remote_gameEnded(self):
+		windowmanager.get('window_main').set_turn(None)
 		window = windowmanager.get('window_game')
 		
 		if self.game.playing and self.game.playing.isComplete():
@@ -315,4 +318,5 @@ class ClientBridgeTable(pb.Referenceable):
 			d.addCallback(lambda r: self.getHand(self.seated))
 			d.addCallback(lambda r: bidbox.set_available_calls(self.seated, self.game.bidding))
 		d.addCallback(lambda r: self.redrawHand(self.seated))
+		d.addCallback(lambda r: windowmanager.get('window_main').set_turn(self.game.whoseTurn()))
 

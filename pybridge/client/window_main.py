@@ -88,6 +88,14 @@ class WindowMain(GladeWrapper):
 		self.notebook.remove_page(self.notebook.get_n_pages() - 1)  # TODO: fix this.
 
 
+	def set_turn(self, turn=None):
+		"""Sets the statusbar text to indicate which player is on turn."""
+		context = self.statusbar.get_context_id('turn')
+		self.statusbar.pop(context)
+		if turn is not None:
+			self.statusbar.push(context, "It is %s's turn" % str(turn))
+
+
 # Signal handlers.
 
 
