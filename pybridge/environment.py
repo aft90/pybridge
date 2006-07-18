@@ -18,17 +18,19 @@
 
 import os.path, sys
 
-
 HOME = os.path.expanduser("~")
-CURRENTDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
-BASEDIR = os.path.abspath(os.path.join(CURRENTDIR, '..'))
 
-if os.path.exists(os.path.join(BASEDIR, 'share')):
+if hasattr(sys, "frozen"):  # For py2exe distribution.
+	CURRENTDIR = os.path.dirname(sys.executable)
+	BASEDIR = os.path.abspath(CURRENTDIR)
+else:
+	CURRENTDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+	BASEDIR = os.path.abspath(os.path.join(CURRENTDIR, '..'))
+
+if os.path.exists(os.path.join(BASEDIR, 'share', 'pybridge')):
 	DATADIR = os.path.join(BASEDIR, 'share', 'pybridge')
 else:
 	DATADIR = BASEDIR
-
-# TODO: This will fail on Win32!
 
 CONFIG_DIR = os.path.join(HOME, '.pybridge')
 CLIENT_SETTINGS_PATH = os.path.join(CONFIG_DIR, 'client.cfg')
