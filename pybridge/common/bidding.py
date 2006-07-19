@@ -57,9 +57,15 @@ class Bidding:
 		if bid and self.isComplete() and not self.isPassedOut():
 			double = self.currentCall(Double)
 			redouble = self.currentCall(Redouble)
+			# Declarer is first player in partnership to bid the contract strain.
+			partnership = (self.whoseCall(bid), Seat[(self.whoseCall(bid).index + 2) % 4])
+			for call in self.calls:
+				if isinstance(call, Bid) and self.whoseCall(call) in partnership and call.strain == bid.strain:
+					declarerBid = call
+					break
 			
 			return {'bid'        : bid,
-			        'declarer'   : self.whoseCall(bid),
+			        'declarer'   : self.whoseCall(declarerBid),
 			        'doubleBy'   : double and self.whoseCall(double),
 			        'redoubleBy' : redouble and self.whoseCall(redouble) }
 		
