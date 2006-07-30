@@ -19,77 +19,46 @@
 from twisted.python import log
 
 from database import database
-from table import BridgeTable
+from pybridge.network.tablemanager import LocalTableManager
+from pybridge.network.usermanager import LocalUserManager
+
+from pybridge.network.localbridge import LocalBridgeTable
 
 
 class Server:
 
 
-	def __init__(self):
-		self.tables = {}  # For each table name, its Table object.
-		self.users = {}   # For each online user, its User instance.
+    def __init__(self):
+        self.tables = LocalTableManager()
+        self.users = LocalUserManager()
 
 
-	def userConnects(self, user):
-		""""""
-		self.users[user.name] = user
-		self.informAllUsers('userLoggedIn', username=user.name)
-		log.msg("User %s connected" % user.name)
+    def userConnects(self, user):
+        """"""
+        self.users.userLoggedIn(user)
+        log.msg("User %s connected" % user.name)
 
 
-	def userDisconnects(self, user):
-		""""""
-		del self.users[user.name]
-		self.informAllUsers('userLoggedOut', username=user.name)
-		log.msg("User %s disconnected" % user.name)
+    def userDisconnects(self, user):
+        """"""
+        self.users.userLoggedOut(user)
+        log.msg("User %s disconnected" % user.name)
 
 
-# Methods invoked by users.
+# Methods invoked by user perspectives.
 
 
-	def userRegister(self, username, password):
-		""""""
-		d = database.addUser(username, password=password)
-		log.msg("New user %s registered" % username)
-		return d
+    def userRegister(self, username, password):
+        """"""
+        d = database.addUser(username, password=password)
+        log.msg("New user %s registered" % username)
+        return d
 
 
-	def userTalk(self, talktype, sender, recipients, message):
-		"""Sends message from sender to each recipient user."""
-		# TODO: check silence lists.
-		self.informUsers('messageReceived', recipients, type=talktype,
-		                 sender=sender, message=message)
-
-
-	def tableOpen(self, tablename):
-		"""Creates and announces a new table."""
-		if tablename not in self.tables:
-			table = BridgeTable(tablename, self)  # Reference to server object.
-			self.tables[tablename] = table
-			self.informAllUsers('tableOpened', tablename=tablename)
-			log.msg("Opened table \"%s\"" % tablename)
-
-
-	def tableClose(self, tablename):
-		"""Announces the closure of a table."""
-		if tablename in self.tables:
-			self.informAllUsers('tableClosed', tablename=tablename)
-			del self.tables[tablename]
-			log.msg("Closed table \"%s\"" % tablename)
-
-
-# Utility functions.
-
-
-	def informUsers(self, eventName, usernames, **kwargs):
-		"""For each username, calls event handler with provided kwargs."""
-		# Filter out users with lost connections.
-		users = [self.users[name] for name in usernames if self.users[name].remote]
-		for user in users:
-			user.remote.callRemote(eventName, **kwargs)
-
-
-	def informAllUsers(self, eventName, **kwargs):
-		"""Same as informUsers, but informs all users."""
-		self.informUsers(eventName, self.users.keys(), **kwargs)
+    def createTable(self, tableid):
+        if tableid not in self.tables:
+            table = LocalBridgeTable(tableid)
+            table.id = tableid
+            table.server = self
+            self.tables.openTable(table)
 

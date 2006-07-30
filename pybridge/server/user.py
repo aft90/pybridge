@@ -19,103 +19,106 @@
 import re
 from twisted.spread import pb
 
-from pybridge.enum import Enum
-from pybridge.failure import *
+from pybridge.network.error import DeniedRequest, IllegalRequest
 
 
 class User(pb.Avatar):
 
 
-	def __init__(self, name):
-		self.name = name  # User name.
-		self.server = None  # Set by Realm.
-		self.tables = {}  # For each joined table name, its instance.
+    def __init__(self, name):
+        self.name = name  # User name.
+        self.server = None  # Set by Realm.
+        self.tables = {}  # For each joined table name, its instance.
 
 
-	def attached(self, mind):
-		"""Called when connection to client is established."""
-		self.remote = mind
-		self.server.userConnects(self)
+    def attached(self, mind):
+        """Called when connection to client is established."""
+        self.remote = mind
+        self.server.userConnects(self)
 
 
-	def detached(self, mind):
-		"""Called when connection to client is lost."""
-		self.remote = None
-		
-		# Inform all observed tables.
-		for table in self.tables.values():
-			table.removeObserver(self.name)
-		
-		self.server.userDisconnects(self)  # Inform server.
+    def detached(self, mind):
+        """Called when connection to client is lost."""
+        self.remote = None
+        
+#        # Inform all observed tables.
+ #       for table in self.tables.values():
+  #          observer = table.observers[self]  # TODO
+   #         table.stoppedObserving(self, observer)
+        
+        self.server.userDisconnects(self)  # Inform server.
 
 
-	def callEvent(self, eventName, **kwargs):
-		"""Calls remote event listener with arguments."""
-		if self.remote:
-			self.remote.callRemote(eventName, **kwargs)
+    def callEvent(self, eventName, **kwargs):
+        """Calls remote event listener with arguments."""
+        if self.remote:
+            self.remote.callRemote(eventName, **kwargs)
 
 
 # Perspective methods, accessible by client.
 
 
-	def perspective_getTables(self):
-		"""Returns a dict of table instances, keyed by table name."""
-		return self.tables
+    def perspective_getTables(self):
+        """Provides RemoteTableManager to the client."""
+        return self.server.tables
 
 
-	def perspective_hostTable(self, tablename, listener):
-		"""Creates a new table."""
-		if not isinstance(tablename, str):
-			raise InvalidParameterError()
-		elif not(0 < len(tablename) <= 20) or re.search("[^A-Za-z0-9_ ]", tablename):
-			raise IllegalNameError()
-		elif tablename in self.server.tables:
-			raise TableNameExistsError()
-		
-		self.server.tableOpen(tablename)
-		return self.perspective_joinTable(tablename, listener)  # Force join.
+    def perspective_getUsers(self):
+        """Provides RemoteUserManager to the client."""
+        return self.server.users
 
 
-	def perspective_joinTable(self, tablename, listener):
-		"""Joins an existing table."""
-		if not isinstance(tablename, str):
-			raise IllegalParameterError()
-		elif tablename not in self.server.tables:
-			raise TableNameUnknownError()
-		elif tablename in self.tables:  # Already watching table.
-			raise TableObservingError()
-		
-		table = self.server.tables[tablename]
-		table.addObserver(self.name, listener)
-		self.tables[tablename] = table
-		return table  # Reference to pb.Viewable table object.
+    def perspective_hostTable(self, tableid):
+        """Creates a new table."""
+        if not isinstance(tableid, str):
+            raise IllegalRequest, 'Invalid parameter for table identifier'
+        elif not(0 < len(tableid) <= 20) or re.search("[^A-Za-z0-9_ ]", tableid):
+            raise IllegalRequest, 'Invalid table identifier format'
+        elif tableid in self.server.tables:
+            raise DeniedRequest, 'Table name exists'
+        
+        self.server.createTable(tableid)
+        return self.perspective_joinTable(tableid)  # Force join to table.
 
 
-	def perspective_leaveTable(self, tablename):
-		"""Leaves a table."""
-		if not isinstance(tablename, str):
-			raise IllegalParameterError()
-		elif tablename not in self.tables:  # Not watching table.
-			raise TableObservingError()
-		
-		table = self.tables[tablename]
-		table.removeObserver(self.name)
-		del self.tables[tablename]
+    def perspective_joinTable(self, tableid):
+        """Joins an existing table."""
+        if not isinstance(tableid, str):
+            raise IllegalRequest, 'Invalid parameter for table name'
+        elif tableid not in self.server.tables:
+            raise DeniedRequest, 'No such table'
+        elif tableid in self.tables:
+            raise DeniedRequest, 'Already joined table'
+        
+        table = self.server.tables[tableid]
+        self.tables[tableid] = table
+        # Returning table reference creates a RemoteTable object on client.
+        return table, table.view
 
 
-	def perspective_listTables(self):
-		return self.server.tables.keys()
+    def perspective_leaveTable(self, tableid):
+        """Leaves a table."""
+        if not isinstance(tableid, str):
+            raise IllegalRequest, 'Invalid parameter for table name'
+        elif tableid not in self.tables:
+            raise DeniedRequest, 'Not joined to table'
+        
+        table = self.tables[tableid]
+        observer = table.observers[self]  # TODO
+        del self.tables[tableid]
+
+
 
 
 class AnonymousUser(pb.Avatar):
 
 
-	def perspective_register(self, username, password):
-		"""Register a user account with given username and password."""
-		if not isinstance(username, str):
-			raise IllegalParameterError()
-		elif not isinstance(password, str):
-			raise IllegalParameterError()
-		
-		self.server.userRegister(username, password)
+    def perspective_register(self, username, password):
+        """Register a user account with given username and password."""
+        if not isinstance(username, str):
+            raise IllegalRequest, 'Invalid parameter for user name'
+        elif not isinstance(password, str):
+            raise IllegalRequest, 'Invalid parameter for password'
+        
+        self.server.userRegister(username, password)
 
