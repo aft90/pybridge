@@ -31,17 +31,17 @@ TWISTED_REQUIRED = '1.3.0'
 # Check version requirements.
 
 if PYTHON_VERSION < PYTHON_REQUIRED:
-	raise SystemExit("Error: Python %d.%d or higher required" % PYTHON_REQUIRED)
+    raise SystemExit("Error: Python %d.%d or higher required" % PYTHON_REQUIRED)
 
 if hasattr(sys, 'frozen'):  # For py2exe distribution.
-	os.environ['PATH'] += ";lib;"
+    os.environ['PATH'] += ";lib;"
 else:
-	import pygtk
-	pygtk.require(PYGTK_REQUIRED)
+    import pygtk
+    pygtk.require(PYGTK_REQUIRED)
 
 import twisted.copyright
 if twisted.copyright.version < TWISTED_REQUIRED:
-	raise SystemExit("Error: Twisted Core %s or higher required" % TWISTED_REQUIRED)
+    raise SystemExit("Error: Twisted Core %s or higher required" % TWISTED_REQUIRED)
 
 
 # Determine the base directory.
@@ -50,25 +50,13 @@ basedir = os.path.abspath(os.path.join(currentdir, '..'))
 
 # Find the Python module path, relative to the base directory.
 if os.path.exists(os.path.join(basedir, 'lib')):
-	pythonpath = os.path.join(basedir, 'lib', 'python%d.%d' % PYTHON_VERSION, 'site-packages')
+    pythonpath = os.path.join(basedir, 'lib', 'python%d.%d' % PYTHON_VERSION, 'site-packages')
 else:
-	pythonpath = basedir
+    pythonpath = basedir
 
 sys.path.insert(0, pythonpath)
 
 
-# Now proceed to load the client.
-
-from twisted.internet import gtk2reactor
-gtk2reactor.install()
-
-import gtk
-from twisted.internet import reactor
-
-from pybridge.client.windowmanager import windowmanager
-windowmanager.launch("dialog_connection")
-
-# Start the program.
-reactor.run()
-gtk.main()
+import pybridge.ui
+pybridge.ui.run()
 

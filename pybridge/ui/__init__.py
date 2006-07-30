@@ -16,22 +16,18 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from ConfigParser import SafeConfigParser
-
-from pybridge.conf import TCP_PORT
-from pybridge.environment import CLIENT_SETTINGS_PATH
-
-
-settings = SafeConfigParser()
-settings.read([CLIENT_SETTINGS_PATH])
-
-# Create sections and options, if they do not exist.
-
-if not settings.has_section('connection'):
-	settings.add_section('connection')
-	settings.set('connection', 'hostname', '')
-	settings.set('connection', 'portnum', str(TCP_PORT))
-	settings.set('connection', 'username', '')
-	settings.set('connection', 'password', '')
-	settings.write(file(CLIENT_SETTINGS_PATH, 'w'))
+def run():
+    """"""
+    from twisted.internet import gtk2reactor
+    gtk2reactor.install()
+    
+    import gtk
+    from twisted.internet import reactor
+    
+    import utils
+    utils.openWindow('dialog_connection')
+    
+    # Start the program.
+    reactor.run()
+    gtk.main()
 
