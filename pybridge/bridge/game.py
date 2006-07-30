@@ -23,11 +23,14 @@ from playing import Playing
 from card import Suit
 from deck import Seat
 
-from pybridge.failure import *
+
+class GameError(Exception): pass
 
 
 class Game:
-	"""A game."""
+	"""A bridge game models the bidding, playing, scoring sequence.
+	
+	"""
 
 
 	def __init__(self, dealer, deal, scoring, vulnNS, vulnEW):
@@ -53,15 +56,29 @@ class Game:
 			return self.bidding.isPassedOut()
 
 
+	def isHandVisible(self, seat, viewer):
+		"""A hand is visible if one of the following conditions is met:
+		
+		1. The hand is the viewer's own hand.
+		2. Game is complete.
+		3. Bidding complete and viewer is dummy, who can see all hands.
+		4. Bidding complete and hand is dummy's, and first card of first trick played.
+		"""
+		return seat == viewer \
+		or self.isComplete() \
+		or (self.bidding.isComplete() and viewer == self.playing.dummy) \
+		or (self.bidding.isComplete() and seat == self.playing.dummy and len(self.playing.getTrick(0)[1]) >= 1)
+
+
 	def makeCall(self, seat, call):
 		"""Makes call from seat."""
 		if self.bidding.isComplete():
-			raise RequestUnavailableError()
+			raise GameError('not in bidding')
 		
 		if self.bidding.whoseTurn() is not seat:
-			raise GameOutOfTurnError()
+			raise GameError('out of turn')
 		elif not self.bidding.validCall(call):
-			raise GameInvalidCallError()
+			raise GameError('invalid call')
 		
 		self.bidding.addCall(call)
 		
@@ -75,15 +92,15 @@ class Game:
 	def playCard(self, seat, card):
 		"""Plays card from seat."""
 		if not self.bidding.isComplete() or self.bidding.isPassedOut():
-			raise RequestUnavailableError()
+			raise GameError('not in play')
 		elif self.playing.isComplete():
-			raise RequestUnavailableError()
+			raise GameError('not in play')
 		
 		hand = self.deal[seat]
 		if self.playing.whoseTurn() is not seat:
-			raise GameOutOfTurnError()
+			raise GameError('out of turn')
 		elif not self.playing.isValidPlay(card, seat, hand):
-			raise GameInvalidCardError()
+			raise GameError('invalid card')
 		
 		self.playing.playCard(card)
 
@@ -94,25 +111,9 @@ class Game:
 		If viewer player is specified, then the ability of viewer
 		to "see" the hand will be examined.
 		"""
-		if viewer is None or viewer == seat:
-			return self.deal[seat]  # Player can see their own hand.
-		
-		# During bidding, no player may see another player's hand.
-		if not self.bidding.isComplete():
-			raise GameHandHiddenError()
-		
-		# During play, the dummy player can see all hands.
-		dummy = Seat[(self.playing.declarer.index + 2) % 4]
-		if viewer == dummy:
-			return self.deal[seat]
-
-		# All players can see dummy's hand after first card played.
-		trick = self.playing.getTrick(0)[1]
-		if seat == dummy and len(trick) >= 1:
-			return self.deal[seat]
-		
-		# Hand is not visible.
-		raise GameHandHiddenError()
+		if viewer and not self.isHandVisible(seat, viewer):
+			raise GameError('hand not visible')
+		return self.deal[seat]
 
 
 	def score(self):
@@ -122,7 +123,7 @@ class Game:
 		- play stage is complete.
 		"""
 		if not self.isComplete():
-			raise RequestUnavailableError()
+			raise GameError('game not complete')
 		elif self.bidding.isPassedOut():
 			return 0  # A passed out deal does not score.
 		else:
@@ -152,5 +153,5 @@ class Game:
 			else:
 				return self.bidding.whoseTurn()
 		else:
-			raise RequestUnavailableError()
+			raise GameError('game complete')
 
