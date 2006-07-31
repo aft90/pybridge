@@ -74,7 +74,7 @@ class EventHandler:
 
 
     def playerRemoved(self, table, player, position):
-        self.runCallbacks('playerRemoved', table, player)
+        self.runCallbacks('playerRemoved', table, player, position)
 
 
     def messageReceived(self, table, message, sender, recipients):

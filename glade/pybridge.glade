@@ -285,23 +285,19 @@
 		<widget class="GtkScrolledWindow" id="scrolledwindow5">
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
-		  <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+		  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
 		  <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-		  <property name="shadow_type">GTK_SHADOW_NONE</property>
+		  <property name="shadow_type">GTK_SHADOW_IN</property>
 		  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 		  <child>
-		    <widget class="GtkTreeView" id="tablelisting">
+		    <widget class="GtkIconView" id="tableview">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
-		      <property name="headers_visible">True</property>
-		      <property name="rules_hint">False</property>
+		      <property name="selection_mode">GTK_SELECTION_SINGLE</property>
+		      <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
 		      <property name="reorderable">False</property>
-		      <property name="enable_search">True</property>
-		      <property name="fixed_height_mode">False</property>
-		      <property name="hover_selection">False</property>
-		      <property name="hover_expand">False</property>
-		      <signal name="row_activated" handler="on_tablelisting_row_activated" last_modification_time="Tue, 04 Jul 2006 16:20:47 GMT"/>
+		      <signal name="item_activated" handler="on_tableview_item_activated" last_modification_time="Mon, 31 Jul 2006 15:12:34 GMT"/>
 		    </widget>
 		  </child>
 		</widget>

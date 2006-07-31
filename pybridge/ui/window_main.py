@@ -27,6 +27,8 @@ from cardarea import CardArea
 from eventhandler import eventhandler
 import utils
 
+TABLE_ICON = environment.find_pixmap("table.png")
+
 
 class WindowMain(GladeWrapper):
 
@@ -36,65 +38,23 @@ class WindowMain(GladeWrapper):
     def new(self):
         self.tabletabs = {}  # For each observed table, its tab index.
         
-        # Set up table listing.
-        self.tablelisting_store = gtk.ListStore(str)
-        self.tablelisting.set_model(self.tablelisting_store)
-        cell_renderer = gtk.CellRendererText()
-        for index, title in enumerate( ('Name',) ):
-            column = gtk.TreeViewColumn(title, cell_renderer, text=index)
-            self.tablelisting.append_column(column)
+        # Set up table model and icon view.
+        self.tableview_icon = gtk.gdk.pixbuf_new_from_file(TABLE_ICON)        
+        self.tableview.set_text_column(0)
+        self.tableview.set_pixbuf_column(1)
+        self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
+        self.tableview.set_model(self.tableview_model)
         
         self.focalTable = None  # Table currently being viewed.
         
         # Register events.
-        eventhandler.registerCallback('tableOpened', self.eventTableOpened)
-        eventhandler.registerCallback('tableClosed', self.removeTables)
-        eventhandler.registerCallback('playerAdded', self.eventPlayerAdded)
-        eventhandler.registerCallback('gameStarted', self.gameStarted)
-        eventhandler.registerCallback('gameFinished', self.gameFinished)
-        eventhandler.registerCallback('gameCardPlayed', self.gameCardPlayed)
-        eventhandler.registerCallback('gameHandRevealed', self.gameHandRevealed)
-
-
-# Registered event handlers.
-
-
-    def eventTableOpened(self, tableid):
-        """Adds a table to the table listing."""
-        row = (tableid, )
-        iter = self.tablelisting_store.append(row)
-
-
-    def removeTables(self, *tableids):
-        """Removes a table from the table listing."""
-        
-        def func(model, path, iter, user_data):
-            if model.get_value(iter, 0) in user_data:
-                model.remove(iter)
-            return True
-        
-        self.tablelisting_store.foreach(func, tableids)
-
-
-    def joinedTable(self, table):
-        """Actions to perform when user has joined a table."""
-        # Set up card area widget as new page.
-        tab = gtk.Label(table.id)
-        self.cardarea = CardArea()
-        self.cardarea.on_card_clicked = self.on_card_clicked
-        self.cardarea.show()
-        
-        index = self.notebook.append_page(self.cardarea, tab)
-        self.tabletabs[table] = index
-
-        self.changeTable(table)
-
-
-    def eventPlayerAdded(self, table, player, position):
-        """"""
-        if table == self.focalTable and player == client.username:
-            if table.game and not table.game.bidding.isComplete():
-                utils.openWindow('window_bidbox', self)
+        eventhandler.registerCallback('tableOpened', self.event_tableOpened)
+        eventhandler.registerCallback('tableClosed', self.event_tableClosed)
+        eventhandler.registerCallback('playerAdded', self.event_playerAdded)
+        eventhandler.registerCallback('gameStarted', self.event_gameStarted)
+        eventhandler.registerCallback('gameFinished', self.event_gameFinished)
+        eventhandler.registerCallback('gameCardPlayed', self.event_gameCardPlayed)
+        eventhandler.registerCallback('gameHandRevealed', self.event_gameHandRevealed)
 
 
     def changeTable(self, table):
@@ -108,7 +68,7 @@ class WindowMain(GladeWrapper):
         
         if table.game:
             # If user is a player and bidding in progress, launch bidding box.
-            if table.getPositionOfPlayer(client.username) and not table.game.bidding.isComplete():
+            if table.seated and not table.game.bidding.isComplete():
                 if not utils.getWindow('window_bidbox'):
                     utils.openWindow('window_bidbox', self)
             # Otherwise, if bidding box is open, close it down.
@@ -125,6 +85,20 @@ class WindowMain(GladeWrapper):
         utils.getWindow('window_game').changeTable(table)
 
 
+    def joinedTable(self, table):
+        """Actions to perform when user has joined a table."""
+        # Set up card area widget as new page.
+        tab = gtk.Label(table.id)
+        self.cardarea = CardArea()
+        self.cardarea.on_card_clicked = self.on_card_clicked
+        self.cardarea.show()
+        
+        index = self.notebook.append_page(self.cardarea, tab)
+        self.tabletabs[table] = index
+
+        self.changeTable(table)
+
+
     def leftTable(self, table):
         """Actions to perform when user has left a table."""
         # Switch focus away from table.
@@ -139,52 +113,6 @@ class WindowMain(GladeWrapper):
         self.statusbar.pop(context)
         if turn is not None:
             self.statusbar.push(context, "It is %s's turn" % str(turn))
-
-
-# Game events.
-
-
-    def gameStarted(self, table, dealer, vulnNS, vulnEW):
-        if table == self.focalTable:
-            self.changeTable(table)
-#            
-##            self.chanseated = table.getPositionOfPlayer(client.username)
-#            
-#            # Draw hidden hands (gameHandRevealed draws visible hands)
-#            for position in table.game.deal.keys():
-#                if not table.game.isHandVisible(position, seated):
-#                    cards = ['facedown']*13  # TODO: what about other games?
-#                    self.cardarea.build_hand(position, cards)
-#                    self.cardarea.draw_hand(position)
-#            
-#            if table.seated:  # If playing, launch bidding box.
-#                utils.openWindow('window_bidbox', self)
-
-
-    def gameFinished(self, table):
-        if self.focalTable.game.playing and self.focalTable.game.playing.isComplete():
-            # Display cards in order played.
-            for seat, cards in self.focalTable.game.playing.played.items():
-                self.cardarea.build_hand(seat, cards)
-                self.cardarea.draw_hand(seat)
-        else:
-            # Display cards from all hands.
-            pass
-
-        if self.focalTable.game.isComplete():
-            # Determine and display score.
-            pass
-
-
-    def gameCardPlayed(self, table, card, position):
-        if table == self.focalTable:
-            self.redrawHand(position)
-            self.redrawTrick()
-
-
-    def gameHandRevealed(self, table, hand, position):
-        if table == self.focalTable:
-            self.redrawHand(position)
 
 
     def redrawHand(self, position, all=False):
@@ -222,12 +150,74 @@ class WindowMain(GladeWrapper):
         @param trick: dict of cards played, keyed by player position.
         """
         if leader is None or trick is None:
-            index = self.focalTable.game.playing.currentTrick()
-            leader, trick = self.focalTable.game.playing.getTrick(index)
+            leader, trick = self.focalTable.game.playing.getCurrentTrick()
         
         self.cardarea.build_trick((leader, trick))
         self.cardarea.draw_trick()
+
+
+# Registered event handlers.
+
+
+    def event_tableOpened(self, tableid):
+        """Adds a table to the table listing."""
+        self.tableview_model.append([tableid, self.tableview_icon])
+
+
+    def event_tableClosed(self, tableid):
+        """Removes a table from the table listing."""
         
+        def func(model, path, iter, user_data):
+            if model.get_value(iter, 0) in user_data:
+                model.remove(iter)
+            return True
+        
+        self.tableview_model.foreach(func, tableid)
+
+
+    def event_playerAdded(self, table, player, position):
+        """"""
+        if table == self.focalTable and player == client.username:
+            if table.game and not table.game.bidding.isComplete():
+                utils.openWindow('window_bidbox', self)
+
+
+    def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
+        if table == self.focalTable:
+            self.changeTable(table)
+#            if table.seated:  # If playing, launch bidding box.
+#                utils.openWindow('window_bidbox', self)
+
+
+    def event_gameFinished(self, table):
+        for position in self.focalTable.game.deal:
+            self.redrawHand(position, all=True)
+#        if self.focalTable.game.playing and self.focalTable.game.playing.isComplete():
+#            # Display cards in order played.
+#            for position in self.focalTable.game.deal:
+#                self.redrawHand(position, all=True)
+#            for seat, cards in self.focalTable.game.playing.played.items():
+#                self.cardarea.build_hand(seat, cards)
+#                self.cardarea.draw_hand(seat)
+#        else:
+#            # Display cards from all hands.
+#            pass
+#
+#        if self.focalTable.game.isComplete():
+#            # Determine and display score.
+            
+
+
+    def event_gameCardPlayed(self, table, card, position):
+        if table == self.focalTable:
+            self.redrawHand(position)
+            self.redrawTrick()
+
+
+    def event_gameHandRevealed(self, table, hand, position):
+        if table == self.focalTable:
+            self.redrawHand(position)
+
 
 # Signal handlers.
 
@@ -239,9 +229,9 @@ class WindowMain(GladeWrapper):
         d.addErrback(lambda r: True)  # Ignore error.
 
 
-    def on_tablelisting_row_activated(self, widget, *args):
-        iter = self.tablelisting_store.get_iter(args[0])
-        tableid = self.tablelisting_store.get_value(iter, 0)
+    def on_tableview_item_activated(self, iconview, path, *args):
+        iter = self.tableview_model.get_iter(path)
+        tableid = self.tableview_model.get_value(iter, 0)
         if tableid not in client.tables:
             d = client.joinTable(tableid)
             d.addCallback(self.joinedTable)
@@ -256,7 +246,7 @@ class WindowMain(GladeWrapper):
 
 
     def on_jointable_activate(self, widget, *args):
-        print self.tablelisting.get_cursor()
+        print self.tableview.get_cursor()
 
 
     def on_disconnect_activate(self, widget, *args):

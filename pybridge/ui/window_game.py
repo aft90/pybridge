@@ -67,7 +67,11 @@ class WindowGame(GladeWrapper):
             column = gtk.TreeViewColumn(title, cell_renderer, text=index)
             self.observerlisting.append_column(column)
         
-        eventhandler.registerCallback('gameCallMade', self.gameCallMade)
+        eventhandler.registerCallback('playerAdded', self.event_playerAdded)
+        eventhandler.registerCallback('playerRemoved', self.event_playerRemoved)
+        eventhandler.registerCallback('gameCallMade', self.event_gameCallMade)
+        eventhandler.registerCallback('gameCardPlayed', self.event_gameCardPlayed)
+        eventhandler.registerCallback('gameFinished', self.event_gameFinished)
         
         self.changeTable(self.parent.focalTable)
  #       self.reset_game()
@@ -86,22 +90,20 @@ class WindowGame(GladeWrapper):
         
         if table.game and table.game.bidding.contract():
             contract = table.game.bidding.contract()
-            self.set_contract(contract)
+            self.setContract(contract)
         else:  # Reset contract.
-            self.frame_contract.set_property('sensitive', False)
-            self.label_contract.set_markup('Not established')
+            self.setContract()
         
         if table.game and table.game.playing:
-            self.set_wontricks((1,2),(3,4)) # TODO
+            self.setTrickCount(table.game.getTrickCount())
         else:  # Reset trick counts.
-            self.frame_declarer.set_property('sensitive', False)
-            self.label_declarer.set_markup('-')
-            self.frame_defence.set_property('sensitive', False)
-            self.label_defence.set_markup('-')
+            self.setTrickCount(None)
 
         # Initialise seat buttons.
         for seat, player in self.parent.focalTable.players.items():
-            getattr(self, SEATS[seat]).set_property('sensitive', player==None)
+            button = getattr(self, SEATS[seat])
+            available = player is None or seat == self.parent.focalTable.seated
+            button.set_property('sensitive', available)
 
 
 #    def add_observers(self, observers):
@@ -122,51 +124,11 @@ class WindowGame(GladeWrapper):
 #        self.observerlisting_store.foreach(func, observers)
 
 
-    def player_sits(self, username, seat):
-        button = getattr(self, SEATS[seat])
-        button.set_property('sensitive', False)
-
-
-    def player_stands(self, username, seat):
-        button = getattr(self, SEATS[seat])
-        # If we are not a player, enable seat.
-        button.set_property('sensitive', not(self.parent.focalTable.seated))
-
-
-    def get_contract_format(self, contract):
-        """Returns a format string representing the contract."""
-        bidlevel = contract['bid'].level.index + 1
-        bidstrain = STRAIN_SYMBOLS[contract['bid'].strain]
-        double = ''
-        if contract['redoubleBy']:
-            double = CALLTYPE_SYMBOLS[Redouble]
-        elif contract['doubleBy']:
-            double = CALLTYPE_SYMBOLS[Double]
-        declarer = contract['declarer']  # str?
-        
-        return "%s%s%s by %s" % (bidlevel, bidstrain, double, declarer)
-
-
     def reset_game(self):
         """Clears bidding history, contract, trick counts."""
-        
-        # Reset bidding.
-        self.call_store.clear()
-        
-        # Reset contract.
-        self.frame_contract.set_property('sensitive', False)
-        self.label_contract.set_markup('Not established')
-        
-        # Reset trick counts.
-        self.frame_declarer.set_property('sensitive', False)
-        self.label_declarer.set_markup('-')
-        self.frame_defence.set_property('sensitive', False)
-        self.label_defence.set_markup('-')
-
-
-    def gameCallMade(self, table, call, position):
-        if table == self.parent.focalTable:
-            self.addCall(call, position)
+        self.call_store.clear()  # Reset bidding.
+        self.setContract(None)  # Reset contract.
+        self.setTrickCount(None)  # Reset trick counts.
 
 
     def addCall(self, call, position):
@@ -186,46 +148,111 @@ class WindowGame(GladeWrapper):
         self.call_store.set(iter, column, format)
 
 
-    def set_contract(self, contract):
+    def setContract(self, contract=None):
         """Sets the contract label from contract."""
-        format = self.get_contract_format(contract)
-        self.frame_contract.set_property('sensitive', True)
-        self.label_contract.set_markup('<b>%s</b>' % format)
+        if contract:
+            format = '<b>%s</b>' % self.getContractFormat(contract)
+        else:
+            format = 'Not established'
+        
+        self.frame_contract.set_property('sensitive', contract!=None)
+        self.label_contract.set_markup(format)
 
 
-    def set_wontricks(self, declarer, defence):
+    def setTrickCount(self, count=None):
         """Sets the trick counter labels for declarer and defence.
         
-        declarer: (# obtained, # remaining to make contract)
-        defence: (# obtained, # remaining to defeat contract)
+        @param count:
         """
-        self.frame_declarer.set_property('sensitive', True)
-        self.label_declarer.set_markup('<b>%s (%s)</b>' % declarer)
-        self.frame_defence.set_property('sensitive', True)
-        self.label_defence.set_markup('<b>%s (%s)</b>' % defence)
-
-
-    def set_result(self, contract, offset, score):
-        if contract:
-            contractformat = self.get_contract_format(contract)
-            trickformat = ((offset > 0) and "made by %s tricks" % offset) or \
-                          ((offset < 0 and "failed by %s tricks" % abs(offset))) or \
-                          "made exactly"
-            scoreformat = ("%s points for " % abs(score)) + \
-                          (((score >= 0) and "declarer") or "defenders")
-            message = "Contract %s %s.\n\nScore %s." % (contractformat, trickformat, scoreformat)
+        if count:
+            declarer = '<b>%s (%s)</b>' % (count['declarerWon'], count['declarerNeeds'])
+            defenders = '<b>%s (%s)</b>' % (count['defendersWon'], count['defendersNeed'])
         else:
-            message = "Bidding passed out."
-            
-        res = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK,
-                                message_format = message, )
-        result_dialog.run()
-        result_dialog.destroy()
+            declarer = defenders = '-'
         
-#        # If playing, indicate readiness to start next game.
-#        if client.table.seated:
-#            client.table.setReadyFlag()
+        self.frame_declarer.set_property('sensitive', count!=None)
+        self.frame_defence.set_property('sensitive', count!=None)
+        self.label_declarer.set_markup(declarer)
+        self.label_defence.set_markup(defenders)
+
+
+# Registered event handlers.
+
+
+    def event_playerAdded(self, table, player, position):
+        if table == self.parent.focalTable:
+            button = getattr(self, SEATS[position])
+            # Disable the button, unless we are the player.
+            button.set_property('sensitive', button.get_active())
+
+
+    def event_playerRemoved(self, table, player, position):
+        if table == self.parent.focalTable:
+            button = getattr(self, SEATS[position])
+            # If we are not a player, enable seat button.
+            button.set_property('sensitive', not(self.parent.focalTable.seated))
+
+
+    def event_gameCallMade(self, table, call, position):
+        if table == self.parent.focalTable:
+            self.addCall(call, position)
+            if table.game.isComplete():
+                contract = table.game.bidding.contract()
+                self.setContract(contract)
+
+
+    def event_gameCardPlayed(self, table, card, position):
+        if table == self.parent.focalTable:
+            count = table.game.getTrickCount()
+            self.setTrickCount(count)
+
+
+    def event_gameFinished(self, table):
+        if table == self.parent.focalTable:
+        
+            # Determine and display score in dialog box.
+            contract = table.game.bidding.contract()
+            if contract:
+                trickCount = table.game.getTrickCount()
+                offset = trickCount['declarerWon'] - trickCount['required']
+                score = table.game.score()
+                
+                textContract = "Contract %s" % self.getContractFormat(contract)
+                textTrick = (offset > 0 and "made by %s tricks" % offset) or \
+                            (offset < 0 and "failed by %s tricks" % abs(offset)) or \
+                            "made exactly"
+                textScore = "Score %s points for " % abs(score) + \
+                            ((score >= 0 and "declarer") or "defenders")
+                
+                message = "%s %s.\n\n%s." % (textContract, textTrick, textScore)
+            else:
+                message = "Bidding passed out."
+            
+            dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
+                                        type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK,
+                                        message_format=message)
+            dialog.run()
+            dialog.destroy()
+
+
+# Utility methods.
+
+
+    def getContractFormat(self, contract):
+        """Returns a format string representing the contract.
+        
+        @param contract: a dict generated by bridge.Bidding.contract().
+        """
+        bidlevel = contract['bid'].level.index + 1
+        bidstrain = STRAIN_SYMBOLS[contract['bid'].strain]
+        double = ''
+        if contract['redoubleBy']:
+            double = CALLTYPE_SYMBOLS[Redouble]
+        elif contract['doubleBy']:
+            double = CALLTYPE_SYMBOLS[Double]
+        declarer = contract['declarer']  # str?
+        
+        return "%s%s%s by %s" % (bidlevel, bidstrain, double, declarer)
 
 
 # Signal handlers.

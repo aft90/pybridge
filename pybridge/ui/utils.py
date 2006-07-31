@@ -37,11 +37,12 @@ windows = {}
 def openWindow(windowname, parent=None):
     """"""
     # TODO: replace this with something more robust.
-    classname = ''.join([x.capitalize() for x in windowname.split('_')])
-    exec("from %s import %s" % (windowname, classname))
-    window = eval(classname)(parent)
-    windows[windowname] = window
-    return window
+    if windowname not in windows:
+        classname = ''.join([x.capitalize() for x in windowname.split('_')])
+        exec("from %s import %s" % (windowname, classname))
+        window = eval(classname)(parent)
+        windows[windowname] = window
+        return window
 
 
 def closeWindow(windowname):

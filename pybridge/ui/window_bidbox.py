@@ -19,7 +19,6 @@
 import gtk
 from wrapper import GladeWrapper
 
-from pybridge.network.client import client
 from eventhandler import eventhandler
 
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
@@ -52,17 +51,18 @@ class WindowBidbox(GladeWrapper):
 
 
     def new(self):
+        table = self.parent.focalTable
+        self.set_available_calls(table.seated, table.game.bidding)
+        
         eventhandler.registerCallback('gameCallMade', self.gameCallMade)
 
 
     def gameCallMade(self, table, call, position):
         if table == self.parent.focalTable:
-            seat = table.getPositionOfPlayer(client.username)
-            bidding = table.game.bidding
-            self.set_available_calls(seat, bidding)
+            self.set_available_calls(table.seated, table.game.bidding)
 
             # If bidding is complete, close this window.
-            if bidding.isComplete():
+            if table.game.bidding.isComplete():
                 self.window.destroy()
 
 
