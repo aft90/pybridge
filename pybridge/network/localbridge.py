@@ -81,7 +81,7 @@ class LocalBridgeTable(LocalTable):
                 state['game']['declarer'] = str(self.game.playing.declarer)  # XX
                 state['game']['played'] = {}
                 for seat, played in self.game.playing.played.items():
-                    state['game']['played'][str(seat)] = played
+                    state['game']['played'][str(seat)] = played  # XX
 #                state['game']['played'] = self.game.playing.played
             # Add visible hands.
             state['game']['deal'] = {}
@@ -110,7 +110,7 @@ class LocalBridgeTable(LocalTable):
 
 
     def gameMakeCall(self, call, position):
-        if self.game is None:
+        if self.game is None or self.game.isComplete():
             raise DeniedRequest, 'Game not running'
         elif position is None:
             raise DeniedRequest, 'Not a player'
@@ -125,7 +125,7 @@ class LocalBridgeTable(LocalTable):
 
 
     def gamePlayCard(self, card, position):
-        if self.game is None:
+        if self.game is None or self.game.isComplete():
             raise TableError, 'Game not running'
         elif position is None:
             raise DeniedRequest, 'Not a player'
@@ -192,7 +192,8 @@ class LocalBridgeTable(LocalTable):
                 if seat not in self.handsSeen[viewer] and self.game.isHandVisible(seat, viewer):
                     self.handsSeen[viewer].append(seat)
                     hand = self.game.deal[seat]
-                    self.observers[player].callRemote('gameHandRevealed', hand=hand, position=str(seat))  # XX
+                    self.informObserver(self.observers[player], 'gameHandRevealed',
+                                        hand=hand, position=str(seat))  # XX
 #       for seat in list(Suit) + None:  # Players and observers.
 
 

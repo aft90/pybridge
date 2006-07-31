@@ -40,7 +40,7 @@ class RemoteTable(pb.RemoteCache):
         self.id = None
         self.observers = []
         self.players = {}
-#        self.position = None
+        self.seated = None  # If user is playing at table.
 
 
     def setCopyableState(self, state):
@@ -58,13 +58,13 @@ class RemoteTable(pb.RemoteCache):
 
     def addPlayer(self, position, player=None):
         d = self.master.callRemote('addPlayer', str(position))  # XX
-#        d.addCallback(lambda _: setattr(self, 'position', position))
+        d.addCallback(lambda _: setattr(self, 'seated', position))
         return d
 
 
     def removePlayer(self, player=None):
         d = self.master.callRemote('removePlayer')
-#        d.addCallback(lambda _: setattr(self, 'position', None))
+        d.addCallback(lambda _: setattr(self, 'seated', None))
         return d
 
 

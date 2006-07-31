@@ -17,6 +17,7 @@
 
 
 import time
+from twisted.internet import reactor
 from twisted.spread import pb
 from zope.interface import implements
 
@@ -37,7 +38,6 @@ class LocalTable(pb.Cacheable):
         self.config = {}
         self.observers = {}  # For each perspective, a remote ITableEvents observer.
         self.players = {}    # For each position, the player's perspective.
-        self.ref = None
         
         # Configuration variables.
         self.config['closeWhenEmpty'] = True
@@ -134,10 +134,19 @@ class LocalTable(pb.Cacheable):
         return False
 
 
+    def informObserver(self, obs, event, *args, **kwargs):
+        """Calls observer's event handler with provided args and kwargs.
+        
+        Event handlers are called on the next iteration of the reactor,
+        to allow the caller of this method to return a result.
+        """
+        reactor.callLater(0, obs.callRemote, event, *args, **kwargs)
+
+
     def updateObservers(self, event, *args, **kwargs):
         """For each observer, calls event handler with provided kwargs."""
         for observer in self.observers.values():
-            observer.callRemote(event, *args, **kwargs)
+            self.informObserver(observer, event, *args, **kwargs)
 
 
 
