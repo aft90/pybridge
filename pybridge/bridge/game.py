@@ -76,14 +76,14 @@ class Game:
         
         if self.bidding.whoseTurn() is not seat:
             raise GameError('out of turn')
-        elif not self.bidding.validCall(call):
+        elif not self.bidding.isValidCall(call, seat):
             raise GameError('invalid call')
         
-        self.bidding.addCall(call)
+        self.bidding.makeCall(call, seat)
         
         # If bidding is complete, start playing.
         if self.bidding.isComplete() and not self.bidding.isPassedOut():
-            contract = self.bidding.contract()
+            contract = self.bidding.getContract()
             # Convert from bidding's Strain type to playing's Suit type.
             # Note that No Trumps implies a None trump suit.
             trumpSuit = getattr(Suit, str(contract['bid'].strain), None)
@@ -143,13 +143,11 @@ class Game:
             else:  # Trick won by defenders.
                 count ['defendersWon'] += 1
         
-        contract = self.bidding.contract()
+        contract = self.bidding.getContract()
         # Get index value of bid level, increment, add 6.
         count['required'] = contract['bid'].level.index + 7
-        if count['required'] > count['declarerWon']:  # Declarer needs tricks.
-            count['declarerNeeds'] = count['required'] - count['declarerWon']
-        if count['required'] > count['defendersWon']:  # Defenders need tricks.
-            count['defendersNeed'] = 13 - count['required'] - count['defendersWon'] + 1
+        count['declarerNeeds'] = max(0, count['required'] - count['declarerWon'])
+        count['defendersNeed'] = max(0, 13 - count['required'] - count['defendersWon'] + 1)
         
         return count
 
@@ -165,7 +163,7 @@ class Game:
         elif self.bidding.isPassedOut():
             return 0  # A passed out deal does not score.
         else:
-            contract = self.bidding.contract()
+            contract = self.bidding.getContract()
             declarer = contract['declarer']
             dummy = Seat[(declarer.index + 2) % 4]
             vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + \
@@ -178,7 +176,7 @@ class Game:
                 winner = self.playing.whoPlayed(winningCard)
                 tricksMade += winner in (declarer, dummy)
             
-            result = {'contract'   : self.bidding.contract(),
+            result = {'contract'   : contract,
                       'tricksMade' : tricksMade,
                       'vulnerable' : vulnerable, }
             return self.scoring(result)

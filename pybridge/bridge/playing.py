@@ -24,11 +24,12 @@ from deck import Seat
 
 
 class Playing:
-    """This class represents the playing of cards into tricks.
-
+    """This class models the trick-taking phase of a game of bridge.
+    
     This code is generalised, and could easily be adapted to support a
     variety of trick-taking card games.
     """
+
 
     def __init__(self, declarer, trumps):
         assert declarer in Seat
@@ -48,16 +49,22 @@ class Playing:
 
 
     def isComplete(self):
-        """Returns true for 13 complete tricks."""
+        """Playing is complete if there are 13 complete tricks.
+        
+        @return: True if playing is complete, False if not.
+        """
         return len(self.winners) == 13
 
 
     def getTrick(self, index):
-        """Returns a tuple specifying:
+        """A trick is a set of cards, one from each player's hand.
+        The leader plays the first card, the others play in clockwise order.
         
-        - the leader seat.
-        - a dict containing seat : card pairs, for each card in trick.
+        @param: trick index, in range 0 to 12.
+        @return: a (leader, cards) trick tuple.
         """
+        assert(index in range(13))
+        
         if index == 0:  # First trick.
             leader = self.lho  # Leader is declarer's left-hand opponent.
         else:  # Leader is winner of previous trick.
@@ -71,31 +78,41 @@ class Playing:
 
 
     def getCurrentTrick(self):
-        """Returns the getTrick() tuple of the current trick."""
-        i = max([len(cards) for cards in self.played.values()])
-        index = (i >= 1 and i-1) or 0
+        """Returns the getTrick() tuple of the current trick.
+        
+        @return: a (leader, cards) trick tuple.
+        """
+        # Index of current trick is length of longest played list minus 1.
+        index = max(0, max([len(cards) for cards in self.played.values()]) - 1)
         return self.getTrick(index)
 
 
-    def playCard(self, card):
-        """Plays card to current trick. Assumes correct seat.
-        
+    def playCard(self, card, player=None, hand=[]):
+        """Plays card to current trick.
         Card validity should be checked with isValidPlay() beforehand.
+        
+        @param card: the Card object to be played from player's hand.
+        @param player: the player of card, or None.
+        @param hand: the hand of player, or [].
         """
         assert isinstance(card, Card)
-        # Skip the seat and hand checks here.
-        assert self.isValidPlay(card, self.whoseTurn(), [card])
+        player = player or self.whoseTurn()
+        hand = hand or [card]  # Skip hand check.
         
-        self.played[self.whoseTurn()].append(card)
+        valid = self.isValidPlay(card, player, hand)
+        assert valid
+        if valid:  # In case assert is disabled.
+            self.played[player].append(card)
         
         # If trick is complete, determine winner.
-        leader, cards = self.getCurrentTrick()
+        trick = self.getCurrentTrick()
+        leader, cards = trick
         if len(cards) == 4:
-            winner = self.whoPlayed(self.winningCard(self.getCurrentTrick()))
+            winner = self.whoPlayed(self.winningCard(trick))
             self.winners.append(winner)
 
 
-    def isValidPlay(self, card, seat=None, hand=[]):
+    def isValidPlay(self, card, player=None, hand=[]):
         """Card is playable if and only if:
         
         - Play session is not complete.
@@ -106,13 +123,15 @@ class Playing:
         In addition, if the current trick has an established lead, then
         card must follow lead suit OR hand must be void in lead suit.
         
-        Specification of seat and hand  required for verification.
+        Specification of player and hand are required for verification.
         """
+        assert isinstance(card, Card)
+        
         if self.isComplete():
             return False
         elif hand and card not in hand:
             return False  # Playing a card not in hand.
-        elif seat and seat is not self.whoseTurn():
+        elif player and player is not self.whoseTurn():
             return False  # Playing out of turn.
         elif self.whoPlayed(card):
             return False  # Card played previously.
@@ -125,27 +144,36 @@ class Playing:
         else:  # Current trick has an established lead: check for revoke.
             leadcard = cards[leader]
             # Cards in hand that match suit of leadcard.
-            followers = [c for c in hand if c.suit == leadcard.suit and not self.whoPlayed(c)]
+            followers = [c for c in hand if c.suit == leadcard.suit 
+                                         and not self.whoPlayed(c)]
             # Hand void in lead suit or card follows lead suit.
             return len(followers) == 0 or card in followers
 
 
     def whoPlayed(self, card):
-        """If card is played, returns seat of player, otherwise False."""
-        for seat, cards in self.played.items():
+        """Returns the player who played the specified card.
+        
+        @param card: a Card.
+        @return: the player who played card.
+        """
+        assert isinstance(card, Card)
+        for player, cards in self.played.items():
             if card in cards:
-                return seat
+                return player
         return False
 
 
     def whoseTurn(self):
-        """Returns the seat that is on turn to play."""
+        """If playing is not complete, returns the player who is next to play.
+        
+        @return: the player next to play.
+        """
         if not self.isComplete():
             trick = self.getCurrentTrick()
             leader, cards = trick
-            if len(cards) == 4:  # If trick is complete, the trick winner's turn.
+            if len(cards) == 4:  # If trick is complete, trick winner's turn.
                 return self.whoPlayed(self.winningCard(trick))
-            else:
+            else:  # Otherwise, turn is next (clockwise) player in trick.
                 return Seat[(leader.index + len(cards)) % 4]
         return False
 
@@ -155,6 +183,9 @@ class Playing:
         
         - In a trump contract, the highest ranked trump card wins.
         - Otherwise, the highest ranked card of the lead suit wins.
+
+        @param: a complete (leader, cards) trick tuple.
+        @return: the Card object which wins the trick.
         """
         leader, cards = trick
         if len(cards) == 4:  # Trick is complete.
@@ -163,7 +194,8 @@ class Playing:
                 if len(trumpcards) > 0:
                     return max(trumpcards)  # Highest ranked trump.
             # No Trump contract, or no trump cards played.
-            followers = [c for c in cards.values() if c.suit==cards[leader].suit]
+            followers = [c for c in cards.values()
+                         if c.suit==cards[leader].suit]
             return max(followers)  # Highest ranked card in lead suit.
         return False
 

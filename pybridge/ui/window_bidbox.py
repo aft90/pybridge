@@ -72,7 +72,7 @@ class WindowBidbox(GladeWrapper):
             self.window.set_property('sensitive', True)
             for call in ALL_CALLS:
                 button = self.get_button_from_call(call)
-                button.set_property('sensitive', bidding.validCall(call))
+                button.set_property('sensitive', bidding.isValidCall(call))
         else:
             self.window.set_property('sensitive', False)
 
