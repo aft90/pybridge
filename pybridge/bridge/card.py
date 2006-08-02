@@ -20,53 +20,54 @@ from twisted.spread import pb
 
 from pybridge.enum import Enum
 
+
+# Card ranks.
 Rank = Enum('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
             'Ten', 'Jack', 'Queen', 'King', 'Ace')
 
+# Card suits.
 Suit = Enum('Club', 'Diamond', 'Heart', 'Spade')
 
 
 class Card(pb.Copyable, pb.RemoteCopy):
-	"""A card has a rank and a suit."""
+    """A card has a rank and a suit."""
 
-	def __init__(self, rank, suit):
-		assert(rank in Rank)
-		assert(suit in Suit)
-		self.rank = rank
-		self.suit = suit
-
-
-	def __eq__(self, other):
-		"""Two cards are equivalent if their ranks and suits match."""
-		assert(isinstance(other, Card))
-		return self.suit == other.suit and self.rank == other.rank
+    def __init__(self, rank, suit):
+        assert(rank in Rank)
+        assert(suit in Suit)
+        self.rank = rank
+        self.suit = suit
 
 
-	def __cmp__(self, other):
-		"""Compare cards for hand sorting.
-		
-		Care must be taken when comparing cards of different suits.
-		
-		pre:
-			isinstance(other, Card)
-		"""
-		assert(isinstance(other, Card))
-		selfIndex = self.suit.index*13 + self.rank.index
-		otherIndex = other.suit.index*13 + other.rank.index
-		return cmp(selfIndex, otherIndex)
+    def __eq__(self, other):
+        """Two cards are equivalent if their ranks and suits match."""
+        assert isinstance(other, Card)
+        return self.suit == other.suit and self.rank == other.rank
 
 
-	def __str__(self):
-		"""Returns the English name for the card."""
-		return "%s of %ss" % (self.rank, self.suit)
+    def __cmp__(self, other):
+        """Compare cards for hand sorting.
+        
+        Care must be taken when comparing cards of different suits.
+        """
+        assert isinstance(other, Card)
+        selfIndex = self.suit.index*13 + self.rank.index
+        otherIndex = other.suit.index*13 + other.rank.index
+        return cmp(selfIndex, otherIndex)
 
 
-	def getStateToCopy(self):
-		return {'rank' : str(self.rank),
-		        'suit' : str(self.suit), }
+    def __str__(self):
+        return "%s of %ss" % (self.rank, self.suit)
 
 
-	def setCopyableState(self, state):
-		self.rank = getattr(Rank, state['rank'])
-		self.suit = getattr(Suit, state['suit'])
+    def getStateToCopy(self):
+        state = {}
+        state['rank'] = self.rank.key
+        state['suit'] = self.suit.key
+        return state
+
+
+    def setCopyableState(self, state):
+        self.rank = getattr(Rank, state['rank'])
+        self.suit = getattr(Suit, state['suit'])
 

@@ -20,6 +20,7 @@ from twisted.spread import pb
 
 from pybridge.enum import Enum
 
+
 # Bid levels.
 Level = Enum('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven')
 
@@ -28,49 +29,64 @@ Strain = Enum('Club', 'Diamond', 'Heart', 'Spade', 'NoTrump')
 
 
 class Call(pb.Copyable, pb.RemoteCopy):
-	"""Superclass for bids, passes, doubles and redoubles."""
-
-
-	def __str__(self):
-		return str(self.__class__)
-
-
-class Pass(Call): pass
-
-class Double(Call): pass
-
-class Redouble(Call): pass
+    """Superclass for bids, passes, doubles and redoubles."""
 
 
 class Bid(Call):
+    """A Bid represents a statement of a level and a strain."""
+
+    def __init__(self, level, strain):
+        assert level in Level
+        assert strain in Strain
+        
+        self.level = level
+        self.strain = strain
 
 
-	def __init__(self, level, strain):
-		assert(level in Level)
-		assert(strain in Strain)
-		self.level = level
-		self.strain = strain
+    def __cmp__(self, other):
+        assert issubclass(other.__class__, Call)
+        
+        if isinstance(other, Bid):  # Compare two bids.
+            selfVal = self.level.index*len(Strain) + self.strain.index
+            otherVal = other.level.index*len(Strain) + other.strain.index
+            return cmp(selfVal, otherVal)
+        else:  # Comparing non-bid calls returns true.
+            return 1
 
 
-	def __cmp__(self, other):
-		if isinstance(other, Bid):  # Comparing two bids.
-			selfVal = self.level.index*len(Strain) + self.strain.index
-			otherVal = other.level.index*len(Strain) + other.strain.index
-			return cmp(selfVal, otherVal)
-		else:  # Comparing non-bid calls returns true.
-			return 1
+    def __str__(self):
+        return "%s %s" % (self.level, self.strain)
 
 
-	def __str__(self):
-		return "%s %s" % (self.level, self.strain)
+    def getStateToCopy(self):
+        state = {}
+        state['level'] = self.level.key
+        state['strain'] = self.strain.key
+        return state
 
 
-	def getStateToCopy(self):
-		return {'level' : str(self.level),
-		        'strain' : str(self.strain), }
+    def setCopyableState(self, state):
+        self.level = getattr(Level, state['level'])
+        self.strain = getattr(Strain, state['strain'])
 
 
-	def setCopyableState(self, state):
-		self.level = getattr(Level, state['level'])
-		self.strain = getattr(Strain, state['strain'])
+class Pass(Call):
+    """A Pass represents an abstention from the bidding."""
+
+    def __str__(self):
+        return "Pass"
+
+
+class Double(Call):
+    """A Double over an opponent's current bid."""
+
+    def __str__(self):
+        return "Double"
+
+
+class Redouble(Call):
+    """A Redouble over an opponent's double of partnership's current bid."""
+
+    def __str__(self):
+        return "Redouble"
 

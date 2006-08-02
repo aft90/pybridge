@@ -26,31 +26,26 @@ Seat = Enum('North', 'East', 'South', 'West')  # Clockwise.
 
 
 class Deck:
-	"""A deck consists of 52 cards.
+    """A Deck consists of 52 Card objects."""
 
-	inv:
-		len(self.cards) == len(Rank) * len(Suit)
-	"""
-
-	def __init__(self):
-		self.cards = [Card(r, s) for r in Rank for s in Suit]
+    def __init__(self):
+        self.cards = [Card(r, s) for r in Rank for s in Suit]
 
 
-	def dealOrdered(self, combination):
-		"""Returns a deal, ordered by combination."""
-		pass  # Not implemented yet.
+    def dealOrdered(self, combination):
+        """Returns a deal, ordered by combination."""
+        pass  # Not implemented yet.
 
 
-	def dealRandom(self):
-		"""Returns a deal, from a shuffled deck."""
-		random.shuffle(self.cards)
-		hands = {Seat.North : [],
-		         Seat.East  : [],
-		         Seat.South : [],
-		         Seat.West  : [], }
-		for index, card in enumerate(self.cards):
-			hands[Seat[index % len(Seat)]].append(card)
-		for hand in hands.values():
-			hand.sort()
-		return hands
+    def dealRandom(self):
+        """Returns a deal, from a shuffled deck."""
+        random.shuffle(self.cards)
+        hands = {}
+        for seat in Seat:
+            hands[seat] = []
+        for index, card in enumerate(self.cards):
+            hands[Seat[index % len(Seat)]].append(card)
+        for hand in hands.values():
+            hand.sort()
+        return hands
 
