@@ -82,7 +82,7 @@ class RemoteBridgeTable(RemoteTable):
                 played = state['game']['played']
                 while sum([len(cards) for cards in played.values()]) > 0:
                     seat = self.game.whoseTurn()
-                    card = played[str(seat)].pop(0)  # XX
+                    card = played[seat.key].pop(0)
                     self.game.playCard(card=card, seat=seat)
 
 

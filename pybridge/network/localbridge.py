@@ -72,22 +72,21 @@ class LocalBridgeTable(LocalTable):
         
         if self.game:
             state['game'] = {}
-            state['game']['dealer'] = str(self.dealer)  # XX
+            state['game']['dealer'] = self.dealer.key
             state['game']['vulnNS'] = self.game.vulnNS
             state['game']['vulnEW'] = self.game.vulnEW
             if self.game.bidding:
                 state['game']['calls'] = self.game.bidding.calls
             if self.game.playing:
-                state['game']['declarer'] = str(self.game.playing.declarer)  # XX
+                state['game']['declarer'] = self.game.playing.declarer.key
                 state['game']['played'] = {}
                 for seat, played in self.game.playing.played.items():
-                    state['game']['played'][str(seat)] = played  # XX
-#                state['game']['played'] = self.game.playing.played
+                    state['game']['played'][seat.key] = played
             # Add visible hands.
             state['game']['deal'] = {}
             for seat, hand in self.game.deal.items():
                 if self.game.isHandVisible(seat, viewer=None):
-                    state['game']['deal'][str(seat)] = hand  # XX
+                    state['game']['deal'][seat.key] = hand
         else:
             state['game'] = None
         
@@ -120,13 +119,13 @@ class LocalBridgeTable(LocalTable):
         except GameError, error:
             raise DeniedRequest, error
         
-        self.updateObservers('gameCallMade', call=call, position=str(position))  # XX
+        self.updateObservers('gameCallMade', call=call, position=position.key)
         self.testEndGame()
 
 
     def gamePlayCard(self, card, position):
         if self.game is None or self.game.isComplete():
-            raise TableError, 'Game not running'
+            raise DeniedRequest, 'Game not running'
         elif position is None:
             raise DeniedRequest, 'Not a player'
         
@@ -142,7 +141,7 @@ class LocalBridgeTable(LocalTable):
         except GameError, error:
             raise DeniedRequest, error
         
-        self.updateObservers('gameCardPlayed', card=card, position=str(position))  # XX
+        self.updateObservers('gameCardPlayed', card=card, position=position.key)
         self.revealHands()  # ?
         self.testEndGame()
 
@@ -163,7 +162,7 @@ class LocalBridgeTable(LocalTable):
             vulnNS, vulnEW = False, False
             self.dealer = dealer or (self.dealer and Seat[(self.dealer.index + 1) % 4]) or Seat.North
             self.game = Game(self.dealer, deal, self.scoring, vulnNS, vulnEW)
-            self.updateObservers('gameStarted', dealer=str(self.dealer), vulnNS=vulnNS, vulnEW=vulnEW) # XX
+            self.updateObservers('gameStarted', dealer=self.dealer.key, vulnNS=vulnNS, vulnEW=vulnEW)
             
             for position in self.handsSeen:
                 self.handsSeen[position] = []  # Clear lists of hands seen.
@@ -193,8 +192,7 @@ class LocalBridgeTable(LocalTable):
                     self.handsSeen[viewer].append(seat)
                     hand = self.game.deal[seat]
                     self.informObserver(self.observers[player], 'gameHandRevealed',
-                                        hand=hand, position=str(seat))  # XX
-#       for seat in list(Suit) + None:  # Players and observers.
+                                        hand=hand, position=seat.key)
 
 
 

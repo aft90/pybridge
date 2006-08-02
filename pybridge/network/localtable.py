@@ -59,7 +59,7 @@ class LocalTable(pb.Cacheable):
         state['observers'] = [p.name for p in self.observers.keys()]
         state['players'] = {}
         for position, perspective in self.players.items():
-            state['players'][str(position)] = getattr(perspective, 'name', None)
+            state['players'][position.key] = getattr(perspective, 'name', None)
 #        state['timeCreated'] = self.config['timeCreated']
         
         return state
@@ -91,7 +91,7 @@ class LocalTable(pb.Cacheable):
             raise DeniedRequest('position occupied by another player')
         
         self.players[position] = player
-        self.updateObservers('playerAdded', player=player.name, position=str(position))
+        self.updateObservers('playerAdded', player=player.name, position=position.key)
 
 
     def removePlayer(self, player):
@@ -101,7 +101,7 @@ class LocalTable(pb.Cacheable):
             raise DeniedRequest('not playing at table')
         
         self.players[position] = None
-        self.updateObservers('playerRemoved', player=player.name, position=str(position))
+        self.updateObservers('playerRemoved', player=player.name, position=position.key)
 
 
     def sendMessage(self, message, sender, recipients):

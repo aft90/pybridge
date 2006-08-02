@@ -57,7 +57,7 @@ class RemoteTable(pb.RemoteCache):
 
 
     def addPlayer(self, position, player=None):
-        d = self.master.callRemote('addPlayer', str(position))  # XX
+        d = self.master.callRemote('addPlayer', position.key)
         d.addCallback(lambda _: setattr(self, 'seated', position))
         return d
 
@@ -87,13 +87,13 @@ class RemoteTable(pb.RemoteCache):
 
 
     def observe_playerAdded(self, player, position):
-        position = getattr(Seat, position)  # XX TODO: remove
+        position = getattr(Seat, position)  # XX
         self.players[position] = player
         self.eventHandler.playerAdded(self, player, position)
 
 
     def observe_playerRemoved(self, player, position):
-        position = getattr(Seat, position)  # XX TODO: remove
+        position = getattr(Seat, position)  # XX
         self.players[position] = None
         self.eventHandler.playerRemoved(self, player, position)
 
