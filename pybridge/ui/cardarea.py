@@ -42,6 +42,10 @@ class CardArea(gtk.DrawingArea):
 
     # TODO: when PyGTK 2.8 becomes widespread, adapt this module to Cairo.
 
+    # Load table background and card pixbufs.
+    background = gtk.gdk.pixbuf_new_from_file(BACKGROUND_PATH).render_pixmap_and_mask()[0]
+    card_mask = gtk.gdk.pixbuf_new_from_file_at_size(CARD_MASK_PATH, 1028, 615)
+
 
     def __init__(self):
         gtk.DrawingArea.__init__(self)
@@ -51,10 +55,6 @@ class CardArea(gtk.DrawingArea):
         self.hand_coords = {}   # Positions of hand pixbufs on backing.
         self.card_coords = {}   # Positions of cards on hand pixbufs.
         self.trick_pixbuf = None  # 
-        
-        # Load table background and card pixbufs.
-        self.background = gtk.gdk.pixbuf_new_from_file(BACKGROUND_PATH).render_pixmap_and_mask()[0]
-        self.card_mask = gtk.gdk.pixbuf_new_from_file_at_size(CARD_MASK_PATH, 1028, 615)
         
         # Expect cards of unit size 13 x 5.
         self.card_width = self.card_mask.get_width() / 13
