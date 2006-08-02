@@ -121,11 +121,11 @@ class Game:
         """
         
         @return['declarerWon']: number of tricks won by declarer/dummy.
-        @return['defendersWon']: number of tricks won by defenders.
+        @return['defenceWon']: number of tricks won by defenders.
         @return['declarerNeeds']: number of extra tricks required by declarer
                                   to make contract.
-        @return['declarerNeeds']: number of extra tricks required by defenders
-                                  to break contract.
+        @return['defenceNeeds']: number of extra tricks required by defenders
+                                 to break contract.
         @return['required']: number of tricks required from contract level.
         
         """
@@ -133,7 +133,7 @@ class Game:
             raise GameError('not in play')
         
         count = dict.fromkeys(('declarerWon', 'declarerNeeds',
-                               'defendersWon', 'defendersNeed'), 0)
+                               'defenceWon', 'defenceNeeds'), 0)
         
         for index in range(len(self.playing.winners)):
             trick = self.playing.getTrick(index)
@@ -141,13 +141,13 @@ class Game:
             if winner in (self.playing.declarer, self.playing.dummy):
                 count['declarerWon'] += 1
             else:  # Trick won by defenders.
-                count ['defendersWon'] += 1
+                count ['defenceWon'] += 1
         
         contract = self.bidding.getContract()
         # Get index value of bid level, increment, add 6.
         count['required'] = contract['bid'].level.index + 7
         count['declarerNeeds'] = max(0, count['required'] - count['declarerWon'])
-        count['defendersNeed'] = max(0, 13 - count['required'] - count['defendersWon'] + 1)
+        count['defenceNeeds'] = max(0, 13 - count['required'] - count['defenceWon'] + 1)
         
         return count
 

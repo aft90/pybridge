@@ -166,14 +166,14 @@ class WindowGame(GladeWrapper):
         """
         if count:
             declarer = '<b>%s (%s)</b>' % (count['declarerWon'], count['declarerNeeds'])
-            defenders = '<b>%s (%s)</b>' % (count['defendersWon'], count['defendersNeed'])
+            defence = '<b>%s (%s)</b>' % (count['defenceWon'], count['defenceNeeds'])
         else:
-            declarer = defenders = '-'
+            declarer = defence = '-'
         
         self.frame_declarer.set_property('sensitive', count!=None)
         self.frame_defence.set_property('sensitive', count!=None)
         self.label_declarer.set_markup(declarer)
-        self.label_defence.set_markup(defenders)
+        self.label_defence.set_markup(defence)
 
 
 # Registered event handlers.
@@ -222,7 +222,7 @@ class WindowGame(GladeWrapper):
                             (offset < 0 and "failed by %s tricks" % abs(offset)) or \
                             "made exactly"
                 textScore = "Score %s points for " % abs(score) + \
-                            ((score >= 0 and "declarer") or "defenders")
+                            ((score >= 0 and "declarer") or "defence")
                 
                 message = "%s %s.\n\n%s." % (textContract, textTrick, textScore)
             else:
