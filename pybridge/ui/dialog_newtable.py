@@ -36,13 +36,13 @@ class DialogNewtable(GladeWrapper):
 
 
     def on_cancelbutton_clicked(self, widget, *args):
-        utils.closeWindow('dialog_newtable')
+        utils.windows.close('dialog_newtable')
 
 
     def on_okbutton_clicked(self, widget, *args):
         
         def success(table):
-            utils.closeWindow('dialog_newtable')
+            utils.windows.close('dialog_newtable')
             self.parent.joinedTable(table)  # TODO: is this necessary?
 
         def failure(reason):

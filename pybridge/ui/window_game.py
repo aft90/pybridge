@@ -103,13 +103,11 @@ class WindowGame(GladeWrapper):
             else:  # Reset trick counts.
                 self.setTrickCount(None)
             
-            # If user is a player and bidding in progress, launch bidding box.
+            # If user is a player and bidding in progress, open bidding box.
             if table.seated and not table.game.bidding.isComplete():
-                if not utils.getWindow('window_bidbox'):
-                    utils.openWindow('window_bidbox', self)
-            # Otherwise, if bidding box is open, close it.
-            elif utils.getWindow('window_bidbox'):
-                utils.closeWindow('window_bidbox')
+                utils.windows.open('window_bidbox', self)
+            else:  # Otherwise, if bidding box is open, close it.
+                utils.windows.close('window_bidbox')
         
         # Initialise seat buttons.
         for seat, player in table.players.items():
@@ -197,7 +195,7 @@ class WindowGame(GladeWrapper):
             # Disable the button, unless we are the player.
             button.set_property('sensitive', button.get_active())
             if table.seated and table.game and not table.game.bidding.isComplete():
-                utils.openWindow('window_bidbox', self)
+                utils.windows.open('window_bidbox', self)
 
 
     def event_playerRemoved(self, table, player, position):
@@ -205,6 +203,7 @@ class WindowGame(GladeWrapper):
             button = getattr(self, SEATS[position])
             # If we are not a player, enable seat button.
             button.set_property('sensitive', not(table.seated))
+            utils.windows.close('window_bidbox')
 
 
     def event_gameCallMade(self, table, call, position):
@@ -225,7 +224,7 @@ class WindowGame(GladeWrapper):
         if table == self.table:
             self.resetGame()
             if table.seated:
-                utils.openWindow('window_bidbox', self)
+                utils.windows.open('window_bidbox', self)
 
 
     def event_gameFinished(self, table):
@@ -248,7 +247,7 @@ class WindowGame(GladeWrapper):
             else:
                 message = 'Bidding passed out.'
 
-            dialog = utils.openWindow('dialog_gameresult', self.parent)
+            dialog = utils.windows.open('dialog_gameresult', self.parent)
             dialog.setup(message)
 
 

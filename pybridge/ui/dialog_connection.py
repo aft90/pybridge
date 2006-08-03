@@ -57,8 +57,8 @@ class DialogConnection(GladeWrapper):
         utils.settings.connection['password'] = password
         
         # Launch main window.
-        utils.closeWindow('dialog_connection')
-        utils.openWindow('window_main')
+        utils.windows.close('dialog_connection')
+        utils.windows.open('window_main')
 
 
     def connectFailure(self, failure):

@@ -78,7 +78,7 @@ class WindowBidbox(GladeWrapper):
 
             # If bidding is complete, close this window.
             if table.game.bidding.isComplete():
-                utils.closeWindow('window_bidbox')
+                utils.windows.close('window_bidbox')
 
 
 # Utility methods.

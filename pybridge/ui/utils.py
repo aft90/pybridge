@@ -16,14 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import ConfigParser
-import gtk
-import imp
-from twisted.internet import reactor
-
 from pybridge.conf import TCP_PORT
 from pybridge.environment import CLIENT_SETTINGS_PATH
-
 
 # Set up client with UI event handler.
 from pybridge.network.client import client
@@ -31,30 +25,7 @@ from eventhandler import eventhandler
 client.setEventHandler(eventhandler)
 
 
-windows = {}
-
-
-def openWindow(windowname, parent=None):
-    """"""
-    # TODO: replace this with something more robust.
-    if windowname not in windows:
-        classname = ''.join([x.capitalize() for x in windowname.split('_')])
-        exec("from %s import %s" % (windowname, classname))
-        window = eval(classname)(parent)
-        windows[windowname] = window
-        return window
-
-
-def closeWindow(windowname):
-    """"""
-    windows[windowname].window.destroy()
-    del windows[windowname]
-
-
-def getWindow(windowname):
-    """"""
-    return windows.get(windowname)
-
+import ConfigParser
 
 class Settings:
     """"""
@@ -62,12 +33,10 @@ class Settings:
     connection = {}
     general = {}
 
-
     def __init__(self, filename=CLIENT_SETTINGS_PATH):
         self.config = ConfigParser.SafeConfigParser()
         self.filename = filename
         self.read()
-
 
     def read(self):
         """"""
@@ -77,21 +46,43 @@ class Settings:
         if not self.config.has_section('Connection'):
             self.config.add_section('Connection')
             self.write()
-        
         for key, value in self.config.items('Connection'):
             self.connection[key] = value
-
 
     def write(self):
         """"""
         for key, value in self.connection.items():
             self.config.set('Connection', key, value)
-        
         self.config.write(file(self.filename, 'w'))
-
 
 settings = Settings()
 
+
+import imp
+from UserDict import UserDict
+
+class WindowManager(UserDict):
+
+    def open(self, windowname, parent=None):
+        """"""
+        # TODO: replace this with something more robust.
+        if windowname not in self:
+            classname = ''.join([x.capitalize() for x in windowname.split('_')])
+            exec("from %s import %s" % (windowname, classname))
+            window = eval(classname)(parent)
+            self[windowname] = window
+            return window
+
+    def close(self, windowname):
+        if windowname in self:
+            self[windowname].window.destroy()
+            del self[windowname]
+
+windows = WindowManager()
+
+
+import gtk
+from twisted.internet import reactor
 
 def quit():
     """Shutdown gracefully."""

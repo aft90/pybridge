@@ -25,7 +25,7 @@ def run():
     from twisted.internet import reactor
     
     import utils
-    utils.openWindow('dialog_connection')
+    utils.windows.open('dialog_connection')
     
     # Start the program.
     reactor.run()

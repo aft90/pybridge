@@ -70,8 +70,6 @@ class WindowMain(GladeWrapper):
         index = self.notebook.append_page(cardarea, tab)
         self.tables[table]['tabindex'] = index
         self.notebook.set_current_page(index)
-        
-        self.switchTable(table)  # Switch focus to table.
 
 
     def leftTable(self, table):
@@ -81,15 +79,9 @@ class WindowMain(GladeWrapper):
         self.notebook.remove_page(self.tables[table]['tabindex'])
         del self.tables[table]
         
-#        # Switch focus away from table.
-#        if self.focalTable == table:
-#            self.notebook.prev_page()
-#            self.focalTable = None
-#        
-#        # Switch focus away from table.
-#        self.notebook.remove_page(self.notebook.get_n_pages() - 1)  # TODO: fix this.
-#        self.focalTable = None  # TODO: fix this also.
-#        utils.closeWindow('window_game')  # & bidbox?
+        # Check for any remaining tables.
+        if len(self.tables) == 0:
+            utils.windows.close('window_game')
 
 
     def switchTable(self, table):
@@ -103,14 +95,14 @@ class WindowMain(GladeWrapper):
             if table.game.playing:
                 self.redrawTrick(table)
         
-        window = utils.getWindow('window_game')
+        window = utils.windows.get('window_game')
         if table:
             if window is None:  # Launch window.
-                window = utils.openWindow('window_game', self)
+                window = utils.windows.open('window_game', self)
             window.changeTable(table)
         else:
             if window:
-                utils.closeWindow('window_game')
+                utils.windows.close('window_game')
  
 
     def redrawHand(self, table, position, all=False):
@@ -244,7 +236,7 @@ class WindowMain(GladeWrapper):
 
 
     def on_newtable_activate(self, widget, *args):
-        utils.openWindow('dialog_newtable', self)
+        utils.windows.open('dialog_newtable', self)
 
 
     def on_jointable_activate(self, widget, *args):
@@ -253,8 +245,8 @@ class WindowMain(GladeWrapper):
 
     def on_disconnect_activate(self, widget, *args):
         client.disconnect()
-        utils.closeWindow('window_main')
-        utils.openWindow('dialog_connection')
+        utils.windows.close('window_main')
+        utils.windows.open('dialog_connection')
 
 
     def on_fullscreen_activate(self, widget, *args):
