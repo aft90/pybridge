@@ -36,7 +36,8 @@ class WindowMain(GladeWrapper):
 
 
     def new(self):
-        self.tabletabs = {}  # For each observed table, its tab index.
+        self.tables = {}   # For each observed table, a dict of UI data.
+        self.table = None  # Table currently displayed in window.
         
         # Set up table model and icon view.
         self.tableview_icon = gtk.gdk.pixbuf_new_from_file(TABLE_ICON)        
@@ -45,91 +46,88 @@ class WindowMain(GladeWrapper):
         self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
         self.tableview.set_model(self.tableview_model)
         
-        self.focalTable = None  # Table currently being viewed.
-        
         # Register events.
         eventhandler.registerCallback('tableOpened', self.event_tableOpened)
         eventhandler.registerCallback('tableClosed', self.event_tableClosed)
-        eventhandler.registerCallback('playerAdded', self.event_playerAdded)
         eventhandler.registerCallback('gameStarted', self.event_gameStarted)
         eventhandler.registerCallback('gameFinished', self.event_gameFinished)
         eventhandler.registerCallback('gameCardPlayed', self.event_gameCardPlayed)
         eventhandler.registerCallback('gameHandRevealed', self.event_gameHandRevealed)
 
 
-    def changeTable(self, table):
-        """Call when focus changes to a table.
-        
-        Changes display to match the table specified.
-        """
-        # Switch focus to table.
-        self.focalTable = table
-        self.notebook.set_current_page(self.tabletabs[table])
-        
-        if table.game:
-            # If user is a player and bidding in progress, launch bidding box.
-            if table.seated and not table.game.bidding.isComplete():
-                if not utils.getWindow('window_bidbox'):
-                    utils.openWindow('window_bidbox', self)
-            # Otherwise, if bidding box is open, close it down.
-            elif utils.getWindow('window_bidbox'):
-                utils.closeWindow('window_bidbox')
-            
-            for position in table.game.deal:
-                self.redrawHand(position)
-            if table.game.playing:
-                self.redrawTrick()
-        
-        if not utils.getWindow('window_game'):  # Display game window.
-            utils.openWindow('window_game', self)
-        utils.getWindow('window_game').changeTable(table)
-
-
     def joinedTable(self, table):
         """Actions to perform when user has joined a table."""
-        # Set up card area widget as new page.
-        tab = gtk.Label(table.id)
-        self.cardarea = CardArea()
-        self.cardarea.on_card_clicked = self.on_card_clicked
-        self.cardarea.show()
+        self.tables[table] = {}
         
-        index = self.notebook.append_page(self.cardarea, tab)
-        self.tabletabs[table] = index
-
-        self.changeTable(table)
+        # Set up cardarea widget.
+        cardarea = CardArea()
+        cardarea.on_card_clicked = lambda c, p: table.gamePlayCard(c, p)
+        cardarea.show()
+        self.tables[table]['cardarea'] = cardarea
+        
+        # Set up new page, with cardarea and tab.
+        tab = gtk.Label(table.id)
+        index = self.notebook.append_page(cardarea, tab)
+        self.tables[table]['tabindex'] = index
+        self.notebook.set_current_page(index)
+        
+        self.switchTable(table)  # Switch focus to table.
 
 
     def leftTable(self, table):
         """Actions to perform when user has left a table."""
-        # Switch focus away from table.
-        self.notebook.remove_page(self.notebook.get_n_pages() - 1)  # TODO: fix this.
-        self.focalTable = None  # TODO: fix this also.
-        utils.closeWindow('window_game')  # & bidbox?
+        
+        # Remove table page.
+        self.notebook.remove_page(self.tables[table]['tabindex'])
+        del self.tables[table]
+        
+#        # Switch focus away from table.
+#        if self.focalTable == table:
+#            self.notebook.prev_page()
+#            self.focalTable = None
+#        
+#        # Switch focus away from table.
+#        self.notebook.remove_page(self.notebook.get_n_pages() - 1)  # TODO: fix this.
+#        self.focalTable = None  # TODO: fix this also.
+#        utils.closeWindow('window_game')  # & bidbox?
 
 
-    def set_turn(self, turn=None):
-        """Sets the statusbar text to indicate which player is on turn."""
-        context = self.statusbar.get_context_id('turn')
-        self.statusbar.pop(context)
-        if turn is not None:
-            self.statusbar.push(context, "It is %s's turn" % str(turn))
+    def switchTable(self, table):
+        """"""
+        self.table = table
 
+        if table and table.game:
+            # Redraw hands and, if playing in progress, redraw trick.
+            for position in table.game.deal:
+                self.redrawHand(table, position)
+            if table.game.playing:
+                self.redrawTrick(table)
+        
+        window = utils.getWindow('window_game')
+        if table:
+            if window is None:  # Launch window.
+                window = utils.openWindow('window_game', self)
+            window.changeTable(table)
+        else:
+            if window:
+                utils.closeWindow('window_game')
+ 
 
-    def redrawHand(self, position, all=False):
+    def redrawHand(self, table, position, all=False):
         """Redraws cards making up the hand at position.
         
         Cards played are filtered out and omitted from display.
         Unknown cards are displayed face down.
-
+        
+        @param table:
         @param position:
         @param all: If True, do not filter out cards played.
         """
-        hand = self.focalTable.game.deal[position]
-        if self.focalTable.game.playing:
-            played = self.focalTable.game.playing.played[position]
-        else:
-            played = []
-
+        hand = table.game.deal[position]
+        played = []
+        if table.game.playing:
+            played = table.game.playing.played[position]
+        
         if hand and all is True:  # Own or known hand: show all cards.
             cards = hand
         elif hand:  # Own or known hand: filter out cards played.
@@ -139,21 +137,42 @@ class WindowMain(GladeWrapper):
         
         # dummy = self.game.playing != None and seat == self.game.playing.dummy
         # transpose = dummy and seat in (Seat.North, Seat.South)
-        self.cardarea.build_hand(position, cards)
-        self.cardarea.draw_hand(position)
+        cardarea = self.tables[table]['cardarea']
+        cardarea.build_hand(position, cards)
+        cardarea.draw_hand(position)
 
 
-    def redrawTrick(self, leader=None, trick=None):
+    def redrawTrick(self, table, trick=None):
         """Redraws trick.
-
-        @param leader: position of player to play first card in trick.
-        @param trick: dict of cards played, keyed by player position.
-        """
-        if leader is None or trick is None:
-            leader, trick = self.focalTable.game.playing.getCurrentTrick()
         
-        self.cardarea.build_trick((leader, trick))
-        self.cardarea.draw_trick()
+        @param table:
+        @param trick:
+        """
+        # TODO: this cannot be called until playing in progress
+        # perhaps put a clear() method in cardarea?
+        if trick is None:
+            trick = table.game.playing.getCurrentTrick()
+        
+        cardarea = self.tables[table]['cardarea']
+        cardarea.build_trick(trick)
+        cardarea.draw_trick()
+
+
+    def setTurnIndicator(self, turn=None):
+        """Sets the statusbar text to indicate which player is on turn."""
+        context = self.statusbar.get_context_id('turn')
+        self.statusbar.pop(context)
+        if turn is not None:
+            self.statusbar.push(context, "It is %s's turn" % str(turn))
+
+
+#    def getActiveTable(self):
+#        """Returns table currently displayed to user, or None."""
+#        active = self.notebook.get_current_page()
+#        for table in self.tables:
+#            if self.tables[table]['tabindex'] == active:
+#                return table
+#        return None
 
 
 # Registered event handlers.
@@ -175,58 +194,41 @@ class WindowMain(GladeWrapper):
         self.tableview_model.foreach(func, tableid)
 
 
-    def event_playerAdded(self, table, player, position):
-        """"""
-        if table == self.focalTable and player == client.username:
-            if table.game and not table.game.bidding.isComplete():
-                utils.openWindow('window_bidbox', self)
-
-
     def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
-        if table == self.focalTable:
-            self.changeTable(table)
-#            if table.seated:  # If playing, launch bidding box.
-#                utils.openWindow('window_bidbox', self)
+        if table == self.table:
+            for position in table.game.deal:
+                self.redrawHand(table, position)
+        # TODO: Clear trick.
+#       self.switchTable(table)
 
 
     def event_gameFinished(self, table):
-        for position in self.focalTable.game.deal:
-            self.redrawHand(position, all=True)
-#        if self.focalTable.game.playing and self.focalTable.game.playing.isComplete():
-#            # Display cards in order played.
-#            for position in self.focalTable.game.deal:
-#                self.redrawHand(position, all=True)
-#            for seat, cards in self.focalTable.game.playing.played.items():
-#                self.cardarea.build_hand(seat, cards)
-#                self.cardarea.draw_hand(seat)
-#        else:
-#            # Display cards from all hands.
-#            pass
-#
-#        if self.focalTable.game.isComplete():
-#            # Determine and display score.
-            
+        if table == self.table:
+            for position in table.game.deal:
+                self.redrawHand(table, position, all=True)
 
 
     def event_gameCardPlayed(self, table, card, position):
-        if table == self.focalTable:
-            self.redrawHand(position)
-            self.redrawTrick()
+        if table == self.table:
+            self.redrawHand(table, position)
+            self.redrawTrick(table)
 
 
     def event_gameHandRevealed(self, table, hand, position):
-        if table == self.focalTable:
-            self.redrawHand(position)
+        if table == self.table:
+            self.redrawHand(table, position)
 
 
 # Signal handlers.
 
 
-    def on_card_clicked(self, card, position):
-        # Do not check validity of card play: the server will do that.
-        # If card play is invalid, ignore the resultant errback.
-        d = self.focalTable.gamePlayCard(card, position)
-        d.addErrback(lambda r: True)  # Ignore error.
+    def on_notebook_switch_page(self, notebook, page, page_num):
+        table = None
+        for table in self.tables:
+            if self.tables[table]['tabindex'] == page_num:
+                break
+        self.table = table
+        self.switchTable(table)
 
 
     def on_tableview_item_activated(self, iconview, path, *args):

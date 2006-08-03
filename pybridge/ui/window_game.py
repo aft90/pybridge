@@ -21,6 +21,7 @@ from wrapper import GladeWrapper
 
 from pybridge.network.client import client
 from eventhandler import eventhandler
+import utils
 
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 
@@ -49,6 +50,8 @@ class WindowGame(GladeWrapper):
 
 
     def new(self):
+        self.table = None
+        
         # Set up bidding view model.
         self.call_store = gtk.ListStore(str, str, str, str)  # 4 seats.
         self.tree_bidding.set_model(self.call_store)
@@ -71,10 +74,8 @@ class WindowGame(GladeWrapper):
         eventhandler.registerCallback('playerRemoved', self.event_playerRemoved)
         eventhandler.registerCallback('gameCallMade', self.event_gameCallMade)
         eventhandler.registerCallback('gameCardPlayed', self.event_gameCardPlayed)
+        eventhandler.registerCallback('gameStarted', self.event_gameStarted)
         eventhandler.registerCallback('gameFinished', self.event_gameFinished)
-        
-        self.changeTable(self.parent.focalTable)
- #       self.reset_game()
 
 
     def changeTable(self, table):
@@ -82,27 +83,38 @@ class WindowGame(GladeWrapper):
         
         @param table: the (now) focal table.
         """
-        self.call_store.clear()
-        if table.game:
-            for call in table.game.bidding.calls:
-                seat = table.game.bidding.whoCalled(call)
-                self.addCall(call, seat)
+        if table is not self.table:
+            self.table = table
+            # Rebuild bidding list.
+            self.call_store.clear()
+            if table.game:
+                for call in table.game.bidding.calls:
+                    seat = table.game.bidding.whoCalled(call)
+                    self.addCall(call, seat)
+            # Set contract.
+            if table.game and table.game.bidding.isComplete():
+                contract = table.game.bidding.getContract()
+                self.setContract(contract)
+            else:  # Reset contract.
+                self.setContract()
+            # Set trick counts.
+            if table.game and table.game.playing:
+                self.setTrickCount(table.game.getTrickCount())
+            else:  # Reset trick counts.
+                self.setTrickCount(None)
+            
+            # If user is a player and bidding in progress, launch bidding box.
+            if table.seated and not table.game.bidding.isComplete():
+                if not utils.getWindow('window_bidbox'):
+                    utils.openWindow('window_bidbox', self)
+            # Otherwise, if bidding box is open, close it.
+            elif utils.getWindow('window_bidbox'):
+                utils.closeWindow('window_bidbox')
         
-        if table.game and table.game.bidding.isComplete():
-            contract = table.game.bidding.getContract()
-            self.setContract(contract)
-        else:  # Reset contract.
-            self.setContract()
-        
-        if table.game and table.game.playing:
-            self.setTrickCount(table.game.getTrickCount())
-        else:  # Reset trick counts.
-            self.setTrickCount(None)
-
         # Initialise seat buttons.
-        for seat, player in self.parent.focalTable.players.items():
+        for seat, player in table.players.items():
             button = getattr(self, SEATS[seat])
-            available = player is None or seat == self.parent.focalTable.seated
+            available = player is None or seat == table.seated
             button.set_property('sensitive', available)
 
 
@@ -124,7 +136,7 @@ class WindowGame(GladeWrapper):
 #        self.observerlisting_store.foreach(func, observers)
 
 
-    def reset_game(self):
+    def resetGame(self):
         """Clears bidding history, contract, trick counts."""
         self.call_store.clear()  # Reset bidding.
         self.setContract(None)  # Reset contract.
@@ -142,7 +154,7 @@ class WindowGame(GladeWrapper):
                 iter = self.call_store.iter_next(iter)
         
         if isinstance(call, Bid):
-            format = "%s%s" % (call.level.index+1, STRAIN_SYMBOLS[call.strain])
+            format = '%s%s' % (call.level.index+1, STRAIN_SYMBOLS[call.strain])
         else:
             format = CALLTYPE_SYMBOLS[call.__class__]
         self.call_store.set(iter, column, format)
@@ -180,21 +192,23 @@ class WindowGame(GladeWrapper):
 
 
     def event_playerAdded(self, table, player, position):
-        if table == self.parent.focalTable:
+        if table == self.table:
             button = getattr(self, SEATS[position])
             # Disable the button, unless we are the player.
             button.set_property('sensitive', button.get_active())
+            if table.seated and table.game and not table.game.bidding.isComplete():
+                utils.openWindow('window_bidbox', self)
 
 
     def event_playerRemoved(self, table, player, position):
-        if table == self.parent.focalTable:
+        if table == self.table:
             button = getattr(self, SEATS[position])
             # If we are not a player, enable seat button.
-            button.set_property('sensitive', not(self.parent.focalTable.seated))
+            button.set_property('sensitive', not(table.seated))
 
 
     def event_gameCallMade(self, table, call, position):
-        if table == self.parent.focalTable:
+        if table == self.table:
             self.addCall(call, position)
             if table.game.bidding.isComplete():
                 contract = table.game.bidding.getContract()
@@ -202,14 +216,20 @@ class WindowGame(GladeWrapper):
 
 
     def event_gameCardPlayed(self, table, card, position):
-        if table == self.parent.focalTable:
+        if table == self.table:
             count = table.game.getTrickCount()
             self.setTrickCount(count)
 
 
+    def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
+        if table == self.table:
+            self.resetGame()
+            if table.seated:
+                utils.openWindow('window_bidbox', self)
+
+
     def event_gameFinished(self, table):
-        if table == self.parent.focalTable:
-        
+        if table == self.table:
             # Determine and display score in dialog box.
             contract = table.game.bidding.getContract()
             if contract:
@@ -217,22 +237,19 @@ class WindowGame(GladeWrapper):
                 offset = trickCount['declarerWon'] - trickCount['required']
                 score = table.game.score()
                 
-                textContract = "Contract %s" % self.getContractFormat(contract)
-                textTrick = (offset > 0 and "made by %s tricks" % offset) or \
-                            (offset < 0 and "failed by %s tricks" % abs(offset)) or \
-                            "made exactly"
-                textScore = "Score %s points for " % abs(score) + \
-                            ((score >= 0 and "declarer") or "defence")
+                textContract = 'Contract %s' % self.getContractFormat(contract)
+                textTrick = (offset > 0 and 'made by %s tricks' % offset) or \
+                            (offset < 0 and 'failed by %s tricks' % abs(offset)) or \
+                            'made exactly'
+                textScore = 'Score %s points for ' % abs(score) + \
+                            ((score >= 0 and 'declarer') or 'defence')
                 
-                message = "%s %s.\n\n%s." % (textContract, textTrick, textScore)
+                message = '%s %s.\n\n%s.' % (textContract, textTrick, textScore)
             else:
-                message = "Bidding passed out."
-            
-            dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                        type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK,
-                                        message_format=message)
-            dialog.run()
-            dialog.destroy()
+                message = 'Bidding passed out.'
+
+            dialog = utils.openWindow('dialog_gameresult', self.parent)
+            dialog.setup(message)
 
 
 # Utility methods.
@@ -250,7 +267,7 @@ class WindowGame(GladeWrapper):
             double = CALLTYPE_SYMBOLS[Redouble]
         elif contract['doubleBy']:
             double = CALLTYPE_SYMBOLS[Double]
-        declarer = contract['declarer']  # str?
+        declarer = contract['declarer']
         
         return "%s%s%s by %s" % (bidlevel, bidstrain, double, declarer)
 
@@ -268,17 +285,17 @@ class WindowGame(GladeWrapper):
         def unseated(arg):  # Enable all seat buttons that are not seated.
             for seat, buttonname in SEATS.items():
                 button = getattr(self, buttonname)
-                button.set_property('sensitive', self.parent.focalTable.players[seat]==None)
+                button.set_property('sensitive', self.table.players[seat]==None)
         
         if widget.get_active():
             seat = [k for k, v in SEATS.items() if v==widget.get_name()][0]
-            self.parent.focalTable.addPlayer(seat).addCallback(seated)
+            self.table.addPlayer(seat).addCallback(seated)
         else:
-            self.parent.focalTable.removePlayer().addCallback(unseated)
+            self.table.removePlayer().addCallback(unseated)
 
 
     def on_window_game_delete_event(self, widget, *args):
-        d = client.leaveTable(self.parent.focalTable.id)
-        d.addCallback(lambda _: self.parent.leftTable(self.parent.focalTable))
+        d = client.leaveTable(self.table.id)
+        d.addCallback(lambda _: self.parent.leftTable(self.table))
         return True  # Stops window deletion taking place.
 

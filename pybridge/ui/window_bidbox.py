@@ -20,6 +20,7 @@ import gtk
 from wrapper import GladeWrapper
 
 from eventhandler import eventhandler
+import utils
 
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 from pybridge.bridge.call import Level, Strain
@@ -51,19 +52,10 @@ class WindowBidbox(GladeWrapper):
 
 
     def new(self):
-        table = self.parent.focalTable
+        table = self.parent.table
         self.set_available_calls(table.seated, table.game.bidding)
         
-        eventhandler.registerCallback('gameCallMade', self.gameCallMade)
-
-
-    def gameCallMade(self, table, call, position):
-        if table == self.parent.focalTable:
-            self.set_available_calls(table.seated, table.game.bidding)
-
-            # If bidding is complete, close this window.
-            if table.game.bidding.isComplete():
-                self.window.destroy()
+        eventhandler.registerCallback('gameCallMade', self.event_gameCallMade)
 
 
     def set_available_calls(self, seat, bidding):
@@ -77,13 +69,19 @@ class WindowBidbox(GladeWrapper):
             self.window.set_property('sensitive', False)
 
 
-    def on_call_clicked(self, widget, *args):
-        """Builds a call object and submits."""
-        # Do not check validity of call: the server will do that.
-        # If call is invalid, ignore the resultant errback.
-        call = self.get_call_from_button(widget)
-        d = self.parent.focalTable.gameMakeCall(call)
-        d.addErrback(lambda r: True)  # Ignore error.
+# Registered event handlers.
+
+
+    def event_gameCallMade(self, table, call, position):
+        if table == self.parent.table:
+            self.set_available_calls(table.seated, table.game.bidding)
+
+            # If bidding is complete, close this window.
+            if table.game.bidding.isComplete():
+                utils.closeWindow('window_bidbox')
+
+
+# Utility methods.
 
 
     def get_button_from_call(self, call):
@@ -106,6 +104,18 @@ class WindowBidbox(GladeWrapper):
             strain = STRAIN_NAMES[text[3]]
             return calltype(level, strain)
         return calltype()
+
+
+# Signal handlers.
+
+
+    def on_call_clicked(self, widget, *args):
+        """Builds a call object and submits."""
+        # Do not check validity of call: the server will do that.
+        # If call is invalid, ignore the resultant errback.
+        call = self.get_call_from_button(widget)
+        d = self.parent.table.gameMakeCall(call)
+        d.addErrback(lambda r: True)  # Ignore error.
 
 
     def on_window_bidbox_delete_event(self, widget, *args):
