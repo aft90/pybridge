@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.internet import reactor
 from twisted.spread import pb
 from zope.interface import implements
 
@@ -63,8 +64,11 @@ class LocalBridgeTable(LocalTable):
         for seat in Seat:
             self.handsSeen[seat] = []
         
-        # self.pendingDeals = []  # Queue of deals for successive games.
+        self.pendingDeals = []   # Queue of deals for successive games.
         # self.config['dummySeesAll'] = True
+
+        # A time delay between a finished game and starting the next game.
+        self.config['gameWaitInterval'] = 5
 
 
     def getState(self):
@@ -100,8 +104,8 @@ class LocalBridgeTable(LocalTable):
         self.handsSeen[position] = []  # Clear list of hands seen by player.
         if self.game:  # If game in progress...
             self.revealHands()  # ... provide player with visible hands.
-        else:  # Otherwise, test if game is ready to start.
-            self.testStartGame()
+        # Test if game is ready to start.
+        self.testStartGame()
         
 
 
@@ -142,7 +146,7 @@ class LocalBridgeTable(LocalTable):
             raise DeniedRequest, error
         
         self.updateObservers('gameCardPlayed', card=card, position=position.key)
-        self.revealHands()  # ?
+        self.revealHands()
         self.testEndGame()
 
 
@@ -155,9 +159,10 @@ class LocalBridgeTable(LocalTable):
 
 
     def testStartGame(self, dealer=None, deal=None):
-        """If all players ready, and no game is active, start a game."""
-        count = len([p for p in self.players.values() if p != None]) # and self.observers[p].get('ready')])
-        if self.game is None and count == len(self.players):
+        """If no game is active and all players are ready, start a game."""
+        if (self.game is None or self.game.isComplete()) \
+        and len([p for p in self.players.values() if p is None]) == 0:
+            
             deal = deal or self.deck.dealRandom()
             vulnNS, vulnEW = False, False
             self.dealer = dealer or (self.dealer and Seat[(self.dealer.index + 1) % 4]) or Seat.North
@@ -176,6 +181,12 @@ class LocalBridgeTable(LocalTable):
         if self.game and self.game.isComplete():
             self.updateObservers('gameFinished')
             self.revealHands()  # Make all hands visible.
+            
+            # Set up time delay before next game starts.
+            wait = self.config.get('gameWaitInterval', 0)
+            reactor.callLater(wait, self.testStartGame)
+            
+#            self.game = None  # No game in progress.
             return True
         return False
 
