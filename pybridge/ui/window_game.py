@@ -30,10 +30,8 @@ from pybridge.bridge.call import Level, Strain
 from pybridge.bridge.deck import Seat
 
 
-SEATS = {Seat.North : 'button_north',
-         Seat.East  : 'button_east',
-         Seat.South : 'button_south',
-         Seat.West  : 'button_west', }
+SEATS = {Seat.North : 'north', Seat.East  : 'east',
+         Seat.South : 'south', Seat.West  : 'west', }
 
 CALLTYPE_SYMBOLS = {Pass : 'pass', Double : 'dbl', Redouble : 'rdbl', }
 
@@ -42,6 +40,9 @@ STRAIN_SYMBOLS = {Strain.Club    : u'\N{BLACK CLUB SUIT}',
                   Strain.Heart   : u'\N{BLACK HEART SUIT}',
                   Strain.Spade   : u'\N{BLACK SPADE SUIT}',
                   Strain.NoTrump : u'NT', }
+
+CONTRACT_FORMAT = '<span size="x-large">%s</span>'
+TRICKCOUNT_FORMAT = '<span size="x-large"><b>%s</b> (%s)</span>'
 
 
 class WindowGame(GladeWrapper):
@@ -54,21 +55,23 @@ class WindowGame(GladeWrapper):
         
         # Set up bidding view model.
         self.call_store = gtk.ListStore(str, str, str, str)  # 4 seats.
-        self.tree_bidding.set_model(self.call_store)
+        self.treeview_bidding.set_model(self.call_store)
         
         # Build columns for bidding view.
         renderer = gtk.CellRendererText()
         for index, seat in enumerate(Seat):
             column = gtk.TreeViewColumn(str(seat), renderer, text=index)
-            self.tree_bidding.append_column(column)
+            column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+            column.set_fixed_width(50)
+            self.treeview_bidding.append_column(column)
         
-        # Set up observer listing.
-        self.observerlisting_store = gtk.ListStore(str)
-        self.observerlisting.set_model(self.observerlisting_store)
-        cell_renderer = gtk.CellRendererText()
-        for index, title in enumerate( ('Name',) ):
-            column = gtk.TreeViewColumn(title, cell_renderer, text=index)
-            self.observerlisting.append_column(column)
+#        # Set up observer listing.
+#        self.observerlisting_store = gtk.ListStore(str)
+#        self.observerlisting.set_model(self.observerlisting_store)
+#        cell_renderer = gtk.CellRendererText()
+#        for index, title in enumerate( ('Name',) ):
+#            column = gtk.TreeViewColumn(title, cell_renderer, text=index)
+#            self.observerlisting.append_column(column)
         
         eventhandler.registerCallback('playerAdded', self.event_playerAdded)
         eventhandler.registerCallback('playerRemoved', self.event_playerRemoved)
@@ -83,6 +86,7 @@ class WindowGame(GladeWrapper):
         
         @param table: the (now) focal table.
         """
+        self.window.set_title('Table %s' % table.id)
         if table is not self.table:
             self.table = table
             # Rebuild bidding list.
@@ -111,9 +115,11 @@ class WindowGame(GladeWrapper):
         
         # Initialise seat buttons.
         for seat, player in table.players.items():
-            button = getattr(self, SEATS[seat])
+            button = getattr(self, 'button_%s' % SEATS[seat])
+#            label = getattr(self, 'label_%s' % SEATS[seat])
             available = player is None or seat == table.seated
             button.set_property('sensitive', available)
+#            label.set_text(player or 'Vacant')
 
 
 #    def add_observers(self, observers):
@@ -161,11 +167,11 @@ class WindowGame(GladeWrapper):
     def setContract(self, contract=None):
         """Sets the contract label from contract."""
         if contract:
-            format = '<b>%s</b>' % self.getContractFormat(contract)
+            format = CONTRACT_FORMAT % self.getContractFormat(contract)
         else:
-            format = 'Not established'
+            format = CONTRACT_FORMAT % 'No contract'
         
-        self.frame_contract.set_property('sensitive', contract!=None)
+        self.label_contract.set_property('sensitive', contract!=None)
         self.label_contract.set_markup(format)
 
 
@@ -175,10 +181,11 @@ class WindowGame(GladeWrapper):
         @param count:
         """
         if count:
-            declarer = '<b>%s (%s)</b>' % (count['declarerWon'], count['declarerNeeds'])
-            defence = '<b>%s (%s)</b>' % (count['defenceWon'], count['defenceNeeds'])
+            declarer = TRICKCOUNT_FORMAT % (count['declarerWon'], count['declarerNeeds'])
+            defence = TRICKCOUNT_FORMAT % (count['defenceWon'], count['defenceNeeds'])
         else:
-            declarer = defence = '-'
+            declarer = TRICKCOUNT_FORMAT % (0, 0)
+            defence = declarer
         
         self.frame_declarer.set_property('sensitive', count!=None)
         self.frame_defence.set_property('sensitive', count!=None)
@@ -191,7 +198,8 @@ class WindowGame(GladeWrapper):
 
     def event_playerAdded(self, table, player, position):
         if table == self.table:
-            button = getattr(self, SEATS[position])
+            button = getattr(self, 'button_%s' % SEATS[position])
+            label = getattr(self, 'button_%s' % SEATS[position])
             # Disable the button, unless we are the player.
             button.set_property('sensitive', button.get_active())
             if table.seated and table.game and not table.game.bidding.isComplete():
@@ -200,7 +208,8 @@ class WindowGame(GladeWrapper):
 
     def event_playerRemoved(self, table, player, position):
         if table == self.table:
-            button = getattr(self, SEATS[position])
+            button = getattr(self, 'button_%s' % SEATS[position])
+            label = getattr(self, 'button_%s' % SEATS[position])
             # If we are not a player, enable seat button.
             button.set_property('sensitive', not(table.seated))
             utils.windows.close('window_bidbox')
@@ -222,6 +231,7 @@ class WindowGame(GladeWrapper):
 
     def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
         if table == self.table:
+            utils.windows.close('dialog_gameresult')
             self.resetGame()
             if table.seated:
                 utils.windows.open('window_bidbox', self)
@@ -277,19 +287,19 @@ class WindowGame(GladeWrapper):
     def on_seat_clicked(self, widget, *args):
         
         def seated(arg):  # Disable all seat buttons except the one clicked.
-            for buttonname in SEATS.values():
-                button = getattr(self, buttonname)
+            for name in SEATS.values():
+                button = getattr(self, 'button_%s' % name)
                 button.set_property('sensitive', button==widget)
         
         def unseated(arg):  # Enable all seat buttons that are not seated.
-            for seat, buttonname in SEATS.items():
-                button = getattr(self, buttonname)
+            for seat, name in SEATS.items():
+                button = getattr(self, 'button_%s' % name)
                 button.set_property('sensitive', self.table.players[seat]==None)
         
-        if widget.get_active():
-            seat = [k for k, v in SEATS.items() if v==widget.get_name()][0]
+        if widget.get_active():  # Sit.
+            seat = [k for k, v in SEATS.items() if v==widget.get_name().split('_')[1]][0]
             self.table.addPlayer(seat).addCallback(seated)
-        else:
+        else:  # Stand.
             self.table.removePlayer().addCallback(unseated)
 
 
