@@ -32,10 +32,10 @@ CARD_MASK_RANKS = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
 
 CARD_MASK_SUITS = [Suit.Club, Suit.Diamond, Suit.Heart, Suit.Spade]
 
-BORDER_X = BORDER_Y = 8
+BORDER_X = BORDER_Y = 12
 
-WRAPAROUNDS = {Seat.North : (13,), Seat.East : (4, 3, 3, 3),
-               Seat.South : (13,), Seat.West : (4, 3, 3, 3), }
+# The red-black-red-black convention.
+CARD_SUIT_ORDER = [Suit.Diamond, Suit.Club, Suit.Heart, Suit.Spade]
 
 
 class CardArea(gtk.DrawingArea):
@@ -84,47 +84,76 @@ class CardArea(gtk.DrawingArea):
                                  dest_pixbuf, pos_x, pos_y)
 
 
-    def build_hand(self, seat, hand, transpose=False, dummy=False):
-        """Builds and saves a pixbuf of card images. Assumes cards are sorted by suit.
-    
-        hand: list of card objects and None objects to be drawn.
-        transpose: if True, draw cards in columns, otherwise, draw cards in rows.
-        dummy: if True, draw cards in rows of suits.
+    def build_hand(self, seat, hand, facedown=False, omit=[]):
+        """Builds and saves a pixbuf of card images.
+        
+        @param seat: the seat of player holding hand.
+        @param hand: a list of Card objects representing the hand.
+        @param facedown: if True, card elements of hand are drawn face down.
+        @param omit: a list of Card objects in hand not to draw.
         """
+        coords = []
         
-        # Sort hand, according to the high->low red-black-red-black convention.
-        
-        
-        # The wraparound is a tuple of integers, where, for each integer:
-        # - index of integer in tuple = row number
-        # - integer = number of cards to draw in row.
-        
-        if dummy:  # If required, calculate the row offsets.
-            wraparound = [0, 0, 0, 0]
+        if facedown is False:
+            # Split hand into suits.
+            suits = {}
+            for suit in Suit:
+                suits[suit] = []
             for card in hand:
-                wraparound[card.suit.index] += 1
-        else:
-            wraparound = WRAPAROUNDS[seat]
+                suits[card.suit].append(card)
+            # Sort suits.
+            for suit in suits:
+                suits[suit].sort(reverse=True)  # High to low.
+            # Reorder hand by sorted suits.
+            hand = []
+            for suit in CARD_SUIT_ORDER:
+                hand.extend(suits[suit])
         
-        # Setup hand pixbuf with appropriate dimensions.
-        alpha, beta = max(wraparound)-1, len(wraparound)-1
-        width = self.card_width + self.spacing_x*(transpose*beta + (not transpose)*alpha)
-        height = self.card_height + self.spacing_y*(transpose*alpha + (not transpose)*beta)
+        if seat in (Seat.North, Seat.South):
+            height = self.card_height  # Draw cards in one continuous row.
+            pos_y = 0
+            if facedown is True:
+                width = self.card_width + (self.spacing_x * 12)
+                for index, card in enumerate(hand):
+                    if card not in omit:
+                        pos_x = index * self.spacing_x
+                        coords.append((card, pos_x, pos_y))
+            
+            else:  # Insert a space between each suit.
+                spaces = sum([1 for suit in suits.values() if len(suit) > 0]) - 1
+                width = self.card_width + (self.spacing_x * (12 + spaces))
+                for index, card in enumerate(hand):
+                    if card not in omit:
+                        pos_x = (index + CARD_SUIT_ORDER.index(card.suit)) * self.spacing_x
+                        coords.append((card, pos_x, pos_y))
+        
+        else:  # West or East.
+            if facedown is True:  # Wrap cards to a 4x4 grid.
+                width = self.card_width + (self.spacing_x * 3)
+                height = self.card_height + (self.spacing_y * 3)
+                for index, card in enumerate(hand):
+                    if card not in omit:
+                        pos_x = (index % 4) * self.spacing_x
+                        pos_y = (index / 4) * self.spacing_y
+                        coords.append((card, pos_x, pos_y))
+            
+            else:
+                width = self.card_width + (self.spacing_x * max([len(cards) for cards in suits.values()]))
+                height = self.card_height + (self.spacing_y * (len(suits) - 1))
+                for index, card in enumerate(hand):
+                    if card not in omit:
+                        pos_x = suits[card.suit].index(card) * self.spacing_x
+                        pos_y = CARD_SUIT_ORDER.index(card.suit) * self.spacing_y
+                        coords.append((card, pos_x, pos_y))
+        
         self.hand_pixbufs[seat] = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
         self.hand_pixbufs[seat].fill(0x00000000)  # Clear pixbuf.
-
-        # Draw cards to hand pixbuf.
-        self.card_coords[seat] = []
-        for index, card in enumerate(hand):
-            if card is not None:  # None represents a space.
-                factor_y = 0
-                while sum(wraparound[0:factor_y+1]) <= index:
-                    factor_y += 1
-                factor_x = index - sum(wraparound[0:factor_y])
-                pos_x = self.spacing_x * (transpose*factor_y + (not transpose)*factor_x)
-                pos_y = self.spacing_y * (transpose*factor_x + (not transpose)*factor_y)
-                self.draw_card(self.hand_pixbufs[seat], pos_x, pos_y, card)
-                self.card_coords[seat].append((card, pos_x, pos_y))
+        
+        # Draw cards to pixbuf.
+        for card, pos_x, pos_y in coords:
+            self.draw_card(self.hand_pixbufs[seat], pos_x, pos_y, card)
+#        if facedown is False:
+        self.card_coords[seat] = coords
 
 
     def draw_hand(self, seat):
@@ -185,12 +214,20 @@ class CardArea(gtk.DrawingArea):
         self.backing.draw_pixbuf(self.backingGC, self.trick_pixbuf, 0, 0, pos_x, pos_y)
         
         # Redraw modified area of backing pixbuf.
-        rect = (pos_x, pos_y, trick_width, trick_height)
-        self.window.invalidate_rect(rect, False)
+        self.window.invalidate_rect((pos_x, pos_y, trick_width, trick_height), False)
+
+
+    def clear(self):
+        """Clears backing pixmap and pixbufs."""
+        self.hand_pixbufs = {}
+        self.trick_pixbuf = None
+        x, y, width, height = self.get_allocation()
+        self.backing.draw_rectangle(self.backingGC, True, 0, 0, width, height)
+        self.window.invalidate_rect((0, 0, width, height), False)
 
 
     def configure(self, widget, event):
-        """Creates backing pixmap of the appropriate size, containing hand pixbufs."""
+        """Creates backing pixmap of the appropriate size, containing pixbufs."""
         x, y, width, height = widget.get_allocation()
         self.backing = gtk.gdk.Pixmap(widget.window, width, height)
         self.backingGC = gtk.gdk.GC(self.backing, fill=gtk.gdk.TILED, tile=self.background)
