@@ -34,8 +34,12 @@ class WindowMain(GladeWrapper):
 
     glade_name = 'window_main'
 
+    callbacks = ('tableOpened', 'tableClosed', 'gameStarted', 'gameFinished',
+                 'gameCallMade', 'gameCardPlayed', 'gameHandRevealed')
+
 
     def new(self):
+        # RemoteTable references should not be copied by any child window.
         self.tables = {}   # For each observed table, a dict of UI data.
         self.table = None  # Table currently displayed in window.
         
@@ -46,13 +50,18 @@ class WindowMain(GladeWrapper):
         self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
         self.tableview.set_model(self.tableview_model)
         
-        # Register events.
-        eventhandler.registerCallback('tableOpened', self.event_tableOpened)
-        eventhandler.registerCallback('tableClosed', self.event_tableClosed)
-        eventhandler.registerCallback('gameStarted', self.event_gameStarted)
-        eventhandler.registerCallback('gameFinished', self.event_gameFinished)
-        eventhandler.registerCallback('gameCardPlayed', self.event_gameCardPlayed)
-        eventhandler.registerCallback('gameHandRevealed', self.event_gameHandRevealed)
+        # Register event callbacks.
+        eventhandler.registerCallbacksFor(self, self.callbacks)
+
+
+    def cleanup(self):
+        eventhandler.unregister(self, self.callbacks)
+
+
+#   def joinTable(self, table.id):
+    # Eliminates any need for children to possess client ref?
+
+#   def leaveTable(self, table.id):
 
 
     def joinedTable(self, table):
@@ -61,7 +70,7 @@ class WindowMain(GladeWrapper):
         
         # Set up cardarea widget.
         cardarea = CardArea()
-        cardarea.on_card_clicked = lambda c, p: table.gamePlayCard(c, p)
+        cardarea.on_card_clicked = self.on_card_clicked
         cardarea.show()
         self.tables[table]['cardarea'] = cardarea
         
@@ -75,9 +84,12 @@ class WindowMain(GladeWrapper):
     def leftTable(self, table):
         """Actions to perform when user has left a table."""
         
-        # Remove table page.
-        self.notebook.remove_page(self.tables[table]['tabindex'])
+        # Delete table reference before calling remove_page.
+        index = self.tables[table]['tabindex']
+        if self.table == table:
+            self.table = None
         del self.tables[table]
+        self.notebook.remove_page(index)
         
         # Check for any remaining tables.
         if len(self.tables) == 0:
@@ -87,7 +99,9 @@ class WindowMain(GladeWrapper):
     def switchTable(self, table):
         """"""
         self.table = table
-
+        
+        if table:
+            self.setTurnIndicator()
         if table and table.game:
             # Redraw hands and, if playing in progress, redraw trick.
             for position in table.game.deal:
@@ -100,9 +114,8 @@ class WindowMain(GladeWrapper):
             if window is None:  # Launch window.
                 window = utils.windows.open('window_game', self)
             window.changeTable(table)
-        else:
-            if window:
-                utils.windows.close('window_game')
+        elif window:
+            utils.windows.close('window_game')
  
 
     def redrawHand(self, table, position, all=False):
@@ -115,22 +128,22 @@ class WindowMain(GladeWrapper):
         @param position:
         @param all: If True, do not filter out cards played.
         """
+        cardarea = self.tables[table]['cardarea']
+        
         hand = table.game.deal[position]
         played = []
         if table.game.playing:
             played = table.game.playing.played[position]
         
-        if hand and all is True:  # Own or known hand: show all cards.
-            cards = hand
-        elif hand:  # Own or known hand: filter out cards played.
-            cards = [((card not in played and card) or None) for card in hand]
-        else:  # Unknown hand: show cards face down.
-            cards = ['FACEDOWN']*(13-len(played)) + [None]*len(played)
+        if hand:  # Own or known hand.
+            if all is True:  # Show all cards.
+                played = []
+            cardarea.build_hand(position, hand, omit=played)
+        else:  # Unknown hand: draw cards face down, use integer placeholders.
+            cards = range(13)
+            played = range(len(played))
+            cardarea.build_hand(position, cards, facedown=True, omit=played)
         
-        # dummy = self.game.playing != None and seat == self.game.playing.dummy
-        # transpose = dummy and seat in (Seat.North, Seat.South)
-        cardarea = self.tables[table]['cardarea']
-        cardarea.build_hand(position, cards)
         cardarea.draw_hand(position)
 
 
@@ -150,21 +163,20 @@ class WindowMain(GladeWrapper):
         cardarea.draw_trick()
 
 
-    def setTurnIndicator(self, turn=None):
+    def setTurnIndicator(self):
         """Sets the statusbar text to indicate which player is on turn."""
+        turn = self.table.game and not self.table.game.isComplete() \
+        and self.table.game.whoseTurn()
+        
         context = self.statusbar.get_context_id('turn')
         self.statusbar.pop(context)
-        if turn is not None:
-            self.statusbar.push(context, "It is %s's turn" % str(turn))
+        if turn:
+            text = "It is %s's turn" % str(turn)
+            self.statusbar.push(context, text)
 
 
-#    def getActiveTable(self):
-#        """Returns table currently displayed to user, or None."""
-#        active = self.notebook.get_current_page()
-#        for table in self.tables:
-#            if self.tables[table]['tabindex'] == active:
-#                return table
-#        return None
+    def getActiveTable(self):
+        return self.table
 
 
 # Registered event handlers.
@@ -187,23 +199,31 @@ class WindowMain(GladeWrapper):
 
 
     def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
+        cardarea = self.tables[table]['cardarea']
+        cardarea.clear()
         if table == self.table:
             for position in table.game.deal:
                 self.redrawHand(table, position)
-        # TODO: Clear trick.
-#       self.switchTable(table)
+            self.setTurnIndicator()
 
 
     def event_gameFinished(self, table):
+        for position in table.game.deal:
+            self.redrawHand(table, position, all=True)
         if table == self.table:
-            for position in table.game.deal:
-                self.redrawHand(table, position, all=True)
+            self.setTurnIndicator()
+
+
+    def event_gameCallMade(self, table, call, position):
+        if table == self.table:
+            self.setTurnIndicator()
 
 
     def event_gameCardPlayed(self, table, card, position):
         if table == self.table:
             self.redrawHand(table, position)
             self.redrawTrick(table)
+            self.setTurnIndicator()
 
 
     def event_gameHandRevealed(self, table, hand, position):
@@ -229,6 +249,11 @@ class WindowMain(GladeWrapper):
         if tableid not in client.tables:
             d = client.joinTable(tableid)
             d.addCallback(self.joinedTable)
+
+
+    def on_card_clicked(self, card, position):
+        d = self.table.gamePlayCard(card, position)
+        d.addErrback(lambda _: True)  # Ignore any error.
 
 
     def on_window_main_delete_event(self, widget, *args):

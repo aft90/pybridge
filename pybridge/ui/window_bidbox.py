@@ -50,12 +50,14 @@ class WindowBidbox(GladeWrapper):
 
     glade_name = 'window_bidbox'
 
+    callbacks = ('gameCallMade',)
+
 
     def new(self):
-        table = self.parent.table
+        table = self.parent.getActiveTable()
         self.set_available_calls(table.seated, table.game.bidding)
         
-        eventhandler.registerCallback('gameCallMade', self.event_gameCallMade)
+        eventhandler.registerCallbacksFor(self, self.callbacks)
 
 
     def set_available_calls(self, seat, bidding):
@@ -73,7 +75,7 @@ class WindowBidbox(GladeWrapper):
 
 
     def event_gameCallMade(self, table, call, position):
-        if table == self.parent.table:
+        if table == self.parent.getActiveTable():
             self.set_available_calls(table.seated, table.game.bidding)
 
             # If bidding is complete, close this window.
@@ -111,11 +113,12 @@ class WindowBidbox(GladeWrapper):
 
     def on_call_clicked(self, widget, *args):
         """Builds a call object and submits."""
+        table = self.parent.getActiveTable()
         # Do not check validity of call: the server will do that.
         # If call is invalid, ignore the resultant errback.
         call = self.get_call_from_button(widget)
-        d = self.parent.table.gameMakeCall(call)
-        d.addErrback(lambda r: True)  # Ignore error.
+        d = table.gameMakeCall(call)
+        d.addErrback(lambda r: True)  # Ignore any error.
 
 
     def on_window_bidbox_delete_event(self, widget, *args):

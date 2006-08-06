@@ -40,8 +40,9 @@ class DialogGameresult(GladeWrapper):
 
 
     def on_leavetable_clicked(self, widget, *args):
-        d = client.leaveTable(self.parent.table.id)
-        d.addCallback(lambda _: self.parent.leftTable(self.parent.table))
+        table = self.parent.getActiveTable()
+        d = client.leaveTable(table.id)
+        d.addCallback(lambda _: self.parent.leftTable(table))
         utils.windows.close('dialog_gameresult')
 
 

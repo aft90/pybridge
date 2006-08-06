@@ -108,25 +108,42 @@ class EventHandler:
 # Methods to manipulate the callback lists.
 
 
-    def registerCallback(self, event, callback):
-        """Places callback onto notification list for event."""
-        if not self.callbacks.get(event):
-            self.callbacks[event] = []
-        self.callbacks[event].append(callback)
-        return True
+#    def registerCallback(self, event, callback):
+#        """Places callback onto notification list for event."""
+#        if not self.callbacks.get(event):
+#            self.callbacks[event] = []
+#        self.callbacks[event].append(callback)
+#        return True
 
 
-    def unregisterCallback(self, event, callback):
-        """Removes callback from notification list for event."""
-        if callback in self.callbacks.get(event, []):
-            self.callbacks[event].remove(callback)
-            return True
-        return False
+    def registerCallbacksFor(self, window, events):
+        """Places window object in callback list for each event."""
+        for event in events:
+            if event not in self.callbacks:
+                self.callbacks[event] = []
+            self.callbacks[event].append(window)
+
+
+    def unregister(self, window, events):
+        """Removes window object from callback list for each event."""
+        for event in events:
+            self.callbacks[event].remove(window)
+
+
+#    def unregisterCallback(self, event, callback):
+#        """Removes callback from notification list for event."""
+#        if callback in self.callbacks.get(event, []):
+#            self.callbacks[event].remove(callback)
+#            return True
+#        return False
 
 
     def runCallbacks(self, event, *args, **kwargs):
-        for callback in self.callbacks.get(event, []):
+        for window in self.callbacks.get(event, []):
+            callback = getattr(window, 'event_%s' % event)
             callback(*args, **kwargs)
+#        for callback in self.callbacks.get(event, []):
+#            callback(*args, **kwargs)
 
 
 eventhandler = EventHandler()

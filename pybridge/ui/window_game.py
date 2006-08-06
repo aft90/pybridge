@@ -49,10 +49,11 @@ class WindowGame(GladeWrapper):
 
     glade_name = 'window_game'
 
+    callbacks = ('playerAdded', 'playerRemoved', 'gameStarted', 'gameFinished',
+                 'gameCallMade', 'gameCardPlayed')
+
 
     def new(self):
-        self.table = None
-        
         # Set up bidding view model.
         self.call_store = gtk.ListStore(str, str, str, str)  # 4 seats.
         self.treeview_bidding.set_model(self.call_store)
@@ -65,6 +66,7 @@ class WindowGame(GladeWrapper):
             column.set_fixed_width(50)
             self.treeview_bidding.append_column(column)
         
+        eventhandler.registerCallbacksFor(self, self.callbacks)
 #        # Set up observer listing.
 #        self.observerlisting_store = gtk.ListStore(str)
 #        self.observerlisting.set_model(self.observerlisting_store)
@@ -72,13 +74,10 @@ class WindowGame(GladeWrapper):
 #        for index, title in enumerate( ('Name',) ):
 #            column = gtk.TreeViewColumn(title, cell_renderer, text=index)
 #            self.observerlisting.append_column(column)
-        
-        eventhandler.registerCallback('playerAdded', self.event_playerAdded)
-        eventhandler.registerCallback('playerRemoved', self.event_playerRemoved)
-        eventhandler.registerCallback('gameCallMade', self.event_gameCallMade)
-        eventhandler.registerCallback('gameCardPlayed', self.event_gameCardPlayed)
-        eventhandler.registerCallback('gameStarted', self.event_gameStarted)
-        eventhandler.registerCallback('gameFinished', self.event_gameFinished)
+
+
+    def cleanup(self):
+        eventhandler.unregister(self, self.callbacks)
 
 
     def changeTable(self, table):
@@ -87,31 +86,32 @@ class WindowGame(GladeWrapper):
         @param table: the (now) focal table.
         """
         self.window.set_title('Table %s' % table.id)
-        if table is not self.table:
-            self.table = table
-            # Rebuild bidding list.
-            self.call_store.clear()
-            if table.game:
-                for call in table.game.bidding.calls:
-                    seat = table.game.bidding.whoCalled(call)
-                    self.addCall(call, seat)
-            # Set contract.
-            if table.game and table.game.bidding.isComplete():
-                contract = table.game.bidding.getContract()
-                self.setContract(contract)
-            else:  # Reset contract.
-                self.setContract()
-            # Set trick counts.
-            if table.game and table.game.playing:
-                self.setTrickCount(table.game.getTrickCount())
-            else:  # Reset trick counts.
-                self.setTrickCount(None)
-            
-            # If user is a player and bidding in progress, open bidding box.
-            if table.seated and not table.game.bidding.isComplete():
-                utils.windows.open('window_bidbox', self)
-            else:  # Otherwise, if bidding box is open, close it.
-                utils.windows.close('window_bidbox')
+        
+        # Rebuild bidding list.
+        self.call_store.clear()
+        if table.game:
+            for call in table.game.bidding.calls:
+                seat = table.game.bidding.whoCalled(call)
+                self.addCall(call, seat)
+        
+        # Set contract.
+        if table.game and table.game.bidding.isComplete():
+            contract = table.game.bidding.getContract()
+            self.setContract(contract)
+        else:  # Reset contract.
+            self.setContract()
+        
+        # Set trick counts.
+        if table.game and table.game.playing:
+            self.setTrickCount(table.game.getTrickCount())
+        else:  # Reset trick counts.
+            self.setTrickCount(None)
+        
+        # If user is a player and bidding in progress, open bidding box.
+        if table.seated and table.game and not table.game.bidding.isComplete():
+            utils.windows.open('window_bidbox', self.parent)
+        else:  # Otherwise, if bidding box is open, close it.
+            utils.windows.close('window_bidbox')
         
         # Initialise seat buttons.
         for seat, player in table.players.items():
@@ -197,17 +197,17 @@ class WindowGame(GladeWrapper):
 
 
     def event_playerAdded(self, table, player, position):
-        if table == self.table:
+        if table == self.parent.getActiveTable():
             button = getattr(self, 'button_%s' % SEATS[position])
             label = getattr(self, 'button_%s' % SEATS[position])
             # Disable the button, unless we are the player.
             button.set_property('sensitive', button.get_active())
             if table.seated and table.game and not table.game.bidding.isComplete():
-                utils.windows.open('window_bidbox', self)
+                utils.windows.open('window_bidbox', self.parent)
 
 
     def event_playerRemoved(self, table, player, position):
-        if table == self.table:
+        if table == self.parent.getActiveTable():
             button = getattr(self, 'button_%s' % SEATS[position])
             label = getattr(self, 'button_%s' % SEATS[position])
             # If we are not a player, enable seat button.
@@ -216,7 +216,7 @@ class WindowGame(GladeWrapper):
 
 
     def event_gameCallMade(self, table, call, position):
-        if table == self.table:
+        if table == self.parent.getActiveTable():
             self.addCall(call, position)
             if table.game.bidding.isComplete():
                 contract = table.game.bidding.getContract()
@@ -224,21 +224,21 @@ class WindowGame(GladeWrapper):
 
 
     def event_gameCardPlayed(self, table, card, position):
-        if table == self.table:
+        if table == self.parent.getActiveTable():
             count = table.game.getTrickCount()
             self.setTrickCount(count)
 
 
     def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
-        if table == self.table:
+        if table == self.parent.getActiveTable():
             utils.windows.close('dialog_gameresult')
             self.resetGame()
             if table.seated:
-                utils.windows.open('window_bidbox', self)
+                utils.windows.open('window_bidbox', self.parent)
 
 
     def event_gameFinished(self, table):
-        if table == self.table:
+        if table == self.parent.getActiveTable():
             # Determine and display score in dialog box.
             contract = table.game.bidding.getContract()
             if contract:
@@ -285,6 +285,7 @@ class WindowGame(GladeWrapper):
 
 
     def on_seat_clicked(self, widget, *args):
+        table = self.parent.getActiveTable()
         
         def seated(arg):  # Disable all seat buttons except the one clicked.
             for name in SEATS.values():
@@ -294,17 +295,18 @@ class WindowGame(GladeWrapper):
         def unseated(arg):  # Enable all seat buttons that are not seated.
             for seat, name in SEATS.items():
                 button = getattr(self, 'button_%s' % name)
-                button.set_property('sensitive', self.table.players[seat]==None)
+                button.set_property('sensitive', table.players[seat]==None)
         
         if widget.get_active():  # Sit.
             seat = [k for k, v in SEATS.items() if v==widget.get_name().split('_')[1]][0]
-            self.table.addPlayer(seat).addCallback(seated)
+            table.addPlayer(seat).addCallback(seated)
         else:  # Stand.
-            self.table.removePlayer().addCallback(unseated)
+            table.removePlayer().addCallback(unseated)
 
 
     def on_window_game_delete_event(self, widget, *args):
-        d = client.leaveTable(self.table.id)
-        d.addCallback(lambda _: self.parent.leftTable(self.table))
+        table = self.parent.getActiveTable()
+        d = client.leaveTable(table.id)
+        d.addCallback(lambda _: self.parent.leftTable(table))
         return True  # Stops window deletion taking place.
 
