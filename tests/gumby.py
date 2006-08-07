@@ -59,7 +59,7 @@ QUOTES = ["Hello!", "Doctor? Doctor? DOCTOR!", "My brain hurts!",
           "I believe in peace... and bashing two bricks together.",
           "I would put a tax on all people who stand in water... Oh!", ]
 
-SLOTH = 0.2  # Time between game event and response.
+SLOTH = 0.1  # Time between game event and response.
 
 
 class BotEventHandler:
@@ -69,13 +69,23 @@ class BotEventHandler:
 
     def __init__(self):
         self.table = None  # Convenient reference to observed table.
-        
+
+
+    def errback(self, failure):
+        print "ERROR:", failure.getErrorMessage()
+
 
 # Selection of calls and cards.
 
 
     def chooseCall(self):
-        current = self.table.game.bidding.currentCall(Bid)
+        
+        def makeCall():
+            print "My turn: calling %s" % call
+            d = self.table.gameMakeCall(call)
+            d.addErrback(self.errback)
+        
+        current = self.table.game.bidding.getCurrentCall(Bid)
         if current:
             if current.level < Level.Three:
                 strain = Strain[(current.strain.index + 1) % 5] 
@@ -85,17 +95,21 @@ class BotEventHandler:
                 call = Pass()
         else:  # Start the bidding.
             call = Bid(Level.One, Strain.Club)
-        print "My turn: calling %s" % call
-        reactor.callLater(SLOTH, self.table.gameMakeCall, call)
+        reactor.callLater(SLOTH, makeCall)
 
 
     def chooseCard(self, position):
+        
+        def playCard():
+            print "My turn: playing %s from %s" % (str(selected), position)
+            d = self.table.gamePlayCard(selected, position)
+            d.addErrback(self.errback)
+        
         hand = self.table.game.deal[position]
         if hand:
             valid = [c for c in hand if self.table.game.playing.isValidPlay(c, position, hand)]
             selected = random.choice(valid)
-            print "My turn: playing %s from %s" % (str(selected), position)
-            reactor.callLater(SLOTH, self.table.gamePlayCard, selected, position)
+            reactor.callLater(SLOTH, playCard)
         else:  # Hand not revealed just yet, try again a little later.
             reactor.callLater(0.1, self.chooseCard, position)
 
