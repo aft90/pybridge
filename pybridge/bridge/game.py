@@ -60,13 +60,13 @@ class Game:
         
         1. The hand is the viewer's own hand.
         2. Game is complete.
-        3. Bidding complete and viewer is dummy, who can see all hands.
-        4. Bidding complete and hand is dummy's, and first card of first trick played.
+        3. Bidding complete and hand is dummy's, and first card of
+           first trick has been played.
         """
         return seat == viewer \
         or self.isComplete() \
-        or (self.bidding.isComplete() and viewer == self.playing.dummy) \
-        or (self.bidding.isComplete() and seat == self.playing.dummy and len(self.playing.getTrick(0)[1]) >= 1)
+        or (self.bidding.isComplete() and seat == self.playing.dummy and \
+            len(self.playing.getTrick(0)[1]) >= 1)
 
 
     def makeCall(self, seat, call):
