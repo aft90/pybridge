@@ -19,36 +19,45 @@
 import gtk
 from wrapper import GladeWrapper
 
+import webbrowser
+
 from pybridge.conf import PYBRIDGE_VERSION
 from pybridge.environment import environment
 from pybridge.network.client import client
 
-from cardarea import CardArea
 from eventhandler import eventhandler
 import utils
 
 TABLE_ICON = environment.find_pixmap("table.png")
+PERSON_ICON = environment.find_pixmap("table.png")
 
 
 class WindowMain(GladeWrapper):
 
     glade_name = 'window_main'
 
-    callbacks = ('tableOpened', 'tableClosed', 'gameStarted', 'gameFinished',
-                 'gameCallMade', 'gameCardPlayed', 'gameHandRevealed')
+    callbacks = ('tableOpened', 'tableClosed', 'userLoggedIn', 'userLoggedOut')
 
 
     def new(self):
-        # RemoteTable references should not be copied by any child window.
-        self.tables = {}   # For each observed table, a dict of UI data.
-        self.table = None  # Table currently displayed in window.
+        self.tables = {}   # For each observed table, reference to window.
         
         # Set up table model and icon view.
         self.tableview_icon = gtk.gdk.pixbuf_new_from_file(TABLE_ICON)        
         self.tableview.set_text_column(0)
         self.tableview.set_pixbuf_column(1)
         self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
+        self.tableview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
         self.tableview.set_model(self.tableview_model)
+        
+        # Set up people model and icon view.
+        # TODO: allow users to provide their own icons.
+        self.peopleview_icon = gtk.gdk.pixbuf_new_from_file(TABLE_ICON)        
+        self.peopleview.set_text_column(0)
+        self.peopleview.set_pixbuf_column(1)
+        self.peopleview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
+        self.peopleview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        self.peopleview.set_model(self.peopleview_model)
         
         # Register event callbacks.
         eventhandler.registerCallbacksFor(self, self.callbacks)
@@ -56,127 +65,30 @@ class WindowMain(GladeWrapper):
 
     def cleanup(self):
         eventhandler.unregister(self, self.callbacks)
+        for instance in self.tables.values():
+            utils.windows.close('window_bridgetable', instance)
 
 
-#   def joinTable(self, table.id):
-    # Eliminates any need for children to possess client ref?
-
-#   def leaveTable(self, table.id):
-
-
-    def joinedTable(self, table):
-        """Actions to perform when user has joined a table."""
-        self.tables[table] = {}
+    def joinTable(self, tableid, host=False):
         
-        # Set up cardarea widget.
-        cardarea = CardArea()
-        cardarea.on_card_clicked = self.on_card_clicked
-        cardarea.show()
-        self.tables[table]['cardarea'] = cardarea
-        
-        # Set up new page, with cardarea and tab.
-        tab = gtk.Label(table.id)
-        index = self.notebook.append_page(cardarea, tab)
-        self.tables[table]['tabindex'] = index
-        self.notebook.set_current_page(index)
+        def success(table):
+            window = utils.windows.open('window_bridgetable', parent=self)
+            self.tables[table.id] = window
+            window.setTable(table)
+            
+        d = client.joinTable(tableid, host)
+        d.addCallback(success)
+        return d
 
 
-    def leftTable(self, table):
-        """Actions to perform when user has left a table."""
+    def leaveTable(self, tableid):
         
-        # Delete table reference before calling remove_page.
-        index = self.tables[table]['tabindex']
-        if self.table == table:
-            self.table = None
-        del self.tables[table]
-        self.notebook.remove_page(index)
+        def success(r):
+            del self.tables[tableid]
         
-        # Check for any remaining tables.
-        if len(self.tables) == 0:
-            utils.windows.close('window_game')
-
-
-    def switchTable(self, table):
-        """"""
-        self.table = table
-        
-        if table:
-            self.setTurnIndicator()
-        if table and table.game:
-            # Redraw hands and, if playing in progress, redraw trick.
-            for position in table.game.deal:
-                self.redrawHand(table, position)
-            if table.game.playing:
-                self.redrawTrick(table)
-        
-        window = utils.windows.get('window_game')
-        if table:
-            if window is None:  # Launch window.
-                window = utils.windows.open('window_game', self)
-            window.changeTable(table)
-        elif window:
-            utils.windows.close('window_game')
- 
-
-    def redrawHand(self, table, position, all=False):
-        """Redraws cards making up the hand at position.
-        
-        Cards played are filtered out and omitted from display.
-        Unknown cards are displayed face down.
-        
-        @param table:
-        @param position:
-        @param all: If True, do not filter out cards played.
-        """
-        cardarea = self.tables[table]['cardarea']
-        
-        hand = table.game.deal[position]
-        played = []
-        if table.game.playing:
-            played = table.game.playing.played[position]
-        
-        if hand:  # Own or known hand.
-            if all is True:  # Show all cards.
-                played = []
-            cardarea.build_hand(position, hand, omit=played)
-        else:  # Unknown hand: draw cards face down, use integer placeholders.
-            cards = range(13)
-            played = range(len(played))
-            cardarea.build_hand(position, cards, facedown=True, omit=played)
-        
-        cardarea.draw_hand(position)
-
-
-    def redrawTrick(self, table, trick=None):
-        """Redraws trick.
-        
-        @param table:
-        @param trick:
-        """
-        # TODO: this cannot be called until playing in progress
-        # perhaps put a clear() method in cardarea?
-        if trick is None:
-            trick = table.game.playing.getCurrentTrick()
-        
-        cardarea = self.tables[table]['cardarea']
-        cardarea.build_trick(trick)
-        cardarea.draw_trick()
-
-
-    def setTurnIndicator(self):
-        """Sets the statusbar text to indicate which player is on turn."""
-        turn = self.table.game and not self.table.game.isComplete() \
-        and self.table.game.whoseTurn()
-        
-        context = self.statusbar.get_context_id('turn')
-        self.statusbar.pop(context)
-        if turn:
-            text = "It is %s's turn" % str(turn)
-            self.statusbar.push(context, text)
-
-
-    def getActiveTable(self):
-        return self.table
+        d = client.leaveTable(tableid)
+        d.addCallback(success)
+        return d
 
 
 # Registered event handlers.
@@ -193,96 +105,77 @@ class WindowMain(GladeWrapper):
         def func(model, path, iter, user_data):
             if model.get_value(iter, 0) in user_data:
                 model.remove(iter)
-            return True
+                return True
         
         self.tableview_model.foreach(func, tableid)
 
 
-    def event_gameStarted(self, table, dealer, vulnNS, vulnEW):
-        cardarea = self.tables[table]['cardarea']
-        cardarea.clear()
-        if table == self.table:
-            for position in table.game.deal:
-                self.redrawHand(table, position)
-            self.setTurnIndicator()
+    def event_userLoggedIn(self, user):
+        """Adds a user to the people listing."""
+        self.peopleview_model.append([user, self.peopleview_icon])
 
 
-    def event_gameFinished(self, table):
-        for position in table.game.deal:
-            self.redrawHand(table, position, all=True)
-        if table == self.table:
-            self.setTurnIndicator()
-
-
-    def event_gameCallMade(self, table, call, position):
-        if table == self.table:
-            self.setTurnIndicator()
-
-
-    def event_gameCardPlayed(self, table, card, position):
-        if table == self.table:
-            self.redrawHand(table, position)
-            self.redrawTrick(table)
-            self.setTurnIndicator()
-
-
-    def event_gameHandRevealed(self, table, hand, position):
-        if table == self.table:
-            self.redrawHand(table, position)
+    def event_userLoggedOut(self, user):
+        """Removes a user from the people listing."""
+        
+        def func(model, path, iter, user_data):
+            if model.get_value(iter, 0) in user_data:
+                model.remove(iter)
+                return True
+        
+        self.peopleview_model.foreach(func, user)
 
 
 # Signal handlers.
 
 
     def on_notebook_switch_page(self, notebook, page, page_num):
-        table = None
-        for table in self.tables:
-            if self.tables[table]['tabindex'] == page_num:
-                break
-        self.table = table
-        self.switchTable(table)
+        pass
 
 
     def on_tableview_item_activated(self, iconview, path, *args):
         iter = self.tableview_model.get_iter(path)
         tableid = self.tableview_model.get_value(iter, 0)
         if tableid not in client.tables:
-            d = client.joinTable(tableid)
-            d.addCallback(self.joinedTable)
+            self.joinTable(tableid)
+            self.jointable.set_property('sensitive', False)
 
 
-    def on_card_clicked(self, card, position):
-        d = self.table.gamePlayCard(card, position)
-        d.addErrback(lambda _: True)  # Ignore any error.
+    def on_tableview_selection_changed(self, iconview, *args):
+        path = self.tableview.get_cursor()[0]
+        iter = self.tableview_model.get_iter(path)
+        tableid = self.tableview_model.get_value(iter, 0)
+        # If client not joined to table, enable Join Table button.
+        sensitive = tableid not in client.tables
+        self.jointable.set_property('sensitive', sensitive)
 
 
     def on_window_main_delete_event(self, widget, *args):
         utils.quit()
 
 
-    def on_newtable_activate(self, widget, *args):
-        utils.windows.open('dialog_newtable', self)
+    def on_newtable_clicked(self, widget, *args):
+        if not utils.windows.get('dialog_newtable'):
+            utils.windows.open('dialog_newtable', parent=self)
 
 
-    def on_jointable_activate(self, widget, *args):
-        print self.tableview.get_cursor()
+    def on_jointable_clicked(self, widget, *args):
+        path = self.tableview.get_cursor()[0]
+        self.on_tableview_item_activated(self.tableview, path)
 
 
     def on_disconnect_activate(self, widget, *args):
         client.disconnect()
-        utils.windows.close('window_main')
+        utils.windows.close(self.glade_name)
         utils.windows.open('dialog_connection')
-
-
-    def on_fullscreen_activate(self, widget, *args):
-        if self.menu_fullscreen.active:
-            self.window.fullscreen()
-        else:
-            self.window.unfullscreen()
 
 
     def on_quit_activate(self, widget, *args):
         utils.quit()
+
+
+    def on_homepage_activate(self, widget, *args):
+        webbrowser.open('http://pybridge.sourceforge.net/')
 
 
     def on_about_activate(self, widget, *args):
