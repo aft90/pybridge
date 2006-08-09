@@ -19,7 +19,6 @@
 import gtk
 from wrapper import GladeWrapper
 
-from pybridge.network.client import client
 import utils
 
 
@@ -43,7 +42,6 @@ class DialogNewtable(GladeWrapper):
         
         def success(table):
             utils.windows.close('dialog_newtable')
-            self.parent.joinedTable(table)  # TODO: is this necessary?
 
         def failure(reason):
             error = reason.getErrorMessage()
@@ -58,7 +56,7 @@ class DialogNewtable(GladeWrapper):
             error_dialog.destroy()
         
         tableid = self.entry_tablename.get_text()
-        d = client.joinTable(tableid, host=True)
+        d = self.parent.joinTable(tableid, host=True)
         d.addCallbacks(success, failure)
 
 
