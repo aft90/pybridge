@@ -25,7 +25,10 @@ from eventhandler import eventhandler
 client.setEventHandler(eventhandler)
 
 
+
+
 import ConfigParser
+
 
 class Settings:
     """"""
@@ -33,10 +36,12 @@ class Settings:
     connection = {}
     general = {}
 
+
     def __init__(self, filename=CLIENT_SETTINGS_PATH):
         self.config = ConfigParser.SafeConfigParser()
         self.filename = filename
         self.read()
+
 
     def read(self):
         """"""
@@ -49,40 +54,64 @@ class Settings:
         for key, value in self.config.items('Connection'):
             self.connection[key] = value
 
+
     def write(self):
         """"""
         for key, value in self.connection.items():
             self.config.set('Connection', key, value)
         self.config.write(file(self.filename, 'w'))
 
+
 settings = Settings()
+
+
 
 
 import imp
 from UserDict import UserDict
 
+
 class WindowManager(UserDict):
 
-    def open(self, windowname, parent=None):
-        """"""
-        # TODO: replace this with something more robust.
-        if windowname not in self:
-            classname = ''.join([x.capitalize() for x in windowname.split('_')])
-            exec("from %s import %s" % (windowname, classname))
-            window = eval(classname)(parent)
-            self[windowname] = window
-            return window
 
-    def close(self, windowname):
-        if windowname in self:
-            self[windowname].window.destroy()
-            del self[windowname]
+    def open(self, windowname, parent=None):
+        """Creates a new instance of a GladeWrapper window.
+        
+        @param windowname: the module name of the window.
+        @param parent: if specified, a parent window to set transient property.
+        """
+        classname = ''.join([x.capitalize() for x in windowname.split('_')])
+        exec("from %s import %s" % (windowname, classname))
+        instance = eval(classname)(parent)
+        self[windowname] = instance
+        return instance
+
+
+    def close(self, windowname, instance=None):
+        """Closes an existing instance of a GladeWrapper window.
+        
+        @param windowname: the module name of the window.
+        @param instance: if provided, the specific window object to close.
+        """
+        if instance or self.get(windowname):
+            if instance is None:
+                instance = self[windowname]
+            instance.window.destroy()
+            instance.cleanup()
+            if self.get(windowname) == instance:
+                del self[windowname]
+            return True
+        return False
+
 
 windows = WindowManager()
 
 
+
+
 import gtk
 from twisted.internet import reactor
+
 
 def quit():
     """Shutdown gracefully."""

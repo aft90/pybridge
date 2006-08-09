@@ -24,7 +24,7 @@ GLADE_PATH = environment.find_glade("pybridge.glade")
 
 
 class GladeWrapper:
-    """A superclass for Glade applications.
+    """A superclass for Glade-based application windows.
 
     Modified from: http://www.pixelbeat.org/libs/libglade.py
     """
@@ -60,4 +60,11 @@ class GladeWrapper:
 
 
     def new(self):
+        """Called when this window is opened."""
         pass
+
+
+    def cleanup(self):
+        """Called when this window is closed."""
+        pass
+
