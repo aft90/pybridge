@@ -19,9 +19,6 @@
 import gtk
 from wrapper import GladeWrapper
 
-from pybridge.network.client import client
-import utils
-
 
 class DialogGameresult(GladeWrapper):
 
@@ -40,14 +37,11 @@ class DialogGameresult(GladeWrapper):
 
 
     def on_leavetable_clicked(self, widget, *args):
-        table = self.parent.getActiveTable()
-        d = client.leaveTable(table.id)
-        d.addCallback(lambda _: self.parent.leftTable(table))
-        utils.windows.close('dialog_gameresult')
+        self.parent.on_leavetable_clicked(widget, *args)
 
 
     def on_nextdeal_clicked(self, widget, *args):
-        utils.windows.close('dialog_gameresult')
+        self.parent.children.close(self.glade_name)
 
 
     def on_dialog_gameresult_delete_event(self, widget, *args):

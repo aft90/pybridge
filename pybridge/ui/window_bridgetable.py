@@ -57,7 +57,8 @@ class WindowBridgetable(GladeWrapper):
 
     glade_name = 'window_bridgetable'
 
-    callbacks = ('playerAdded', 'playerRemoved', 'gameStarted', 'gameFinished',
+    callbacks = ('observerAdded', 'observerRemoved', 'playerAdded',
+                 'playerRemoved', 'gameStarted', 'gameFinished',
                  'gameCallMade', 'gameCardPlayed', 'gameHandRevealed')
 
 
@@ -85,8 +86,8 @@ class WindowBridgetable(GladeWrapper):
         
         renderer = gtk.CellRendererText()
         
-        # Set up bidding call store and columns.
-        self.call_store = gtk.ListStore(str, str, str, str)  # 4 seats.
+        # Set up bidding history and column display.
+        self.call_store = gtk.ListStore(str, str, str, str)
         self.treeview_bidding.set_model(self.call_store)
         for index, seat in enumerate(Seat):
             column = gtk.TreeViewColumn(str(seat), renderer, text=index)
@@ -94,28 +95,23 @@ class WindowBridgetable(GladeWrapper):
             column.set_fixed_width(50)
             self.treeview_bidding.append_column(column)
         
-        # Set up trick store and columns.
-        self.trick_store = gtk.ListStore(str, str, str, str)  # int?
+        # Set up trick history and column display.
+        self.trick_store = gtk.ListStore(str, str, str, str)
         self.treeview_tricks.set_model(self.trick_store)
-#        column = gtk.TreeViewColumn(None, renderer, text=0)
-#        column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-#        column.set_fixed_width(20)
-#        self.treeview_tricks.append_column(column)
         for index, seat in enumerate(Seat):
-            column = gtk.TreeViewColumn(str(seat), renderer, text=index)  # +1
+            column = gtk.TreeViewColumn(str(seat), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
             self.treeview_tricks.append_column(column)
-
+        
+        # Set up observer listing.
+        self.observer_store = gtk.ListStore(str)
+        self.treeview_observers.set_model(self.observer_store)
+        column = gtk.TreeViewColumn(None, renderer, text=0)
+        self.observer_store.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        self.treeview_observers.append_column(column)
         
         eventhandler.registerCallbacksFor(self, self.callbacks)
-#        # Set up observer listing.
-#        self.observerlisting_store = gtk.ListStore(str)
-#        self.observerlisting.set_model(self.observerlisting_store)
-#        cell_renderer = gtk.CellRendererText()
-#        for index, title in enumerate( ('Name',) ):
-#            column = gtk.TreeViewColumn(title, cell_renderer, text=index)
-#            self.observerlisting.append_column(column)
 
 
     def cleanup(self):
@@ -175,31 +171,18 @@ class WindowBridgetable(GladeWrapper):
             else:  # Seat vacant.
                 self.event_playerRemoved(table, None, seat)
 
-
-#    def add_observers(self, observers):
-#        """Adds specified observers to listing."""
-#        for observername in observers:
-#            row = (observername, )
-#            iter = self.observerlisting_store.append(row)
-
-
-#    def remove_observers(self, observers):
-#        """Removes specified observers from listing."""
-#        
-#        def func(model, path, iter, user_data):
-#            if model.get_value(iter, 0) in user_data:
-#                model.remove(iter)
-#            return True
-#        
-#        self.observerlisting_store.foreach(func, observers)
+        # Initialise observer listing.
+        self.observer_store.clear()
+        for observer in table.observers:
+            self.event_observerAdded(table, observer)
 
 
     def resetGame(self):
         """Clears bidding history, contract, trick counts."""
         self.cardarea.clear()
-        self.call_store.clear()  # Reset bidding.
-        self.trick_store.clear()  # Reset bidding.
-        self.setContract(None)  # Reset contract.
+        self.call_store.clear()   # Reset bidding history.
+        self.trick_store.clear()  # Reset trick history.
+        self.setContract(None)    # Reset contract.
         self.setTrickCount(None)  # Reset trick counts.
 
 
@@ -330,6 +313,22 @@ class WindowBridgetable(GladeWrapper):
 
 
 # Registered event handlers.
+
+
+    def event_observerAdded(self, table, observer):
+        if table == self.table:
+            self.observer_store.append([observer])
+
+
+    def event_observerRemoved(self, table, observer):
+        
+        def func(model, path, iter, user_data):
+            if model.get_value(iter, 0) in user_data:
+                model.remove(iter)
+                return True
+        
+        if table == self.table:
+            self.observer_store.foreach(func, observer)
 
 
     def event_playerAdded(self, table, player, position):

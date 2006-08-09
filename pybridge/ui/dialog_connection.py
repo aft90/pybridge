@@ -32,10 +32,12 @@ class DialogConnection(GladeWrapper):
     def new(self):
         # Read connection parameters from client settings.
         hostname = utils.settings.connection.get('hostname', '')
+        portnum = utils.settings.connection.get('portnum', str(TCP_PORT))
         username = utils.settings.connection.get('username', '')
         password = utils.settings.connection.get('password', '')
         
         self.entry_hostname.set_text(hostname)
+        self.entry_portnum.set_text(portnum)
         self.entry_username.set_text(username)
         self.entry_password.set_text(password)
         if password:
@@ -45,6 +47,7 @@ class DialogConnection(GladeWrapper):
     def connectSuccess(self, avatar):
         """Actions to perform when connecting succeeds."""
         hostname = self.entry_hostname.get_text()
+        portnum = self.entry_portnum.get_text()
         username = self.entry_username.get_text()
         if self.check_savepassword.get_active():
             password = self.entry_password.get_text()
@@ -53,6 +56,7 @@ class DialogConnection(GladeWrapper):
         
         # Save connection information.
         utils.settings.connection['hostname'] = hostname
+        utils.settings.connection['portnum'] = portnum
         utils.settings.connection['username'] = username
         utils.settings.connection['password'] = password
         
@@ -79,20 +83,27 @@ class DialogConnection(GladeWrapper):
         utils.quit()
 
 
-    def on_hostname_changed(self, widget, *args):
-        sensitive = self.entry_hostname.get_text() != "" and self.entry_username.get_text() != ""
-        self.button_connect.set_property('sensitive', sensitive)
+    def on_field_changed(self, widget, *args):
+        """Validates entry fields, disables Connect button if invalid."""
+        # Host name, user name must not be blank.
+        valid = self.entry_hostname.get_text() \
+                and self.entry_username.get_text()
+        # Port number must be an integer.
+        if valid:
+            try:
+                port = int(self.entry_portnum.get_text())
+            except ValueError:
+                valid = False
 
-
-    def on_username_changed(self, widget, *args):
-        self.on_hostname_changed(self, widget, *args)  # Same as host field.
+        self.button_connect.set_property('sensitive', valid)
 
 
     def on_connect_clicked(self, widget, *args):
-        self.button_connect.set_property('sensitive', False)  # Prevent repeat clicks.
+        # Prevent repeat clicks.
+        self.button_connect.set_property('sensitive', False)
         
         hostname = self.entry_hostname.get_text()
-        port = TCP_PORT
+        port = int(self.entry_portnum.get_text())
         client.connect(hostname, port)
         
         username = self.entry_username.get_text()
