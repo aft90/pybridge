@@ -65,8 +65,7 @@ class LocalBridgeTable(LocalTable):
             self.handsSeen[seat] = []
         
         self.pendingDeals = []   # Queue of deals for successive games.
-        # self.config['dummySeesAll'] = True
-
+        
         # A time delay between a finished game and starting the next game.
         self.config['gameWaitInterval'] = 5
 
@@ -132,6 +131,8 @@ class LocalBridgeTable(LocalTable):
             raise DeniedRequest, 'Game not running'
         elif position is None:
             raise DeniedRequest, 'Not a player'
+        elif self.game.playing is None:
+            raise DeniedRequest, 'Play not running'
         
         # Declarer can play dummy's cards, dummy cannot play own cards.
         if self.game.whoseTurn() == self.game.playing.dummy:
@@ -186,7 +187,6 @@ class LocalBridgeTable(LocalTable):
             wait = self.config.get('gameWaitInterval', 0)
             reactor.callLater(wait, self.testStartGame)
             
-#            self.game = None  # No game in progress.
             return True
         return False
 
