@@ -26,16 +26,16 @@ CARD_MASK_PATH = environment.find_pixmap("bonded.png")
 from pybridge.bridge.card import Card, Rank, Suit
 from pybridge.bridge.deck import Seat
 
+# The order in which card graphics are expected in card mask.
 CARD_MASK_RANKS = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
                    Rank.Six, Rank.Seven, Rank.Eight, Rank.Nine, Rank.Ten,
                    Rank.Jack, Rank.Queen, Rank.King]
-
 CARD_MASK_SUITS = [Suit.Club, Suit.Diamond, Suit.Heart, Suit.Spade]
 
-BORDER_X = BORDER_Y = 12
+# The red-black-red-black ordering convention.
+RED_BLACK = [Suit.Diamond, Suit.Club, Suit.Heart, Suit.Spade]
 
-# The red-black-red-black convention.
-CARD_SUIT_ORDER = [Suit.Diamond, Suit.Club, Suit.Heart, Suit.Spade]
+BORDER_X = BORDER_Y = 12
 
 
 class CardArea(gtk.DrawingArea):
@@ -92,6 +92,9 @@ class CardArea(gtk.DrawingArea):
         @param facedown: if True, card elements of hand are drawn face down.
         @param omit: a list of Card objects in hand not to draw.
         """
+        # Filters out cards in hand that appear in omit.
+        ef = lambda hand: [(i, c) for i, c in enumerate(hand) if c not in omit]
+            
         coords = []
         
         if facedown is False:
@@ -106,45 +109,45 @@ class CardArea(gtk.DrawingArea):
                 suits[suit].sort(reverse=True)  # High to low.
             # Reorder hand by sorted suits.
             hand = []
-            for suit in CARD_SUIT_ORDER:
+            for suit in RED_BLACK:
                 hand.extend(suits[suit])
         
         if seat in (Seat.North, Seat.South):
             height = self.card_height  # Draw cards in one continuous row.
             pos_y = 0
+            
             if facedown is True:
                 width = self.card_width + (self.spacing_x * 12)
-                for index, card in enumerate(hand):
-                    if card not in omit:
-                        pos_x = index * self.spacing_x
-                        coords.append((card, pos_x, pos_y))
+                for index, card in ef(hand):
+                    pos_x = index * self.spacing_x
+                    coords.append((card, pos_x, pos_y))
             
             else:  # Insert a space between each suit.
-                spaces = sum([1 for suit in suits.values() if len(suit) > 0]) - 1
+                spaces = sum([1 for suitcards in suits.values() if len(suitcards) > 0]) - 1
                 width = self.card_width + (self.spacing_x * (12 + spaces))
-                for index, card in enumerate(hand):
-                    if card not in omit:
-                        pos_x = (index + CARD_SUIT_ORDER.index(card.suit)) * self.spacing_x
-                        coords.append((card, pos_x, pos_y))
+                for index, card in ef(hand):
+                    # Insert a space for each suit in hand which appears before this card's suit.
+                    insert = sum([1 for suit, suitcards in suits.items() if len(suitcards) > 0
+                                 and RED_BLACK.index(card.suit) > RED_BLACK.index(suit)])
+                    pos_x = (index + insert) * self.spacing_x
+                    coords.append((card, pos_x, pos_y))
         
         else:  # West or East.
             if facedown is True:  # Wrap cards to a 4x4 grid.
                 width = self.card_width + (self.spacing_x * 3)
                 height = self.card_height + (self.spacing_y * 3)
-                for index, card in enumerate(hand):
-                    if card not in omit:
-                        pos_x = (index % 4) * self.spacing_x
-                        pos_y = (index / 4) * self.spacing_y
-                        coords.append((card, pos_x, pos_y))
+                for index, card in ef(hand):
+                    pos_x = (index % 4) * self.spacing_x
+                    pos_y = (index / 4) * self.spacing_y
+                    coords.append((card, pos_x, pos_y))
             
             else:
-                width = self.card_width + (self.spacing_x * max([len(cards) for cards in suits.values()]))
+                width = self.card_width + (self.spacing_x * (max([len(cards) for cards in suits.values()]) - 1))
                 height = self.card_height + (self.spacing_y * (len(suits) - 1))
-                for index, card in enumerate(hand):
-                    if card not in omit:
-                        pos_x = suits[card.suit].index(card) * self.spacing_x
-                        pos_y = CARD_SUIT_ORDER.index(card.suit) * self.spacing_y
-                        coords.append((card, pos_x, pos_y))
+                for index, card in ef(hand):
+                    pos_x = suits[card.suit].index(card) * self.spacing_x
+                    pos_y = RED_BLACK.index(card.suit) * self.spacing_y
+                    coords.append((card, pos_x, pos_y))
         
         self.hand_pixbufs[seat] = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, width, height)
         self.hand_pixbufs[seat].fill(0x00000000)  # Clear pixbuf.
