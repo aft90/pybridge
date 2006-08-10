@@ -59,7 +59,8 @@ class WindowBridgetable(GladeWrapper):
 
     callbacks = ('observerAdded', 'observerRemoved', 'playerAdded',
                  'playerRemoved', 'gameStarted', 'gameFinished',
-                 'gameCallMade', 'gameCardPlayed', 'gameHandRevealed')
+                 'gameCallMade', 'gameCardPlayed', 'gameHandRevealed',
+                 'messageReceived')
 
 
     def new(self):
@@ -81,7 +82,7 @@ class WindowBridgetable(GladeWrapper):
         self.cardarea = CardArea()
         self.cardarea.on_card_clicked = self.on_card_clicked
         self.cardarea.set_size_request(640, 480)
-        self.scrolledwindow.add_with_viewport(self.cardarea)
+        self.scrolled_cardarea.add_with_viewport(self.cardarea)
         self.cardarea.show()
         
         renderer = gtk.CellRendererText()
@@ -428,6 +429,14 @@ class WindowBridgetable(GladeWrapper):
             self.redrawHand(position)
 
 
+    def event_messageReceived(self, table, message, sender, recipients):
+        if table == self.table:
+            buffer = self.chat_messagehistory.get_buffer()
+            iter = buffer.get_end_iter()
+            buffer.insert(iter, '%s: %s\n' % (sender, message))
+            self.chat_messagehistory.scroll_to_iter(iter, 0)
+
+
 # Utility methods.
 
 
@@ -475,6 +484,7 @@ class WindowBridgetable(GladeWrapper):
         for seat, player in self.table.players.items():
             if player is None:  # Vacant.
                 self.on_seat_activated(widget, seat)
+                break
 
 
     def on_leaveseat_clicked(self, widget, *args):
@@ -488,13 +498,18 @@ class WindowBridgetable(GladeWrapper):
         d.addCallback(success)
 
 
-    def on_gameinfo_clicked(self, widget, *args):
-        visible = self.gameinfo.get_active()
-        self.handlebox.set_property('visible', visible)
+    def on_toggle_gameinfo_clicked(self, widget, *args):
+        visible = self.toggle_gameinfo.get_active()
+        self.gameinfo.set_property('visible', visible)
 
 
-    def on_fullscreen_clicked(self, widget, *args):
-        if self.fullscreen.get_active():
+    def on_toggle_chat_clicked(self, widget, *args):
+        visible = self.toggle_chat.get_active()
+        self.chatbox.set_property('visible', visible)
+
+
+    def on_toggle_fullscreen_clicked(self, widget, *args):
+        if self.toggle_fullscreen.get_active():
             self.window.fullscreen()
         else:
             self.window.unfullscreen()
@@ -503,6 +518,19 @@ class WindowBridgetable(GladeWrapper):
     def on_leavetable_clicked(self, widget, *args):
         d = self.parent.leaveTable(self.table.id)
         d.addCallback(lambda _: utils.windows.close(self.glade_name, instance=self))
+
+
+    def on_chat_message_changed(self, widget, *args):
+        sensitive = self.chat_message.get_text() != ''
+        self.chat_send.set_property('sensitive', sensitive)
+
+
+    def on_chat_send_clicked(self, widget, *args):
+        message = self.chat_message.get_text()
+        if message:  # Don't send a null message.
+            self.chat_send.set_property('sensitive', False)
+            self.chat_message.set_text('')  # Clear message.
+            self.table.sendMessage(message)
 
 
     def on_window_delete_event(self, widget, *args):
