@@ -137,15 +137,18 @@ class CardArea(gtk.DrawingArea):
                 width = self.card_width + (self.spacing_x * 3)
                 height = self.card_height + (self.spacing_y * 3)
                 for index, card in ef(hand):
-                    pos_x = (index % 4) * self.spacing_x
+                    adjust = seat is Seat.East and index == 12 and 3
+                    pos_x = ((index % 4) + adjust) * self.spacing_x
                     pos_y = (index / 4) * self.spacing_y
                     coords.append((card, pos_x, pos_y))
             
             else:
-                width = self.card_width + (self.spacing_x * (max([len(cards) for cards in suits.values()]) - 1))
+                longest = max([len(cards) for cards in suits.values()])
+                width = self.card_width + (self.spacing_x * (longest - 1))
                 height = self.card_height + (self.spacing_y * (len(suits) - 1))
                 for index, card in ef(hand):
-                    pos_x = suits[card.suit].index(card) * self.spacing_x
+                    adjust = seat is Seat.East and longest - len(suits[card.suit])
+                    pos_x = (suits[card.suit].index(card) + adjust) * self.spacing_x
                     pos_y = RED_BLACK.index(card.suit) * self.spacing_y
                     coords.append((card, pos_x, pos_y))
         
@@ -155,7 +158,6 @@ class CardArea(gtk.DrawingArea):
         # Draw cards to pixbuf.
         for card, pos_x, pos_y in coords:
             self.draw_card(self.hand_pixbufs[seat], pos_x, pos_y, card)
-#        if facedown is False:
         self.card_coords[seat] = coords
 
 
@@ -163,17 +165,23 @@ class CardArea(gtk.DrawingArea):
         """"""
         x, y, width, height = self.get_allocation()
         
-        # When called with (w, h) of hand pixbuf, returns (x, y) start point to draw hand.
-        coords = {Seat.North : lambda w, h: ((width-w)/2, BORDER_Y),
-                  Seat.East  : lambda w, h: (width-w-BORDER_X, (height-h)/2),
-                  Seat.South : lambda w, h: ((width-w)/2, height-h-BORDER_Y),
-                  Seat.West  : lambda w, h: (BORDER_X, (height-h)/2), }
-        
         # Determine coordinates in backing pixmap to draw hand pixbuf.
         hand_pixbuf = self.hand_pixbufs[seat]
         hand_width = hand_pixbuf.get_width()
         hand_height = hand_pixbuf.get_height()
-        pos_x, pos_y = coords[seat](hand_width, hand_height)
+        
+        if seat is Seat.North:
+            pos_x = (width - hand_width) / 2
+            pos_y = BORDER_Y
+        elif seat is Seat.East:
+            pos_x = width - hand_width - BORDER_X
+            pos_y = (height - hand_height) / 2
+        elif seat is Seat.South:
+            pos_x = (width - hand_width) / 2
+            pos_y = height - hand_height - BORDER_Y
+        elif seat is Seat.West:
+            pos_x = BORDER_X
+            pos_y = (height - hand_height) / 2
         
         # Draw hand pixbuf and save hand coordinates.
         self.backing.draw_rectangle(self.backingGC, True, pos_x, pos_y, hand_width, hand_height)
@@ -248,8 +256,8 @@ class CardArea(gtk.DrawingArea):
     def expose(self, widget, event):
         """Redraws card table widget from the backing pixmap."""
         x, y, width, height = event.area
-        widget.window.draw_drawable(widget.get_style().bg_gc[gtk.STATE_NORMAL],
-                                    self.backing, x, y, x, y, width, height)
+        gc = widget.get_style().bg_gc[gtk.STATE_NORMAL]
+        widget.window.draw_drawable(gc, self.backing, x, y, x, y, width, height)
         return False  # Expose event is expected to return false.
 
 
