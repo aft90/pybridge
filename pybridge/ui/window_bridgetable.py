@@ -89,21 +89,28 @@ class WindowBridgetable(GladeWrapper):
         
         # Set up bidding history and column display.
         self.call_store = gtk.ListStore(str, str, str, str)
-        self.treeview_bidding.set_model(self.call_store)
-        for index, seat in enumerate(Seat):
-            column = gtk.TreeViewColumn(str(seat), renderer, text=index)
+        self.biddingview.set_model(self.call_store)
+        for index, title in enumerate(Seat):
+            column = gtk.TreeViewColumn(str(title), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
-            self.treeview_bidding.append_column(column)
+            self.biddingview.append_column(column)
         
         # Set up trick history and column display.
         self.trick_store = gtk.ListStore(str, str, str, str)
-        self.treeview_tricks.set_model(self.trick_store)
-        for index, seat in enumerate(Seat):
-            column = gtk.TreeViewColumn(str(seat), renderer, text=index)
+        self.trickview.set_model(self.trick_store)
+        for index, title in enumerate(Seat):
+            column = gtk.TreeViewColumn(str(title), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
-            self.treeview_tricks.append_column(column)
+            self.trickview.append_column(column)
+        
+        # Set up score sheet and column display.
+        self.score_store = gtk.ListStore(str, str, str, str)
+        self.scoresheet.set_model(self.score_store)
+        for index, title in enumerate(['Contract', 'Made', 'N/S', 'E/W']):
+            column = gtk.TreeViewColumn(title, renderer, text=index)
+            self.scoresheet.append_column(column)
         
         # Set up observer listing.
         self.observer_store = gtk.ListStore(str)
@@ -222,6 +229,17 @@ class WindowBridgetable(GladeWrapper):
         format = '%s%s' % (STRAIN_SYMBOLS[strain_equivalent],
                            RANK_SYMBOLS[card.rank])
         self.trick_store.set(iter, column, format)
+
+
+    def addScore(self, contract, made, score):
+        textContract = self.getContractFormat(contract)
+        textMade = '%s' % made
+        if contract['declarer'] in (Seat.North, Seat.South) and score > 0 \
+        or contract['declarer'] in (Seat.East, Seat.West) and score < 0:
+            textNS, textEW = '%s' % abs(score), ''
+        else:
+            textNS, textEW = '', '%s' % abs(score)
+        self.score_store.prepend([textContract, textMade, textNS, textEW])
 
 
     def redrawHand(self, position, all=False):
@@ -408,6 +426,7 @@ class WindowBridgetable(GladeWrapper):
                 trickCount = table.game.getTrickCount()
                 offset = trickCount['declarerWon'] - trickCount['required']
                 score = table.game.score()
+                self.addScore(contract, trickCount['declarerWon'], score)
                 
                 textContract = 'Contract %s' % self.getContractFormat(contract)
                 textTrick = (offset > 0 and 'made by %s tricks' % offset) or \
