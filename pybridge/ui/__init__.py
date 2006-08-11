@@ -31,6 +31,7 @@ def run():
     locale.setlocale(locale.LC_ALL, '')
     gettext.bindtextdomain('pybridge', LOCALE_DIR)
     gettext.textdomain('pybridge')
+    gettext.install('pybridge')
     
     import utils
     utils.windows.open('dialog_connection')
