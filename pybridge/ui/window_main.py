@@ -21,7 +21,7 @@ from wrapper import GladeWrapper
 
 import webbrowser
 
-from pybridge.conf import PYBRIDGE_VERSION
+from pybridge import __version__
 from pybridge.environment import environment
 from pybridge.network.client import client
 
@@ -29,7 +29,7 @@ from eventhandler import eventhandler
 import utils
 
 TABLE_ICON = environment.find_pixmap("table.png")
-PERSON_ICON = environment.find_pixmap("table.png")
+USER_ICON = environment.find_pixmap("user.png")
 
 
 class WindowMain(GladeWrapper):
@@ -38,12 +38,14 @@ class WindowMain(GladeWrapper):
 
     callbacks = ('tableOpened', 'tableClosed', 'userLoggedIn', 'userLoggedOut')
 
+    tableview_icon = gtk.gdk.pixbuf_new_from_file_at_size(TABLE_ICON, 48, 48)
+    peopleview_icon = gtk.gdk.pixbuf_new_from_file_at_size(USER_ICON, 48, 48)
+
 
     def new(self):
         self.tables = {}   # For each observed table, reference to window.
         
         # Set up table model and icon view.
-        self.tableview_icon = gtk.gdk.pixbuf_new_from_file(TABLE_ICON)        
         self.tableview.set_text_column(0)
         self.tableview.set_pixbuf_column(1)
         self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
@@ -51,8 +53,7 @@ class WindowMain(GladeWrapper):
         self.tableview.set_model(self.tableview_model)
         
         # Set up people model and icon view.
-        # TODO: allow users to provide their own icons.
-        self.peopleview_icon = gtk.gdk.pixbuf_new_from_file(TABLE_ICON)        
+        # TODO: allow users to provide their own "avatar" icons.
         self.peopleview.set_text_column(0)
         self.peopleview.set_pixbuf_column(1)
         self.peopleview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
@@ -182,7 +183,7 @@ class WindowMain(GladeWrapper):
     def on_about_activate(self, widget, *args):
         about = gtk.AboutDialog()
         about.set_name('PyBridge')
-        about.set_version(PYBRIDGE_VERSION)
+        about.set_version(__version__)
         about.set_copyright('Copyright (C) 2004-2006 Michael Banks')
         about.set_comments(_('A free online bridge game.'))
         about.set_website('http://pybridge.sourceforge.net/')
