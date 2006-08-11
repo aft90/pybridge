@@ -108,7 +108,7 @@ class WindowBridgetable(GladeWrapper):
         # Set up score sheet and column display.
         self.score_store = gtk.ListStore(str, str, str, str)
         self.scoresheet.set_model(self.score_store)
-        for index, title in enumerate(['Contract', 'Made', 'N/S', 'E/W']):
+        for index, title in enumerate([_('Contract'), _('Made'), _('N/S'), _('E/W')]):
             column = gtk.TreeViewColumn(title, renderer, text=index)
             self.scoresheet.append_column(column)
         
@@ -135,7 +135,7 @@ class WindowBridgetable(GladeWrapper):
         @param table: the (now) focal table.
         """
         self.table = table
-        self.window.set_title('Table %s' % table.id)
+        self.window.set_title(_('Table %s') % table.id)
         self.resetGame()
         
         if table.game:
@@ -291,7 +291,7 @@ class WindowBridgetable(GladeWrapper):
         context = self.statusbar.get_context_id('turn')
         self.statusbar.pop(context)
         if turn:
-            text = "It is %s's turn" % str(turn)
+            text = "_(It is %s's turn)" % str(turn)
             self.statusbar.push(context, text)
 
 
@@ -324,10 +324,10 @@ class WindowBridgetable(GladeWrapper):
 
 
     def setVuln(self, vulnNS, vulnEW):
-        vuln = {(True, True)  : 'All',
-                (True, False) : 'N/S',
-                (False, True) : 'E/W',
-                (False, False) : 'Love all', }
+        vuln = {(True, True)  : _('All'),
+                (True, False) : _('N/S'),
+                (False, True) : _('E/W'),
+                (False, False) : _('None'), }
         self.label_vuln.set_markup('<b>%s</b>' % vuln[(vulnNS, vulnEW)])
 
 
@@ -371,7 +371,7 @@ class WindowBridgetable(GladeWrapper):
             widget.set_property('sensitive', True)
             # Reset player label.
             label = getattr(self, 'label_%s' % SEATS[position])
-            label.set_markup('<i>Vacant</i>')
+            label.set_markup(_('<i>Vacant</i>'))
             
             # If we are not seated, ensure Take Seat is enabled.
             if not table.seated:
@@ -429,11 +429,11 @@ class WindowBridgetable(GladeWrapper):
                 self.addScore(contract, trickCount['declarerWon'], score)
                 
                 textContract = 'Contract %s' % self.getContractFormat(contract)
-                textTrick = (offset > 0 and 'made by %s tricks' % offset) or \
-                            (offset < 0 and 'failed by %s tricks' % abs(offset)) or \
-                            'made exactly'
-                textScore = 'Score %s points for ' % abs(score) + \
-                            ((score >= 0 and 'declarer') or 'defence')
+                textTrick = (offset > 0 and _('made by %s tricks') % offset) or \
+                            (offset < 0 and _('failed by %s tricks') % abs(offset)) or \
+                            _('made exactly')
+                textScore = _('Score %s points for ') % abs(score) + \
+                            ((score >= 0 and _('declarer')) or _('defence'))
                 
                 message = '%s %s.\n\n%s.' % (textContract, textTrick, textScore)
             else:
@@ -473,7 +473,7 @@ class WindowBridgetable(GladeWrapper):
             double = CALLTYPE_SYMBOLS[Double]
         declarer = contract['declarer']
         
-        return "%s%s%s by %s" % (bidlevel, bidstrain, double, declarer)
+        return _('%s%s%s by %s') % (bidlevel, bidstrain, double, declarer)
 
 
 # Signal handlers.

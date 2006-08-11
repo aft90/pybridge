@@ -16,7 +16,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk, gtk.glade
+import gettext
+import gtk
+import gtk.glade
 
 from pybridge.environment import environment
 ICON_PATH = environment.find_pixmap("pybridge.png")
@@ -34,7 +36,8 @@ class GladeWrapper:
         
         @param parent: pointer to parent gtk.Window, or None.
         """
-        self.widgets = gtk.glade.XML(GLADE_PATH, self.glade_name, None)
+        self.widgets = gtk.glade.XML(GLADE_PATH, self.glade_name,
+                                     gettext.textdomain())
         self.window = self.widgets.get_widget(self.glade_name)
         
         instance_attributes = {}

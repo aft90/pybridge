@@ -152,6 +152,7 @@ class WindowMain(GladeWrapper):
 
     def on_window_main_delete_event(self, widget, *args):
         utils.quit()
+#        return True
 
 
     def on_newtable_clicked(self, widget, *args):
@@ -183,12 +184,12 @@ class WindowMain(GladeWrapper):
         about.set_name('PyBridge')
         about.set_version(PYBRIDGE_VERSION)
         about.set_copyright('Copyright (C) 2004-2006 Michael Banks')
-        about.set_comments('A free online bridge game.')
+        about.set_comments(_('A free online bridge game.'))
         about.set_website('http://pybridge.sourceforge.net/')
         license = file(environment.find_doc('COPYING')).read()
         about.set_license(license)
         authorsfile = file(environment.find_doc('AUTHORS'))
-        authors = [author.strip() for author in authorsfile.readlines()]
+        authors = [author.strip() for author in authorsfile]
         about.set_authors(authors)
         logo_path = environment.find_pixmap('pybridge.png')
         logo = gtk.gdk.pixbuf_new_from_file(logo_path)

@@ -16,6 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from pybridge.environment import LOCALE_DIR
+
 def run():
     """"""
     from twisted.internet import gtk2reactor
@@ -23,6 +25,12 @@ def run():
     
     import gtk
     from twisted.internet import reactor
+    
+    import locale
+    import gettext
+    locale.setlocale(locale.LC_ALL, '')
+    gettext.bindtextdomain('pybridge', LOCALE_DIR)
+    gettext.textdomain('pybridge')
     
     import utils
     utils.windows.open('dialog_connection')
