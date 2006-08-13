@@ -16,13 +16,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from pybridge.conf import TCP_PORT
 from pybridge.environment import CLIENT_SETTINGS_PATH
 
 # Set up client with UI event handler.
 from pybridge.network.client import client
 from eventhandler import eventhandler
 client.setEventHandler(eventhandler)
+
+PORT = 5040  # Default port for PyBridge.
 
 
 

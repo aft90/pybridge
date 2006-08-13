@@ -20,7 +20,6 @@ import gtk
 from wrapper import GladeWrapper
 
 from pybridge.network.client import client
-from pybridge.conf import TCP_PORT
 import utils
 
 
@@ -32,7 +31,7 @@ class DialogConnection(GladeWrapper):
     def new(self):
         # Read connection parameters from client settings.
         hostname = utils.settings.connection.get('hostname', '')
-        portnum = utils.settings.connection.get('portnum', str(TCP_PORT))
+        portnum = utils.settings.connection.get('portnum', str(utils.PORT))
         username = utils.settings.connection.get('username', '')
         password = utils.settings.connection.get('password', '')
         
@@ -69,8 +68,8 @@ class DialogConnection(GladeWrapper):
         """Actions to perform when connecting fails."""
         error = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
                                  type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
-        error.set_markup("Could not connect to server.")
-        error.format_secondary_text("Reason: %s" % failure.getErrorMessage())
+        error.set_markup(_('Could not connect to server.'))
+        error.format_secondary_text(_('Reason: %s') % failure.getErrorMessage())
         error.run()
         error.destroy()
         self.button_connect.set_property('sensitive', True)

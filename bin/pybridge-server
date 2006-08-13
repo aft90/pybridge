@@ -37,12 +37,11 @@ sys.path.insert(0, pythonpath)
 from twisted.internet import reactor
 from twisted.python import log
 
-from pybridge.conf import TCP_PORT
 from pybridge.server import factory
 
 
 # TODO: replace with a service.
 log.startLogging(sys.stdout)  # Log to stdout.
-reactor.listenTCP(TCP_PORT, factory)
+reactor.listenTCP(5040, factory)  # Default PyBridge port.
 reactor.run()
 
