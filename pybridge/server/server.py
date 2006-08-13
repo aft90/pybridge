@@ -19,6 +19,7 @@
 from twisted.python import log
 
 from database import database
+import pybridge
 from pybridge.network.tablemanager import LocalTableManager
 from pybridge.network.usermanager import LocalUserManager
 
@@ -31,6 +32,8 @@ class Server:
     def __init__(self):
         self.tables = LocalTableManager()
         self.users = LocalUserManager()
+        self.version = pybridge.__version__
+        self.supported = ['bridge']
 
 
     def userConnects(self, user):
@@ -55,7 +58,8 @@ class Server:
         return d
 
 
-    def createTable(self, tableid):
+    def createTable(self, tableid, tabletype):
+        # Ignore specified tabletype, for now.
         if tableid not in self.tables:
             table = LocalBridgeTable(tableid)
             table.id = tableid

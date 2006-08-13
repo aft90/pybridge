@@ -40,12 +40,6 @@ class User(pb.Avatar):
     def detached(self, mind):
         """Called when connection to client is lost."""
         self.remote = None
-        
-#        # Inform all observed tables.
- #       for table in self.tables.values():
-  #          observer = table.observers[self]  # TODO
-   #         table.stoppedObserving(self, observer)
-        
         self.server.userDisconnects(self)  # Inform server.
 
 
@@ -58,6 +52,14 @@ class User(pb.Avatar):
 # Perspective methods, accessible by client.
 
 
+    def perspective_getServerInfo(self):
+        """Provides a dict of information about the server."""
+        info = {}
+        info['supported'] = self.server.supported
+        info['version'] = self.server.version
+        return info
+
+
     def perspective_getTables(self):
         """Provides RemoteTableManager to the client."""
         return self.server.tables
@@ -68,16 +70,18 @@ class User(pb.Avatar):
         return self.server.users
 
 
-    def perspective_hostTable(self, tableid):
+    def perspective_hostTable(self, tableid, tabletype):
         """Creates a new table."""
         if not isinstance(tableid, str):
             raise IllegalRequest, 'Invalid parameter for table identifier'
-        elif not(0 < len(tableid) <= 20) or re.search("[^A-Za-z0-9_ ]", tableid):
+        elif not(0 < len(tableid) < 21) or re.search("[^A-Za-z0-9_ ]", tableid):
             raise IllegalRequest, 'Invalid table identifier format'
         elif tableid in self.server.tables:
             raise DeniedRequest, 'Table name exists'
+        elif tabletype not in self.server.supported:
+            raise DeniedRequest, 'Table type not suppported by this server'
         
-        self.server.createTable(tableid)
+        self.server.createTable(tableid, tabletype)
         return self.perspective_joinTable(tableid)  # Force join to table.
 
 
@@ -103,8 +107,6 @@ class User(pb.Avatar):
         elif tableid not in self.tables:
             raise DeniedRequest, 'Not joined to table'
         
-        table = self.tables[tableid]
-        observer = table.observers[self]  # TODO
         del self.tables[tableid]
 
 

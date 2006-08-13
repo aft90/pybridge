@@ -133,8 +133,11 @@ class NetworkClient(pb.Referenceable):
             self.tables[tableid] = table
             return table
         
-        request = (host and 'hostTable') or 'joinTable'
-        d = self.avatar.callRemote(request, tableid=tableid)
+        if host:
+            d = self.avatar.callRemote('hostTable', tableid=tableid,
+                                       tabletype='bridge')
+        else:
+            d = self.avatar.callRemote('joinTable', tableid=tableid)
         d.addCallback(success)
         return d
 
@@ -144,11 +147,8 @@ class NetworkClient(pb.Referenceable):
         def success(r):
             del self.tables[tableid]
         
-        def failure(r):
-            print r.getErrorMessage()
-        
         d = self.avatar.callRemote('leaveTable', tableid=tableid)
-        d.addCallbacks(success, failure)
+        d.addCallback(success)
         return d
 
 
