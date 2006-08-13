@@ -143,12 +143,36 @@ class WindowMain(GladeWrapper):
 
 
     def on_tableview_selection_changed(self, iconview, *args):
-        path = self.tableview.get_cursor()[0]
-        iter = self.tableview_model.get_iter(path)
-        tableid = self.tableview_model.get_value(iter, 0)
-        # If client not joined to table, enable Join Table button.
-        sensitive = tableid not in client.tables
-        self.jointable.set_property('sensitive', sensitive)
+        cursor = self.tableview.get_cursor()
+        if cursor:  # Ensure cursor contains a path, not None.
+            iter = self.tableview_model.get_iter(cursor[0])  # Path.
+            tableid = self.tableview_model.get_value(iter, 0)
+            # If client not joined to table, enable Join Table button.
+            sensitive = tableid not in client.tables
+            self.jointable.set_property('sensitive', sensitive)
+            # Display information about table.
+            self.frame_tableinfo.set_property('sensitive', True)
+            self.label_tableid.set_text(tableid)
+            self.label_tabletype.set_text(client.tablesAvailable[tableid]['type'])
+        else:
+            self.frame_tableinfo.set_property('sensitive', False)
+            self.label_tableid.set_text('')
+            self.label_tabletype.set_text('')
+
+
+    def on_peopleview_selection_changed(self, iconview, *args):
+        cursor = self.peopleview.get_cursor()
+        if cursor:  # Ensure cursor contains a path, not None.
+            iter = self.peopleview_model.get_iter(cursor[0])  # Path.
+            person = self.peopleview_model.get_value(iter, 0)
+            # Display information about person.
+            self.frame_personinfo.set_property('sensitive', True)
+            self.label_personname.set_text(person)
+        else:
+            self.frame_personinfo.set_property('sensitive', False)
+            self.label_personname.set_text('')
+
+            
 
 
     def on_window_main_delete_event(self, widget, *args):

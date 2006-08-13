@@ -49,7 +49,8 @@ class LocalUserManager(UserDict, pb.Cacheable):
     
     def userLoggedIn(self, user):
         self[user.name] = user
-        self.updateObservers('userLoggedIn', username=user.name, info={})
+        state = {}
+        self.updateObservers('userLoggedIn', username=user.name, info=state)
 
 
     def userLoggedOut(self, user):

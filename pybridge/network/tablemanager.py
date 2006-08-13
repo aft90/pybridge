@@ -34,10 +34,10 @@ class LocalTableManager(UserDict, pb.Cacheable):
     def getStateToCacheAndObserveFor(self, perspective, observer):
         self.observers.append(observer)
         
-        # TODO: iterate through table and pull out information.
+        # TODO: iterate through tables and pull out information.
         state = {}
         for tableid in self.keys():
-            state[tableid] = {}  # For now, just provide a blank dict.
+            state[tableid] = {'type' : 'bridge'}
         
         return state
 
@@ -48,7 +48,8 @@ class LocalTableManager(UserDict, pb.Cacheable):
     
     def openTable(self, table):
         self[table.id] = table
-        self.updateObservers('tableOpened', tableid=table.id, info={})
+        state = {'type' : 'bridge'}
+        self.updateObservers('tableOpened', tableid=table.id, info=state)
 
 
     def closeTable(self, table):
@@ -68,7 +69,7 @@ class LocalTableManager(UserDict, pb.Cacheable):
 
 
 class RemoteTableManager(UserDict, pb.RemoteCache):
-    """Maintains a 
+    """Maintains a cache of a server-side LocalTableManager object.
 
     """
 

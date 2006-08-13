@@ -49,7 +49,7 @@
 		      <signal name="activate" handler="on_newtable_clicked" last_modification_time="Tue, 08 Aug 2006 16:22:07 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image330">
+			<widget class="GtkImage" id="image340">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-new</property>
 			  <property name="icon_size">1</property>
@@ -71,7 +71,7 @@
 		      <signal name="activate" handler="on_opengame_activate" last_modification_time="Mon, 07 Aug 2006 13:57:54 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image331">
+			<widget class="GtkImage" id="image341">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -98,7 +98,7 @@
 		      <signal name="activate" handler="on_disconnect_activate" last_modification_time="Mon, 19 Sep 2005 09:26:13 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image332">
+			<widget class="GtkImage" id="image342">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-disconnect</property>
 			  <property name="icon_size">1</property>
@@ -125,61 +125,6 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkMenuItem" id="menu_settings">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">_Settings</property>
-	      <property name="use_underline">True</property>
-
-	      <child>
-		<widget class="GtkMenu" id="menu_settings_menu">
-
-		  <child>
-		    <widget class="GtkImageMenuItem" id="menu_userprofile">
-		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">_User Profile...</property>
-		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_userprofile_activate" last_modification_time="Mon, 07 Aug 2006 14:07:49 GMT"/>
-
-		      <child internal-child="image">
-			<widget class="GtkImage" id="image333">
-			  <property name="visible">True</property>
-			  <property name="stock">gtk-info</property>
-			  <property name="icon_size">1</property>
-			  <property name="xalign">0.5</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">0</property>
-			</widget>
-		      </child>
-		    </widget>
-		  </child>
-
-		  <child>
-		    <widget class="GtkImageMenuItem" id="menu_options">
-		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">_Options...</property>
-		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_options_activate" last_modification_time="Mon, 07 Aug 2006 14:08:19 GMT"/>
-
-		      <child internal-child="image">
-			<widget class="GtkImage" id="image334">
-			  <property name="visible">True</property>
-			  <property name="stock">gtk-preferences</property>
-			  <property name="icon_size">1</property>
-			  <property name="xalign">0.5</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">0</property>
-			</widget>
-		      </child>
-		    </widget>
-		  </child>
-		</widget>
-	      </child>
-	    </widget>
-	  </child>
-
-	  <child>
 	    <widget class="GtkMenuItem" id="menu_help">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Help</property>
@@ -196,7 +141,7 @@
 		      <signal name="activate" handler="on_homepage_activate" last_modification_time="Mon, 07 Aug 2006 13:48:07 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image335">
+			<widget class="GtkImage" id="image343">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-home</property>
 			  <property name="icon_size">1</property>
@@ -223,7 +168,7 @@
 		      <signal name="activate" handler="on_about_activate" last_modification_time="Wed, 16 Feb 2005 20:18:12 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image336">
+			<widget class="GtkImage" id="image344">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-about</property>
 			  <property name="icon_size">1</property>
@@ -464,6 +409,7 @@
 		  <child>
 		    <widget class="GtkFrame" id="frame_tableinfo">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label_xalign">0.5</property>
 		      <property name="label_yalign">0.5</property>
 		      <property name="shadow_type">GTK_SHADOW_ETCHED_IN</property>
@@ -481,7 +427,126 @@
 			  <property name="right_padding">4</property>
 
 			  <child>
-			    <placeholder/>
+			    <widget class="GtkTable" id="table_tableinfo">
+			      <property name="visible">True</property>
+			      <property name="n_rows">2</property>
+			      <property name="n_columns">2</property>
+			      <property name="homogeneous">False</property>
+			      <property name="row_spacing">2</property>
+			      <property name="column_spacing">8</property>
+
+			      <child>
+				<widget class="GtkLabel" id="label63">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">ID:</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="left_attach">0</property>
+				  <property name="right_attach">1</property>
+				  <property name="top_attach">0</property>
+				  <property name="bottom_attach">1</property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options"></property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkLabel" id="label_tableid">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes"></property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="left_attach">1</property>
+				  <property name="right_attach">2</property>
+				  <property name="top_attach">0</property>
+				  <property name="bottom_attach">1</property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options"></property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkLabel" id="label65">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">Type:</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="left_attach">0</property>
+				  <property name="right_attach">1</property>
+				  <property name="top_attach">1</property>
+				  <property name="bottom_attach">2</property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options"></property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkLabel" id="label_tabletype">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes"></property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="left_attach">1</property>
+				  <property name="right_attach">2</property>
+				  <property name="top_attach">1</property>
+				  <property name="bottom_attach">2</property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options"></property>
+				</packing>
+			      </child>
+			    </widget>
 			  </child>
 			</widget>
 		      </child>
@@ -578,6 +643,7 @@
 		      <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
 		      <property name="reorderable">False</property>
 		      <signal name="item_activated" handler="on_peopleview_item_activated" last_modification_time="Mon, 07 Aug 2006 19:21:22 GMT"/>
+		      <signal name="selection_changed" handler="on_peopleview_selection_changed" last_modification_time="Sun, 13 Aug 2006 19:13:43 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -596,8 +662,9 @@
 		  <property name="spacing">4</property>
 
 		  <child>
-		    <widget class="GtkFrame" id="frame_person">
+		    <widget class="GtkFrame" id="frame_personinfo">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label_xalign">0.5</property>
 		      <property name="label_yalign">0.5</property>
 		      <property name="shadow_type">GTK_SHADOW_ETCHED_IN</property>
@@ -615,7 +682,70 @@
 			  <property name="right_padding">4</property>
 
 			  <child>
-			    <placeholder/>
+			    <widget class="GtkTable" id="table_personinfo">
+			      <property name="visible">True</property>
+			      <property name="n_rows">1</property>
+			      <property name="n_columns">2</property>
+			      <property name="homogeneous">False</property>
+			      <property name="row_spacing">2</property>
+			      <property name="column_spacing">8</property>
+
+			      <child>
+				<widget class="GtkLabel" id="label67">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">Name:</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="left_attach">0</property>
+				  <property name="right_attach">1</property>
+				  <property name="top_attach">0</property>
+				  <property name="bottom_attach">1</property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options"></property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkLabel" id="label_personname">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes"></property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="left_attach">1</property>
+				  <property name="right_attach">2</property>
+				  <property name="top_attach">0</property>
+				  <property name="bottom_attach">1</property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options"></property>
+				</packing>
+			      </child>
+			    </widget>
 			  </child>
 			</widget>
 		      </child>
