@@ -31,26 +31,28 @@ from pybridge.bridge.card import Rank
 from pybridge.bridge.deck import Seat
 
 
-SEATS = {Seat.North : 'north', Seat.East  : 'east',
-         Seat.South : 'south', Seat.West  : 'west', }
+# Translatable symbols for elements of bridge.
 
-CALLTYPE_SYMBOLS = {Pass : 'pass', Double : 'dbl', Redouble : 'rdbl', }
+CALLTYPE_SYMBOLS = {Pass : _('pass'), Double : _('dbl'), Redouble : _('rdbl') }
 
-LEVEL_SYMBOLS = {Level.One : '1',  Level.Two : '2',  Level.Three : '3',
-                 Level.Four : '4', Level.Five : '5', Level.Six : '6',
-                 Level.Seven : '7', }
+LEVEL_SYMBOLS = {Level.One : _('1'),  Level.Two : _('2'),  Level.Three : _('3'),
+                 Level.Four : _('4'), Level.Five : _('5'), Level.Six : _('6'),
+                 Level.Seven : _('7'), }
 
-RANK_SYMBOLS = {Rank.Two : '2',   Rank.Three : '3', Rank.Four : '4',
-                Rank.Five : '5',  Rank.Six : '6',   Rank.Seven : '7',
-                Rank.Eight : '8', Rank.Nine : '9',  Rank.Ten : '10',
-                Rank.Jack : 'J',  Rank.Queen : 'Q', Rank.King : 'K',
-                Rank.Ace : 'A', }
+RANK_SYMBOLS = {Rank.Two : _('2'),   Rank.Three : _('3'), Rank.Four : _('4'),
+                Rank.Five : _('5'),  Rank.Six : _('6'),   Rank.Seven : _('7'),
+                Rank.Eight : _('8'), Rank.Nine : _('9'),  Rank.Ten : _('10'),
+                Rank.Jack : _('J'),  Rank.Queen : _('Q'), Rank.King : _('K'),
+                Rank.Ace : _('A'), }
 
 STRAIN_SYMBOLS = {Strain.Club    : u'\N{BLACK CLUB SUIT}',
                   Strain.Diamond : u'\N{BLACK DIAMOND SUIT}',
                   Strain.Heart   : u'\N{BLACK HEART SUIT}',
                   Strain.Spade   : u'\N{BLACK SPADE SUIT}',
                   Strain.NoTrump : u'NT', }
+
+SEAT_SYMBOLS = {Seat.North : _('North'), Seat.East : _('East'),
+                Seat.South : _('South'), Seat.West : _('West') }
 
 
 class WindowBridgetable(GladeWrapper):
@@ -71,7 +73,7 @@ class WindowBridgetable(GladeWrapper):
         items = {}
         menu = gtk.Menu()
         for seat in Seat:
-            items[seat] = gtk.MenuItem(seat.key, True)
+            items[seat] = gtk.MenuItem(SEAT_SYMBOLS[seat], True)
             items[seat].connect('activate', self.on_seat_activated, seat)
             items[seat].show()
             menu.append(items[seat])
@@ -90,7 +92,8 @@ class WindowBridgetable(GladeWrapper):
         # Set up bidding history and column display.
         self.call_store = gtk.ListStore(str, str, str, str)
         self.biddingview.set_model(self.call_store)
-        for index, title in enumerate(Seat):
+        for index, seat in enumerate(Seat):
+            title = SEAT_SYMBOLS[seat]
             column = gtk.TreeViewColumn(str(title), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
@@ -99,7 +102,8 @@ class WindowBridgetable(GladeWrapper):
         # Set up trick history and column display.
         self.trick_store = gtk.ListStore(str, str, str, str)
         self.trickview.set_model(self.trick_store)
-        for index, title in enumerate(Seat):
+        for index, seat in enumerate(Seat):
+            title = SEAT_SYMBOLS[seat]
             column = gtk.TreeViewColumn(str(title), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
@@ -291,19 +295,19 @@ class WindowBridgetable(GladeWrapper):
         context = self.statusbar.get_context_id('turn')
         self.statusbar.pop(context)
         if turn:
-            text = "_(It is %s's turn)" % str(turn)
+            text = _("It is %s's turn") % str(turn)
             self.statusbar.push(context, text)
 
 
     def setContract(self, contract=None):
         """Sets the contract label from contract."""
-        format = (contract and self.getContractFormat(contract)) or 'No contract'
+        format = (contract and self.getContractFormat(contract)) or _('No contract')
         self.label_contract.set_property('sensitive', contract!=None)
         self.label_contract.set_markup('<span size="x-large">%s</span>' % format)
 
 
     def setDealer(self, dealer):
-        self.label_dealer.set_markup('<b>%s</b>' % dealer)
+        self.label_dealer.set_markup('<b>%s</b>' % SEAT_SYMBOLS[dealer])
 
 
     def setTrickCount(self, count=None):
@@ -356,7 +360,7 @@ class WindowBridgetable(GladeWrapper):
             widget = self.takeseat_items[position]
             widget.set_property('sensitive', False)
             # Set player label.
-            label = getattr(self, 'label_%s' % SEATS[position])
+            label = getattr(self, 'label_%s' % position.key.lower())
             label.set_markup('<b>%s</b>' % player)
             
             # If all seats occupied, disable Take Seat.
@@ -370,8 +374,8 @@ class WindowBridgetable(GladeWrapper):
             widget = self.takeseat_items[position]
             widget.set_property('sensitive', True)
             # Reset player label.
-            label = getattr(self, 'label_%s' % SEATS[position])
-            label.set_markup(_('<i>Vacant</i>'))
+            label = getattr(self, 'label_%s' % position.key.lower())
+            label.set_markup('<i>%s</i>' % _('Seat vacant'))
             
             # If we are not seated, ensure Take Seat is enabled.
             if not table.seated:
@@ -428,16 +432,16 @@ class WindowBridgetable(GladeWrapper):
                 score = table.game.score()
                 self.addScore(contract, trickCount['declarerWon'], score)
                 
-                textContract = 'Contract %s' % self.getContractFormat(contract)
+                textContract = _('Contract %s') % self.getContractFormat(contract)
                 textTrick = (offset > 0 and _('made by %s tricks') % offset) or \
                             (offset < 0 and _('failed by %s tricks') % abs(offset)) or \
                             _('made exactly')
-                textScore = _('Score %s points for ') % abs(score) + \
-                            ((score >= 0 and _('declarer')) or _('defence'))
+                scorer = (score >= 0 and _('declarer')) or _('defence')
+                textScore = _('Score %s points for %s') % (abs(score), scorer)
                 
                 message = '%s %s.\n\n%s.' % (textContract, textTrick, textScore)
             else:
-                message = 'Bidding passed out.'
+                message = _('Bidding passed out.')
             
             dialog = self.children.open('dialog_gameresult', parent=self)
             dialog.setup(message)
