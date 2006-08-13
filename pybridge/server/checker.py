@@ -19,49 +19,50 @@
 from twisted.cred import checkers, credentials, error
 from twisted.internet import defer
 from twisted.python import failure, log
+from zope.interface import implements
 
 from database import database
 
 
 class Checker:
-	""""""
+    """"""
 
-	__implements__ = checkers.ICredentialsChecker
+    implements(checkers.ICredentialsChecker)
 
-	credentialInterfaces = (credentials.IUsernamePassword,
-	                        credentials.IUsernameHashedPassword)
-
-
-	def __init__(self):
-		self.database = database
-		self.users = {}  # Users online, from Server object.
+    credentialInterfaces = (credentials.IUsernamePassword,
+                            credentials.IUsernameHashedPassword)
 
 
-	def requestAvatarId(self, credentials):
-		
-		def gotUser(user):
-			password = user.get('password', '')
-			d = defer.maybeDeferred(credentials.checkPassword, password)
-			d.addCallback(passwordMatch)
-			return d
-		
-		def passwordMatch(matched):
-			if matched:
-				if credentials.username in self.users.keys():
-					raise unauthorized('Already logged in')
-				else:
-					return credentials.username
-			else:
-				return unauthorized('Password mismatch')
-		
-		def unauthorized(reason):
-			log.msg('Login failed for %s: %s' % (credentials.username, reason))
-			return failure.Failure(error.UnauthorizedLogin(reason))
-		
-		if credentials.username == '':
-			return checkers.ANONYMOUS
-		else:
-			d = self.database.getUser(credentials.username)
-			d.addCallbacks(gotUser, lambda e: unauthorized('No such user'))
-			return d
+    def __init__(self):
+        self.database = database
+        self.users = {}  # Users online, from Server object.
+
+
+    def requestAvatarId(self, credentials):
+        
+        def gotUser(user):
+            password = user.get('password', '')
+            d = defer.maybeDeferred(credentials.checkPassword, password)
+            d.addCallback(passwordMatch)
+            return d
+        
+        def passwordMatch(matched):
+            if matched:
+                if credentials.username in self.users.keys():
+                    raise unauthorized('Already logged in')
+                else:
+                    return credentials.username
+            else:
+                return unauthorized('Incorrect password')
+        
+        def unauthorized(reason):
+            log.msg('Login failed for %s: %s' % (credentials.username, reason))
+            return failure.Failure(error.UnauthorizedLogin(reason))
+        
+        if credentials.username == '':
+            return checkers.ANONYMOUS
+        else:
+            d = self.database.getUser(credentials.username)
+            d.addCallbacks(gotUser, lambda e: unauthorized('No user account'))
+            return d
 

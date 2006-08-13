@@ -24,20 +24,20 @@ from user import User, AnonymousUser
 
 class Realm:
 
-	__implements__ = portal.IRealm
+    __implements__ = portal.IRealm
 
 
-	def requestAvatar(self, avatarId, mind, *interfaces):
-		if pb.IPerspective not in interfaces:
-			raise NotImplementedError
-		
-		if avatarId == checkers.ANONYMOUS:
-			avatar = AnonymousUser()
-			avatar.server = self.server  # Provide reference to server.
-			return pb.IPerspective, avatar, lambda:None
-		else:
-			avatar = User(avatarId)
-			avatar.server = self.server  # Provide reference to server.
-			avatar.attached(mind)
-			return pb.IPerspective, avatar, lambda a=avatar:a.detached(mind)
+    def requestAvatar(self, avatarId, mind, *interfaces):
+        if pb.IPerspective not in interfaces:
+            raise NotImplementedError
+        
+        if avatarId == checkers.ANONYMOUS:
+            avatar = AnonymousUser()
+            avatar.server = self.server  # Provide reference to server.
+            return pb.IPerspective, avatar, lambda:None
+        else:
+            avatar = User(avatarId)
+            avatar.server = self.server  # Provide reference to server.
+            avatar.attached(mind)
+            return pb.IPerspective, avatar, lambda a=avatar:a.detached(mind)
 

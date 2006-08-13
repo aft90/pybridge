@@ -23,62 +23,66 @@ from twisted.python import failure
 from pybridge.environment import USER_DB
 
 
-class DuplicateError(Exception): pass
-class UnknownError(Exception): pass
+class DuplicateError(Exception):
+    pass
+
+class UnknownError(Exception):
+    pass
+
 
 class UserDatabase:
-	"""A simple database of user accounts."""
+    """A simple database of user accounts."""
 
 
-	def __init__(self):
-		# Open the database file.
-		self.accounts = shelve.open(USER_DB, 'c', writeback=True)
+    def __init__(self):
+        # Open the database file.
+        self.accounts = shelve.open(USER_DB, 'c', writeback=True)
 
 
-	def addUser(self, username, **attrs):
-		"""Adds a new user."""
-		if self.accounts.has_key(username):
-			f = failure.Failure(DuplicateError())
-			return defer.fail(f)
-		
-		profile = attrs.copy()
-		profile['username'] = username
-		self.accounts[username] = profile
-		
-		return defer.succeed(username)
+    def addUser(self, username, **attrs):
+        """Adds a new user."""
+        if self.accounts.has_key(username):
+            f = failure.Failure(DuplicateError())
+            return defer.fail(f)
+        
+        profile = attrs.copy()
+        profile['username'] = username
+        self.accounts[username] = profile
+        
+        return defer.succeed(username)
 
 
-	def removeUser(self, username):
-		"""Removes an existing user."""
-		if not self.accounts.has_key(username):
-			f = failure.Failure(UnknownError())
-			return defer.fail(f)
-		
-		del self.accounts[username]
-		
-		return defer.succeed(username)
-		
+    def removeUser(self, username):
+        """Removes an existing user."""
+        if not self.accounts.has_key(username):
+            f = failure.Failure(UnknownError())
+            return defer.fail(f)
+        
+        del self.accounts[username]
+        
+        return defer.succeed(username)
+        
 
-	def updateUser(self, username, **attrs):
-		"""Updates attributes for an existing user."""
-		if not self.accounts.has_key(username):
-			f = failure.Failure(UnknownError())
-			return defer.fail(f)
-		
-		self.accounts[username].update(attrs)
-		
-		return defer.succeed(username)
+    def updateUser(self, username, **attrs):
+        """Updates attributes for an existing user."""
+        if not self.accounts.has_key(username):
+            f = failure.Failure(UnknownError())
+            return defer.fail(f)
+        
+        self.accounts[username].update(attrs)
+        
+        return defer.succeed(username)
 
 
-	def getUser(self, username):
-		"""Returns a dict of information for an existing user."""
-		if not self.accounts.has_key(username):
-			f = failure.Failure(UnknownError())
-			return defer.fail(f)
-		
-		info = self.accounts[username]
-		
-		return defer.succeed(info)
+    def getUser(self, username):
+        """Returns a dict of information for an existing user."""
+        if not self.accounts.has_key(username):
+            f = failure.Failure(UnknownError())
+            return defer.fail(f)
+        
+        info = self.accounts[username]
+        
+        return defer.succeed(info)
 
 
 database = UserDatabase()
