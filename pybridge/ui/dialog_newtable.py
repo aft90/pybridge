@@ -45,15 +45,13 @@ class DialogNewtable(GladeWrapper):
 
         def failure(reason):
             error = reason.getErrorMessage()
-            error_dialog = gtk.MessageDialog(
-                parent = self.window,
-                flags = gtk.DIALOG_MODAL,
-                type = gtk.MESSAGE_ERROR,
-                buttons = gtk.BUTTONS_OK,
-                message_format = error
-            )
-            error_dialog.run()
-            error_dialog.destroy()
+            dialog = gtk.MessageDialog(parent=self.window,
+                                       flags=gtk.DIALOG_MODAL,
+                                       type=gtk.MESSAGE_ERROR,
+                                       buttons=gtk.BUTTONS_OK,
+                                       message_format=error)
+            dialog.run()
+            dialog.destroy()
         
         tableid = self.entry_tablename.get_text()
         d = self.parent.joinTable(tableid, host=True)

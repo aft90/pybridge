@@ -23,7 +23,6 @@ from pybridge.interfaces.bridgetable import IBridgeTableEvents
 from pybridge.interfaces.serverstate import IServerEvents
 
 
-
 class EventHandler:
     """An implementation of ITableEvents."""
 
@@ -78,7 +77,6 @@ class EventHandler:
 
 
     def messageReceived(self, table, message, sender, recipients):
-        print "%s says: %s" % (sender, message) 
         self.runCallbacks('messageReceived', table, message, sender, recipients)
 
 
@@ -108,14 +106,6 @@ class EventHandler:
 # Methods to manipulate the callback lists.
 
 
-#    def registerCallback(self, event, callback):
-#        """Places callback onto notification list for event."""
-#        if not self.callbacks.get(event):
-#            self.callbacks[event] = []
-#        self.callbacks[event].append(callback)
-#        return True
-
-
     def registerCallbacksFor(self, window, events):
         """Places window object in callback list for each event."""
         for event in events:
@@ -130,20 +120,10 @@ class EventHandler:
             self.callbacks[event].remove(window)
 
 
-#    def unregisterCallback(self, event, callback):
-#        """Removes callback from notification list for event."""
-#        if callback in self.callbacks.get(event, []):
-#            self.callbacks[event].remove(callback)
-#            return True
-#        return False
-
-
     def runCallbacks(self, event, *args, **kwargs):
         for window in self.callbacks.get(event, []):
             callback = getattr(window, 'event_%s' % event)
             callback(*args, **kwargs)
-#        for callback in self.callbacks.get(event, []):
-#            callback(*args, **kwargs)
 
 
 eventhandler = EventHandler()

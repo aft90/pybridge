@@ -20,7 +20,6 @@ import gtk
 from wrapper import GladeWrapper
 
 from eventhandler import eventhandler
-import utils
 
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 from pybridge.bridge.call import Level, Strain
