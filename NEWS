@@ -1,18 +1,18 @@
-0.2.0 (XX August 2006)
+0.2.0 (14 August 2006)
 ======================
 
 Features:
 
 - Substantial rewrite of network code. Focus on splitting discrete services
   into separate components and making full use of Twisted's pb.Cacheable.
-  (Support for other games can be added, simply by writing new table modules
+  (Support for other games can be added simply by writing new table modules
   for server and client subclassing LocalTable and RemoteTable respectively.)
 
 - Introduction of an event handler and callback mechanism, which provides an
   indirect interface between network code and user interface components.
 
 - Facelift for user interface: tables now display as separate windows,
-  enhancements to CardArea display widget, new icons.
+  enhancements to CardArea display widget, new icons and logo artwork.
 
 - Basic table chat support.
 
