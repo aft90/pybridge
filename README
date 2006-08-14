@@ -1,4 +1,4 @@
-PyBridge 0.1.0
+PyBridge 0.2.0 - a free online bridge game
 http://pybridge.sourceforge.net/
 http://sourceforge.net/projects/pybridge/
 
@@ -6,24 +6,27 @@ http://sourceforge.net/projects/pybridge/
 PyBridge allows you to play the card game of (contract) bridge, with human
 players, over the Internet or a local network.
 
-For information on learning to play bridge, consult the Wikipedia article:
-http://en.wikipedia.org/wiki/Contract_bridge .
+There are many Web resources for learning to play bridge. A good starting point
+is the Wikipedia: see http://en.wikipedia.org/wiki/Contract_bridge .
 
 
 Release Notes
 =============
 
-To use PyBridge, you will need to create your own server, or connect to a
-public server: a list of known public servers can be found on the project
-website. When connecting to a server for the first time, ensure that the
+To use PyBridge, you need to connect to a game server. You have two options:
+
+- Connect to a public server. A list of known public servers can be found on
+  the project website.
+
+- Run a game server yourself, with the pybridge-server script.
+
+When connecting to a server for the first time, you need to ensure that the
 "Register as New User" checkbox is ticked.
 
-Installation instructions can be found in the INSTALL file. Details of
-functionality are in the ChangeLog.
+Installation instructions can be found in the INSTALL file. Details of changes
+made in this release can be found in the NEWS file.
 
-Please remember this is an initial release, which should be considered
-alpha software: some functionality may not work as intended, or work at all.
-Your feedback, bug reports and feature requests are especially welcome. ;-)
+Your feedback, bug reports and ideas for new features are especially welcome.
 
 Forums: http://sourceforge.net/forum/?group_id=114287
 Bug reports: http://sourceforge.net/tracker/?group_id=114287&atid=667822
@@ -40,5 +43,5 @@ PyBridge is released under the GNU General Public License, version 2 or later.
 A copy of the license is provided in the COPYING file.
 
 
-Michael Banks (michael@banksie.co.uk), 18 July 2006
+Michael Banks (michael@banksie.co.uk), 14 August 2006
 
