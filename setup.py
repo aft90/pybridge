@@ -21,16 +21,16 @@ setup(
     url = 'http://sourceforge.net/projects/pybridge/',
     description = 'A free online bridge game.',
     download_url = 'http://sourceforge.net/project/showfiles.php?group_id=114287',
-    packages = ['pybridge', 'pybridge.bridge', 'pybridge.interfaces', 'pybridge.network', 'pybridge.server', 'pybridge.ui'],
-    package_data = {'pybridge' : ['glade/pybridge.glade', 'locale', 'pixmaps/*']},
+    packages = ['pybridge', 'pybridge.bridge', 'pybridge.interfaces',
+                'pybridge.network', 'pybridge.server', 'pybridge.ui'],
     scripts = ['bin/pybridge', 'bin/pybridge-server'],
+    data_files = [('share/doc/pybridge', ['AUTHORS', 'COPYING', 'INSTALL', 'NEWS', 'README']),
+                  ('share/pybridge/glade', glob.glob('glade/*.glade')),
+                  ('share/pybridge/pixmaps', glob.glob('pixmaps/*')), ],
     
     # py2exe
     console = ['bin/pybridge-server'],
     windows = [{'script' : 'bin/pybridge', 'icon_resources' : [(1, 'pixmaps/pybridge.ico')]}],
-    data_files = [('.', ['AUTHORS', 'COPYING', 'INSTALL', 'NEWS', 'README']),
-	          ('glade', glob.glob('glade/*.glade')),
-                  ('pixmaps', glob.glob('pixmaps/*')), ],
     options = {'py2exe': {'packages' : 'encodings',
                           'includes' : 'cairo, pango, pangocairo, atk, gobject, gtk.glade' } },
 )
