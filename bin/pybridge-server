@@ -18,30 +18,68 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import os, sys
-
-# Determine the base directory.
-currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
-basedir = os.path.abspath(os.path.join(currentdir, '..'))
-
-# Find the Python module path, relative to the base directory.
-if os.path.exists(os.path.join(basedir, 'lib')):
-    pythonver = 'python%d.%d' % sys.version_info[:2]
-    pythonpath = os.path.join(basedir, 'lib', pythonver, 'site-packages')
-else:
-    pythonpath = basedir
-
-sys.path.insert(0, pythonpath)
+import os
+import sys
+import getopt
 
 
-from twisted.internet import reactor
-from twisted.python import log
+def usage():
+    print "Usage: pybridge-server [options]"
+    print "-h      : Print this help message and exit."
+    print "-p PORT : Listen for connections on specified port."
+    print "-v      : Print version number and exit."
 
-from pybridge.server import factory
+
+def main():
+    PORT = 5040
+    
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hp:v',
+                                   ['help', 'port=', 'version'])
+    except getopt.GetoptError, error:
+        usage()
+        print "\nError: %s" % error
+        sys.exit(2)
+    
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            usage()
+            sys.exit(0)
+        elif opt in ('-p', '--port'):
+            try:
+                PORT = int(arg)
+            except ValueError:
+                usage()
+                print "\nError: invalid value %s specified for %s" % (arg, opt)
+                sys.exit(2)
+        elif opt in ('-v', '--version'):
+            import pybridge
+            print "PyBridge Server version %s" % pybridge.__version__
+            sys.exit(0)
+    
+    # Determine the base directory.
+    currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    basedir = os.path.abspath(os.path.join(currentdir, '..'))
+    
+    # Find the Python module path, relative to the base directory.
+    if os.path.exists(os.path.join(basedir, 'lib')):
+        pythonver = 'python%d.%d' % sys.version_info[:2]
+        pythonpath = os.path.join(basedir, 'lib', pythonver, 'site-packages')
+    else:
+        pythonpath = basedir
+    
+    sys.path.insert(0, pythonpath)
+    
+    from twisted.internet import reactor
+    from twisted.python import log
+    from pybridge.server import factory
+    
+    # TODO: replace with a service.
+    log.startLogging(sys.stdout)  # Log to stdout.
+    reactor.listenTCP(PORT, factory)  # Default PyBridge port.
+    reactor.run()
 
 
-# TODO: replace with a service.
-log.startLogging(sys.stdout)  # Log to stdout.
-reactor.listenTCP(5040, factory)  # Default PyBridge port.
-reactor.run()
+if __name__ == '__main__':
+    main()
 
