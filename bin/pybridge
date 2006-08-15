@@ -18,7 +18,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import os, sys
+import os
+import sys
 
 
 PYTHON_VERSION = sys.version_info[:2]
@@ -44,17 +45,17 @@ if twisted.copyright.version < TWISTED_REQUIRED:
     raise SystemExit("Error: Twisted Core %s or higher required" % TWISTED_REQUIRED)
 
 
-# Determine the base directory.
-currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
-basedir = os.path.abspath(os.path.join(currentdir, '..'))
-
-# Find the Python module path, relative to the base directory.
-if os.path.exists(os.path.join(basedir, 'lib')):
-    pythonpath = os.path.join(basedir, 'lib', 'python%d.%d' % PYTHON_VERSION, 'site-packages')
-else:
-    pythonpath = basedir
-
-sys.path.insert(0, pythonpath)
+try:  # If PyBridge is installed system-wide, this finds it automatically.
+    import pybridge
+except ImportError:  # Locate the PyBridge package.
+    currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    basedir = os.path.abspath(os.path.join(currentdir, '..'))
+    # The package path should be relative to the base directory.
+    if os.path.exists(os.path.join(basedir, 'lib', 'python')):
+        pythonpath = os.path.join(basedir, 'lib', 'python')
+    else:
+        pythonpath = basedir
+    sys.path.insert(0, pythonpath)  # Place PyBridge package in PYTHONPATH.
 
 
 import pybridge.ui

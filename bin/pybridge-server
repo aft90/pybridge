@@ -41,6 +41,18 @@ def main():
         print "\nError: %s" % error
         sys.exit(2)
     
+    try:  # If PyBridge is installed system-wide, this finds it automatically.
+        import pybridge
+    except ImportError:  # Locate the PyBridge package.
+        currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        basedir = os.path.abspath(os.path.join(currentdir, '..'))
+        # The package path should be relative to the base directory.
+        if os.path.exists(os.path.join(basedir, 'lib', 'python')):
+            pythonpath = os.path.join(basedir, 'lib', 'python')
+        else:
+            pythonpath = basedir
+        sys.path.insert(0, pythonpath)  # Place PyBridge package in PYTHONPATH.
+    
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -53,22 +65,8 @@ def main():
                 print "\nError: invalid value %s specified for %s" % (arg, opt)
                 sys.exit(2)
         elif opt in ('-v', '--version'):
-            import pybridge
             print "PyBridge Server version %s" % pybridge.__version__
             sys.exit(0)
-    
-    # Determine the base directory.
-    currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    basedir = os.path.abspath(os.path.join(currentdir, '..'))
-    
-    # Find the Python module path, relative to the base directory.
-    if os.path.exists(os.path.join(basedir, 'lib')):
-        pythonver = 'python%d.%d' % sys.version_info[:2]
-        pythonpath = os.path.join(basedir, 'lib', pythonver, 'site-packages')
-    else:
-        pythonpath = basedir
-    
-    sys.path.insert(0, pythonpath)
     
     from twisted.internet import reactor
     from twisted.python import log
@@ -76,7 +74,7 @@ def main():
     
     # TODO: replace with a service.
     log.startLogging(sys.stdout)  # Log to stdout.
-    reactor.listenTCP(PORT, factory)  # Default PyBridge port.
+    reactor.listenTCP(PORT, factory)
     reactor.run()
 
 
