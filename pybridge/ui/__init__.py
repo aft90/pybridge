@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from pybridge.environment import LOCALE_DIR
+from pybridge.environment import environment
 
 def run():
     """"""
@@ -29,7 +29,7 @@ def run():
     import locale
     import gettext
     locale.setlocale(locale.LC_ALL, '')
-    gettext.bindtextdomain('pybridge', LOCALE_DIR)
+    gettext.bindtextdomain('pybridge', environment.get_localedir())
     gettext.textdomain('pybridge')
     gettext.install('pybridge')
     

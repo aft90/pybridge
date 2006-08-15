@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from pybridge.environment import CLIENT_SETTINGS_PATH
+from pybridge.environment import environment
 
 # Set up client with UI event handler.
 from pybridge.network.client import client
@@ -38,7 +38,7 @@ class Settings:
     general = {}
 
 
-    def __init__(self, filename=CLIENT_SETTINGS_PATH):
+    def __init__(self, filename):
         self.config = ConfigParser.SafeConfigParser()
         self.filename = filename
         self.read()
@@ -63,7 +63,7 @@ class Settings:
         self.config.write(file(self.filename, 'w'))
 
 
-settings = Settings()
+settings = Settings(environment.find_configfile('client.cfg'))
 
 
 

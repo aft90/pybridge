@@ -20,7 +20,7 @@ import shelve, anydbm, dbhash
 from twisted.internet import defer
 from twisted.python import failure
 
-from pybridge.environment import USER_DB
+from pybridge.environment import environment
 
 
 class DuplicateError(Exception):
@@ -36,7 +36,8 @@ class UserDatabase:
 
     def __init__(self):
         # Open the database file.
-        self.accounts = shelve.open(USER_DB, 'c', writeback=True)
+        dbfile = environment.find_configfile('users.db')
+        self.accounts = shelve.open(dbfile, 'c', writeback=True)
 
 
     def addUser(self, username, **attrs):
