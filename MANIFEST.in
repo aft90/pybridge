@@ -1,6 +1,6 @@
 include MANIFEST.in
 include AUTHORS COPYING INSTALL NEWS README
-
 include glade/*.glade
-include pixmaps/*.png
+recursive-include locale *.mo
+recursive-include pixmaps *.ico *.png *.svg
 
