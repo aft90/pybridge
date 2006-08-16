@@ -19,10 +19,15 @@
 import gettext
 import gtk
 import gtk.glade
+import sys
 
 from pybridge.environment import environment
-ICON_PATH = environment.find_pixmap("pybridge.png")
+
 GLADE_PATH = environment.find_glade("pybridge.glade")
+if sys.platform == 'win32':  # Win32 should use the ICO icon.
+    ICON_PATH = environment.find_pixmap("pybridge.ico")
+else:  # All other platforms should use the PNG icon.
+    ICON_PATH = environment.find_pixmap("pybridge.png")
 
 
 class GladeWrapper:
