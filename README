@@ -1,4 +1,4 @@
-PyBridge 0.2.0 - a free online bridge game
+PyBridge 0.2.1 - a free online bridge game
 http://pybridge.sourceforge.net/
 http://sourceforge.net/projects/pybridge/
 
@@ -41,7 +41,4 @@ Copyright Information
 
 PyBridge is released under the GNU General Public License, version 2 or later.
 A copy of the license is provided in the COPYING file.
-
-
-Michael Banks (michael@banksie.co.uk), 14 August 2006
 

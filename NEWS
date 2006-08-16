@@ -1,7 +1,23 @@
+======================
+0.2.1 (16 August 2006)
+======================
+
+Bug fixes
+=========
+
+- Fixed setup.py script to install source package and supporting files in the
+  standard /usr/ directories.
+
+- Updated pybridge.environment and bin/* scripts to work with both the source
+  and installation directory layouts.
+
+
+======================
 0.2.0 (14 August 2006)
 ======================
 
-Features:
+New Features
+============
 
 - Substantial rewrite of network code. Focus on splitting discrete services
   into separate components and making full use of Twisted's pb.Cacheable.
@@ -19,6 +35,7 @@ Features:
 - Initial support for internationalization and localization via gettext.
 
 
+====================
 0.1.0 (19 July 2006)
 ====================
 
