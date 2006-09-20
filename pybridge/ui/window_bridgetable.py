@@ -283,8 +283,11 @@ class WindowBridgetable(GladeWrapper):
 
     def setTurnIndicator(self):
         """Sets the statusbar text to indicate which player is on turn."""
-        turn = self.table.game and not self.table.game.isComplete() \
-        and self.table.game.whoseTurn()
+        turn = None
+        if self.table.game and not self.table.game.isComplete():
+            turn = self.table.game.whoseTurn()
+        
+        self.cardarea.set_turn(turn)
         
         context = self.statusbar.get_context_id('turn')
         self.statusbar.pop(context)
@@ -385,7 +388,7 @@ class WindowBridgetable(GladeWrapper):
             self.setDealer(table.dealer)
             self.setVuln(table.game.vulnNS, table.game.vulnEW)
             
-            self.redrawTrick()
+            self.redrawTrick()  # Clear trick.
             for position in table.game.deal:
                 self.redrawHand(position)
             if table.seated:

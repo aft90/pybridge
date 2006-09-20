@@ -208,8 +208,14 @@ class CardArea(CairoCanvas):
         """Sets the current trick.
         Draws representation of current trick to context.
         
-        @param trick: a (leader, cards_played) pair.
+        @param trick: a (leader, cards_played) pair, or None.
         """
+        id = 'trick'
+        self.trick = trick
+        if trick is None:
+            self.remove_item(id)
+            return
+        
         width, height = 200, 200
         # (x, y) positions to fit within (width, height) bound box.
         pos = {Seat.North : ((width - self.card_width)/2, 0 ),
@@ -235,7 +241,6 @@ class CardArea(CairoCanvas):
                     pos_x, pos_y = pos[seat]
                     self.draw_card(context, pos_x, pos_y, card)
         
-        id = 'trick'
         if id in self.items:
             self.update_item(id, source=surface)
         else: 
@@ -244,21 +249,36 @@ class CardArea(CairoCanvas):
 
 
 
-    def set_turn(self, seat):
-        """
+    def set_turn(self, turn):
+        """Sets the turn indicator.
         
-        @param seat: a member of Seat.
+        The turn indicator is displayed as a rounded rectangle around
+        the hand matching the specified seat.
+        
+        @param turn: a member of Seat, or None.
         """
-#        hand_surface = self.hands[seat]['surface']
-#        x = self.hands[seat]['xy'] - 10
-#        y = self.hands[seat]['xy'] - 10
-#        width = surface.get_width() + 20
-#        height = surface.get_height() + 20
-#        args = ('turn', surface, pos_x, pos_y, -1)
-#        if self.items.get('turn'):
-#            self.update_item(*args)
-#        else:
-#            self.add_item(*args)
+        id = 'turn'
+        if turn is None:
+            self.remove_item(id)
+            return
+        
+        def xy(w, h):
+            x, y = self.items['hand-%s' % turn]['xy'](w, h)
+            return x-10, y-10
+        
+        # TODO: select colours that don't clash with the background.
+        # TODO: one colour if user can click card, another if not.
+        width = self.hands[turn]['surface'].get_width() + 20
+        height = self.hands[turn]['surface'].get_height() + 20
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        context = cairo.Context(surface)
+        context.set_source_rgb(0.3, 0.6, 0)  # Green.
+        context.paint_with_alpha(0.5)
+        
+        if id in self.items:
+            self.update_item(id, source=surface, xy=xy)
+        else:
+            self.add_item(id, surface, xy, -1)
 
 
     def button_release(self, widget, event):

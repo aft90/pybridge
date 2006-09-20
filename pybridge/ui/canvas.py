@@ -79,7 +79,7 @@ class CairoCanvas(gtk.DrawingArea):
         """
         if self.items.get(id):
             area = self.items[id]['area']
-            del self.item[id]
+            del self.items[id]
             self.redraw(*area)
 
 
@@ -123,7 +123,7 @@ class CairoCanvas(gtk.DrawingArea):
         # TODO: Find sources which intersect with area.
         area = gtk.gdk.Rectangle(x, y, width, height)
         items = self.items.values()
-        items.sort(lambda i, j : cmp(i['z-index'], j['z-index']), reverse=True)
+        items.sort(lambda i, j : cmp(i['z-index'], j['z-index']))
         
         for item in items:
             pos_x, pos_y = item['area'][0:2]
