@@ -52,6 +52,7 @@ def main():
         else:
             pythonpath = basedir
         sys.path.insert(0, pythonpath)  # Place PyBridge package in PYTHONPATH.
+        import pybridge
     
     for opt, arg in opts:
         if opt in ('-h', '--help'):

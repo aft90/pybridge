@@ -56,6 +56,7 @@ except ImportError:  # Locate the PyBridge package.
     else:
         pythonpath = basedir
     sys.path.insert(0, pythonpath)  # Place PyBridge package in PYTHONPATH.
+    import pybridge
 
 
 import pybridge.ui
