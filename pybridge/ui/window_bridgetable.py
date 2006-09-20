@@ -35,7 +35,7 @@ from pybridge.bridge.deck import Seat
 
 CALLTYPE_SYMBOLS = {Pass : _('pass'), Double : _('dbl'), Redouble : _('rdbl') }
 
-LEVEL_SYMBOLS = {Level.One : _('1'),  Level.Two : _('2'),  Level.Three : _('3'),
+LEVEL_SYMBOLS = {Level.One : _('1'), Level.Two : _('2'), Level.Three : _('3'),
                  Level.Four : _('4'), Level.Five : _('5'), Level.Six : _('6'),
                  Level.Seven : _('7'), }
 
@@ -191,7 +191,7 @@ class WindowBridgetable(GladeWrapper):
 
     def resetGame(self):
         """Clears bidding history, contract, trick counts."""
-        self.cardarea.clear()
+#        self.cardarea.clear()
         self.call_store.clear()   # Reset bidding history.
         self.trick_store.clear()  # Reset trick history.
         self.setContract(None)    # Reset contract.
@@ -263,28 +263,22 @@ class WindowBridgetable(GladeWrapper):
         if hand:  # Own or known hand.
             if all is True:  # Show all cards.
                 played = []
-            self.cardarea.build_hand(position, hand, omit=played)
+            self.cardarea.set_hand(hand, position, omit=played)
         else:  # Unknown hand: draw cards face down, use integer placeholders.
-            cards = range(13)
-            played = range(len(played))
-            self.cardarea.build_hand(position, cards, facedown=True, omit=played)
-        
-        self.cardarea.draw_hand(position)
+            cards, played = range(13), range(len(played))
+            self.cardarea.set_hand(cards, position, facedown=True, omit=played)
 
 
-    def redrawTrick(self, trick=None):
+    def redrawTrick(self):
         """Redraws trick.
         
         @param table:
         @param trick:
         """
-        # TODO: this cannot be called until playing in progress
-        # perhaps put a clear() method in cardarea?
-        if trick is None:
+        trick = None
+        if self.table.game.playing:
             trick = self.table.game.playing.getCurrentTrick()
-        
-        self.cardarea.build_trick(trick)
-        self.cardarea.draw_trick()
+        self.cardarea.set_trick(trick)
 
 
     def setTurnIndicator(self):
@@ -391,6 +385,7 @@ class WindowBridgetable(GladeWrapper):
             self.setDealer(table.dealer)
             self.setVuln(table.game.vulnNS, table.game.vulnEW)
             
+            self.redrawTrick()
             for position in table.game.deal:
                 self.redrawHand(position)
             if table.seated:
