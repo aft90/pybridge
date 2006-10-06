@@ -54,7 +54,8 @@ class CairoCanvas(gtk.DrawingArea):
         context.rectangle(0, 0, width, height)
         context.set_source(self.pattern)
         context.paint()
-        self.window.invalidate_rect((0, 0, width, height), False)  # Expose.
+        # Trigger a call to self.expose().
+        self.window.invalidate_rect((0, 0, width, height), False)
 
 
     def add_item(self, id, source, xy, z_index):
@@ -62,13 +63,13 @@ class CairoCanvas(gtk.DrawingArea):
 
         @param id: unique identifier for source.
         @param source: ImageSurface.
-        @param xy: function providing (x, y) coords for source in backing.
+        @param xy: tuple providing (x, y) coords for source in backing.
         @param z_index: integer.
         """
-        pos_x, pos_y = xy(*self.window.get_size())
-        area = (pos_x, pos_y, source.get_width(), source.get_height())
-        self.items[id] = {'source': source, 'area': area,
-                          'xy' : xy, 'z-index': z_index, }
+        # Calculate and cache the on-screen area of the item.
+        area = self.get_area(source, xy)
+        self.items[id] = {'source': source, 'area': area, 'xy': xy,
+                          'z-index': z_index, }
         self.redraw(*area)
 
 
@@ -87,29 +88,35 @@ class CairoCanvas(gtk.DrawingArea):
         """
         
         """
-        # If optional parameters are not specified, use previous values.
-        source = source or self.items[id]['source']
-        xy = xy or self.items[id]['xy']
+        # If optional parameters are not specified, use stored values.
         z_index = z_index or self.items[id]['z-index']
+        if source or xy:
+            # If source or xy coords changed, recalculate on-screen area.
+            source = source or self.items[id]['source']
+            xy = xy or self.items[id]['xy']
+            area = self.get_area(source, xy)
+            # If area of item has changed, clear item from previous area.
+            oldarea = self.items[id]['area']
+            if area != oldarea:
+                del self.items[id]
+                self.redraw(*oldarea)
+        else:
+            source = self.items[id]['source']
+            xy = self.items[id]['xy']
+            area = self.items[id]['area']
         
-        oldarea = self.items[id]['area']  # Current position of item.
-        pos_x, pos_y = xy(*self.window.get_size())
-        area = (pos_x, pos_y, source.get_width(), source.get_height())
-        if area != oldarea:  # If position has changed, clear previous area.
-            del self.items[id]
-            self.redraw(*oldarea)
-        self.items[id] = {'source': source, 'area': area,
-                          'xy' : xy, 'z-index': z_index, }
+        self.items[id] = {'source': source, 'area': area, 'xy' : xy,
+                          'z-index': z_index, }
         self.redraw(*area)
 
 
     def redraw(self, x, y, width, height):
         """Redraws sources in area (x, y, width, height) to backing canvas.
         
-        @param x:
-        @param y:
-        @param width:
-        @param height:
+        @param x: start x-coordinate of area to be redrawn.
+        @param y: start y-coordinate of area to be redrawn.
+        @param width: the width of area to be redrawn.
+        @param height: the height of area to be redrawn.
         """
         context = cairo.Context(self.backing)
         context.rectangle(x, y, width, height)
@@ -134,16 +141,55 @@ class CairoCanvas(gtk.DrawingArea):
         self.window.invalidate_rect((x, y, width, height), False)  # Expose.
 
 
+    def get_area(self, source, xy):
+        """Calculates the on-screen area of the specified source centred at xy.
+        
+        @param source:
+        @param xy:
+        @return: a tuple (x, y, width, height)
+        """
+        win_w, win_h = self.window.get_size()  # Window width and height.
+        width, height = source.get_width(), source.get_height()
+        x = int((xy[0] * win_w) - width/2)  # Round to integer.
+        y = int((xy[1] * win_h) - height/2)
+        # Ensure that source coordinates fit inside dimensions of backing.
+        if x < self.border_x:
+            x = self.border_x
+        elif x + width > win_w - self.border_x:
+            x = win_w - self.border_x - width
+        if y < self.border_y:
+            y = self.border_y
+        elif y + height > win_h - self.border_y:
+            y = win_h - self.border_y - height
+        return x, y, width, height
+
+
+    def new_surface(self, width, height):
+        """Creates a new ImageSurface of dimensions (width, height)
+        and ensures that the ImageSurface is cleared.
+        
+        @param width: the expected width of the ImageSurface.
+        @param height: the expected height of the ImageSurface.
+        @return: tuple (surface, context)
+        """
+        # Create new ImageSurface for hand.
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        context = cairo.Context(surface)
+        # Clear ImageSurface - in Cairo 1.2+, this is done automatically.
+        if cairo.version_info < (1, 2):
+            context.set_operator(cairo.OPERATOR_CLEAR)
+            context.paint()
+            context.set_operator(cairo.OPERATOR_OVER)  # Restore.
+        return surface, context
+
 
     def configure(self, widget, event):
         width, height = self.window.get_size()
         self.backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
         
         # Recalculate position of all items.
-        for id, item in self.items.items():
-            pos_x, pos_y = item['xy'](width, height)
-            area = (pos_x, pos_y, item['area'][2], item['area'][3])
-            self.items[id]['area'] = area
+        for id, item in self.items.iteritems():
+            self.items[id]['area'] = self.get_area(item['source'], item['xy'])
         
         self.redraw(0, 0, width, height)  # Full redraw required.
         return True  # Expected to return True.

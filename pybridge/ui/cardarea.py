@@ -18,6 +18,8 @@
 
 import gtk
 import cairo
+import pango
+import pangocairo
 
 from pybridge.environment import environment
 from canvas import CairoCanvas
@@ -44,6 +46,8 @@ class CardArea(CairoCanvas):
     # Load card mask.
     card_mask_path = environment.find_pixmap('bonded.png')
     card_mask = cairo.ImageSurface.create_from_png(card_mask_path)
+    
+    font_description = pango.FontDescription('Sans Bold 10')
     
     border_x = border_y = 10
     card_width = card_mask.get_width() / 13
@@ -110,10 +114,10 @@ class CardArea(CairoCanvas):
                         pos_x = index * self.spacing_x
                         coords.append((card, pos_x, pos_y))
                 else:  # Insert a space between each suit.
-                    spaces = sum([1 for suitcards in suits.values() if len(suitcards) > 0]) - 1
+                    spaces = len([1 for suitcards in suits.values() if len(suitcards) > 0]) - 1
                     for index, card in enumerate(hand):
                         # Insert a space for each suit in hand which appears before this card's suit.
-                        insert = sum([1 for suit, suitcards in suits.items() if len(suitcards) > 0
+                        insert = len([1 for suit, suitcards in suits.items() if len(suitcards) > 0
                                      and RED_BLACK.index(card.suit) > RED_BLACK.index(suit)])
                         pos_x = (index + insert) * self.spacing_x
                         coords.append((card, pos_x, pos_y))
@@ -156,14 +160,7 @@ class CardArea(CairoCanvas):
         # Determine dimensions of hand.
         width = max([x for card, x, y in coords]) + self.card_width
         height = max([y for card, x, y in coords]) + self.card_height
-        # Create new ImageSurface for hand.
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        context = cairo.Context(surface)
-        # Clear ImageSurface - in Cairo 1.2+, this is done automatically.
-        if cairo.version_info < (1, 2):
-            context.set_operator(cairo.OPERATOR_CLEAR)
-            context.paint()
-            context.set_operator(cairo.OPERATOR_OVER)  # Restore.
+        surface, context = self.new_surface(width, height)
         
         # Draw cards to surface.
         visible = [(i, card) for i, card in enumerate(hand) if card not in omit]
@@ -175,21 +172,51 @@ class CardArea(CairoCanvas):
         self.hands[seat] = {'hand' : hand, 'visible' : visible,
                             'surface' : surface, 'coords' : coords, }
         
-        # 
-        if seat is self.TOP:
-            xy = lambda w, h: ((w - width)/2, self.border_y)
-        elif seat is self.RIGHT:
-            xy = lambda w, h: ((w - width - self.border_x), (h - height)/2)
-        elif seat is self.BOTTOM:
-            xy = lambda w, h: ((w - width)/2, (h - height - self.border_y))
-        elif seat is self.LEFT:
-            xy = lambda w, h: (self.border_x, (h - height)/2)
-        
         id = 'hand-%s' % seat  # Identifier for this item.
         if id in self.items:
-            self.update_item(id, source=surface, xy=xy)
-        else: 
-            self.add_item(id, surface, xy, 0)
+            self.update_item(id, source=surface)
+        else:
+            xy = {self.TOP : (0.5, 0.15), self.BOTTOM : (0.5, 0.85),
+                  self.LEFT : (0.15, 0.5), self.RIGHT : (0.85, 0.5), }
+            self.add_item(id, surface, xy[seat], 0)
+
+
+    def set_player_name(self, seat, name=None):
+        """
+        
+        @param name: the name of the player, or None.
+        """
+        id = 'player-%s' % seat
+        if name is None or id in self.items:
+            self.remove_item(id)
+            return
+        
+        layout = pango.Layout(self.create_pango_context())
+        layout.set_font_description(self.font_description)
+        layout.set_text(name)
+        # Create an ImageSurface respective to dimensions of text.
+        width, height = layout.get_pixel_size()
+        surface, context = self.new_surface(width, height)
+        context = pangocairo.CairoContext(context)
+        
+#        context.set_line_width(4)
+#        context.rectangle(0, 0, width, height)
+#        context.set_source_rgb(0, 0.5, 0)
+#        context.fill_preserve()
+#        context.set_source_rgb(0, 0.25, 0)
+#        context.stroke()
+#        context.move_to(4, 2)
+        context.set_source_rgb(1, 1, 1)
+        context.show_layout(layout)
+        
+        if id in self.items:
+            self.update_item(id, source=surface)
+        else:
+            xy = {self.TOP : (0.5, 0.05), self.BOTTOM : (0.5, 0.95),
+                  self.LEFT : (0.15, 0.7), self.RIGHT : (0.85, 0.7), }
+#            xy = {self.TOP : (0.5, 0.3), self.BOTTOM : (0.5, 0.7),
+#                  self.LEFT : (0.15, 0.7), self.RIGHT : (0.85, 0.7), }
+            self.add_item(id, surface, xy[seat], 2)
 
 
     def set_seat_mapping(self, focus=Seat.South):
@@ -223,14 +250,7 @@ class CardArea(CairoCanvas):
                Seat.South : ((width - self.card_width)/2, (height - self.card_height) ),
                Seat.West  : (0, (height - self.card_height)/2 ), }
         
-        # Create new ImageSurface for trick.
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        context = cairo.Context(surface)
-        # Clear ImageSurface - in Cairo 1.2+, this is done automatically.
-        if cairo.version_info < (1, 2):
-            context.set_operator(cairo.OPERATOR_CLEAR)
-            context.paint()
-            context.set_operator(cairo.OPERATOR_OVER)  # Restore.
+        surface, context = self.new_surface(width, height)
         
         if trick:
             leader, cards_played = trick
@@ -244,9 +264,8 @@ class CardArea(CairoCanvas):
         if id in self.items:
             self.update_item(id, source=surface)
         else: 
-            xy = lambda w, h: ((w - width)/2, (h - height)/2)
+            xy = (0.5, 0.5)
             self.add_item(id, surface, xy, 0)
-
 
 
     def set_turn(self, turn):
@@ -262,18 +281,15 @@ class CardArea(CairoCanvas):
             self.remove_item(id)
             return
         
-        def xy(w, h):
-            x, y = self.items['hand-%s' % turn]['xy'](w, h)
-            return x-10, y-10
-        
         # TODO: select colours that don't clash with the background.
-        # TODO: one colour if user can click card, another if not.
+        # TODO: one colour if user can play card from hand, another if not.
         width = self.hands[turn]['surface'].get_width() + 20
         height = self.hands[turn]['surface'].get_height() + 20
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        context = cairo.Context(surface)
+        surface, context = self.new_surface(width, height)
         context.set_source_rgb(0.3, 0.6, 0)  # Green.
         context.paint_with_alpha(0.5)
+        
+        xy = self.items['hand-%s' % turn]['xy']  # Use same xy as hand.
         
         if id in self.items:
             self.update_item(id, source=surface, xy=xy)

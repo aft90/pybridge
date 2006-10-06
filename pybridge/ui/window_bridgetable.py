@@ -353,6 +353,7 @@ class WindowBridgetable(GladeWrapper):
 
     def event_playerAdded(self, table, player, position):
         if table == self.table:
+            self.cardarea.set_player_name(position, player)
             # Disable menu item corresponding to position.
             widget = self.takeseat_items[position]
             widget.set_property('sensitive', False)
@@ -367,6 +368,7 @@ class WindowBridgetable(GladeWrapper):
 
     def event_playerRemoved(self, table, player, position):
         if table == self.table:
+            self.cardarea.set_player_name(position, None)
             # Enable menu item corresponding to position.
             widget = self.takeseat_items[position]
             widget.set_property('sensitive', True)
@@ -384,13 +386,14 @@ class WindowBridgetable(GladeWrapper):
             self.children.close('dialog_gameresult')
             self.resetGame()
             
+            self.redrawTrick()  # Clear trick.
+            for position in table.game.deal:
+                self.redrawHand(position)
+            
             self.setTurnIndicator()
             self.setDealer(table.dealer)
             self.setVuln(table.game.vulnNS, table.game.vulnEW)
             
-            self.redrawTrick()  # Clear trick.
-            for position in table.game.deal:
-                self.redrawHand(position)
             if table.seated:
                 self.children.open('window_bidbox', parent=self)
 
