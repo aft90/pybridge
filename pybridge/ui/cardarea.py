@@ -196,26 +196,26 @@ class CardArea(CairoCanvas):
         layout.set_text(name)
         # Create an ImageSurface respective to dimensions of text.
         width, height = layout.get_pixel_size()
+        width += 8; height += 4
         surface, context = self.new_surface(width, height)
         context = pangocairo.CairoContext(context)
         
-#        context.set_line_width(4)
-#        context.rectangle(0, 0, width, height)
-#        context.set_source_rgb(0, 0.5, 0)
-#        context.fill_preserve()
-#        context.set_source_rgb(0, 0.25, 0)
-#        context.stroke()
-#        context.move_to(4, 2)
+        # Draw background box, text to ImageSurface.
+        context.set_line_width(4)
+        context.rectangle(0, 0, width, height)
+        context.set_source_rgb(0, 0.5, 0)
+        context.fill_preserve()
+        context.set_source_rgb(0, 0.25, 0)
+        context.stroke()
+        context.move_to(4, 2)
         context.set_source_rgb(1, 1, 1)
         context.show_layout(layout)
         
         if id in self.items:
             self.update_item(id, source=surface)
         else:
-            xy = {self.TOP : (0.5, 0.05), self.BOTTOM : (0.5, 0.95),
-                  self.LEFT : (0.15, 0.7), self.RIGHT : (0.85, 0.7), }
-#            xy = {self.TOP : (0.5, 0.3), self.BOTTOM : (0.5, 0.7),
-#                  self.LEFT : (0.15, 0.7), self.RIGHT : (0.85, 0.7), }
+            xy = {self.TOP : (0.5, 0.15), self.BOTTOM : (0.5, 0.85),
+                  self.LEFT : (0.15, 0.6), self.RIGHT : (0.85, 0.6), }
             self.add_item(id, surface, xy[seat], 2)
 
 
@@ -237,35 +237,34 @@ class CardArea(CairoCanvas):
         
         @param trick: a (leader, cards_played) pair, or None.
         """
-        id = 'trick'
-        self.trick = trick
-        if trick is None:
-            self.remove_item(id)
-            return
-        
-        width, height = 200, 200
-        # (x, y) positions to fit within (width, height) bound box.
-        pos = {Seat.North : ((width - self.card_width)/2, 0 ),
-               Seat.East  : ((width - self.card_width), (height - self.card_height)/2 ),
-               Seat.South : ((width - self.card_width)/2, (height - self.card_height) ),
-               Seat.West  : (0, (height - self.card_height)/2 ), }
-        
-        surface, context = self.new_surface(width, height)
+        xy = {self.TOP : (0.5, 0.425), self.BOTTOM : (0.5, 0.575),
+              self.LEFT : (0.425, 0.5), self.RIGHT : (0.575, 0.5), }
         
         if trick:
-            leader, cards_played = trick
             # The order of play is the leader, then clockwise around Seat.
-            for seat in Seat[leader.index:] + Seat[:leader.index]:
-                card = cards_played.get(seat)
-                if card:
-                    pos_x, pos_y = pos[seat]
-                    self.draw_card(context, pos_x, pos_y, card)
+            leader = trick[0]
+            order = Seat[leader.index:] + Seat[:leader.index]
+            for i, seat in enumerate(order):
+                id = 'trick-%s' % seat
+                old_card = self.trick and self.trick[1].get(seat) or None
+                new_card = trick[1].get(seat)
+                # If old card matches new card, take no action.
+                if old_card is None and new_card is not None:
+                    surface, context = self.new_surface(self.card_width, self.card_height)
+                    self.draw_card(context, 0, 0, new_card)
+                    self.add_item(id, surface, xy[seat], z_index=i+1)
+                elif new_card is None and old_card is not None:
+                    self.remove_item(id)
+                elif old_card != new_card:
+                    surface, context = self.new_surface(self.card_width, self.card_height)
+                    self.draw_card(context, 0, 0, new_card)
+                    self.update_item(id, surface, z_index=i+1)
         
-        if id in self.items:
-            self.update_item(id, source=surface)
-        else: 
-            xy = (0.5, 0.5)
-            self.add_item(id, surface, xy, 0)
+        elif self.trick:  # Remove all cards from previous trick.
+            for seat in self.trick[1]:
+                self.remove_item('trick-%s' % seat)
+        
+        self.trick = trick  # Save trick and return.
 
 
     def set_turn(self, turn):
@@ -276,25 +275,27 @@ class CardArea(CairoCanvas):
         
         @param turn: a member of Seat, or None.
         """
-        id = 'turn'
         if turn is None:
-            self.remove_item(id)
             return
         
-        # TODO: select colours that don't clash with the background.
-        # TODO: one colour if user can play card from hand, another if not.
-        width = self.hands[turn]['surface'].get_width() + 20
-        height = self.hands[turn]['surface'].get_height() + 20
-        surface, context = self.new_surface(width, height)
-        context.set_source_rgb(0.3, 0.6, 0)  # Green.
-        context.paint_with_alpha(0.5)
-        
-        xy = self.items['hand-%s' % turn]['xy']  # Use same xy as hand.
-        
-        if id in self.items:
-            self.update_item(id, source=surface, xy=xy)
-        else:
-            self.add_item(id, surface, xy, -1)
+        for seat in Seat:
+            opacity = (seat is turn) and 1 or 0.5
+            self.update_item('hand-%s' % seat, opacity=opacity)
+
+#        # TODO: select colours that don't clash with the background.
+#        # TODO: one colour if user can play card from hand, another if not.
+#        width = self.hands[turn]['surface'].get_width() + 20
+#        height = self.hands[turn]['surface'].get_height() + 20
+#        surface, context = self.new_surface(width, height)
+#        context.set_source_rgb(0.3, 0.6, 0)  # Green.
+#        context.paint_with_alpha(0.5)
+#        
+#        xy = self.items['hand-%s' % turn]['xy']  # Use same xy as hand.
+#        
+#        if id in self.items:
+#            self.update_item(id, source=surface, xy=xy)
+#        else:
+#            self.add_item(id, surface, xy, -1)
 
 
     def button_release(self, widget, event):

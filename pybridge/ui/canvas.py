@@ -58,18 +58,19 @@ class CairoCanvas(gtk.DrawingArea):
         self.window.invalidate_rect((0, 0, width, height), False)
 
 
-    def add_item(self, id, source, xy, z_index):
+    def add_item(self, id, source, xy, z_index, opacity=1):
         """Places source item into items list.
 
         @param id: unique identifier for source.
         @param source: ImageSurface.
         @param xy: tuple providing (x, y) coords for source in backing.
         @param z_index: integer.
+        @param opacity: integer in range 0 to 1.
         """
         # Calculate and cache the on-screen area of the item.
         area = self.get_area(source, xy)
         self.items[id] = {'source': source, 'area': area, 'xy': xy,
-                          'z-index': z_index, }
+                          'z-index': z_index, 'opacity' : opacity, }
         self.redraw(*area)
 
 
@@ -84,12 +85,17 @@ class CairoCanvas(gtk.DrawingArea):
             self.redraw(*area)
 
 
-    def update_item(self, id, source=None, xy=None, z_index=0):
+    def update_item(self, id, source=None, xy=None, z_index=0, opacity=0):
         """
-        
+        @param id: unique identifier for source.
+        @param source: if specified, ImageSurface.
+        @param xy: if specified, tuple providing (x, y) coords for source in backing.
+        @param z_index: if specified, integer.
+        @param opacity: if specified, integer in range 0 to 1. 
         """
         # If optional parameters are not specified, use stored values.
         z_index = z_index or self.items[id]['z-index']
+        opacity = opacity or self.items[id]['opacity']
         if source or xy:
             # If source or xy coords changed, recalculate on-screen area.
             source = source or self.items[id]['source']
@@ -106,7 +112,7 @@ class CairoCanvas(gtk.DrawingArea):
             area = self.items[id]['area']
         
         self.items[id] = {'source': source, 'area': area, 'xy' : xy,
-                          'z-index': z_index, }
+                          'z-index': z_index, 'opacity' : opacity, }
         self.redraw(*area)
 
 
@@ -135,7 +141,8 @@ class CairoCanvas(gtk.DrawingArea):
         for item in items:
             pos_x, pos_y = item['area'][0:2]
             context.set_source_surface(item['source'], pos_x, pos_y)
-            context.paint()
+#            context.paint()
+            context.paint_with_alpha(item['opacity'])
         
         context.reset_clip()
         self.window.invalidate_rect((x, y, width, height), False)  # Expose.
