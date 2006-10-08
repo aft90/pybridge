@@ -41,8 +41,9 @@ class Card(pb.Copyable, pb.RemoteCopy):
 
     def __eq__(self, other):
         """Two cards are equivalent if their ranks and suits match."""
-        assert isinstance(other, Card)
-        return self.suit == other.suit and self.rank == other.rank
+        if isinstance(other, Card):
+            return self.suit == other.suit and self.rank == other.rank
+        return False
 
 
     def __cmp__(self, other):
