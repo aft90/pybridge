@@ -172,8 +172,6 @@ class WindowMain(GladeWrapper):
             self.frame_personinfo.set_property('sensitive', False)
             self.label_personname.set_text('')
 
-            
-
 
     def on_window_main_delete_event(self, widget, *args):
         utils.quit()
@@ -198,6 +196,10 @@ class WindowMain(GladeWrapper):
 
     def on_quit_activate(self, widget, *args):
         utils.quit()
+
+
+    def on_preferences_activate(self, widget, *args):
+        utils.windows.open('dialog_preferences')
 
 
     def on_homepage_activate(self, widget, *args):
