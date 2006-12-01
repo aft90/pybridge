@@ -66,8 +66,8 @@ class CardArea(CairoCanvas):
         self.trick = None
         self.set_seat_mapping(Seat.South)
         
-        self.connect('button_release_event', self.button_release)
-        self.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
+        self.connect('button_press_event', self.button_press)
+        self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
 
 
     def draw_card(self, context, pos_x, pos_y, card):
@@ -270,8 +270,8 @@ class CardArea(CairoCanvas):
     def set_turn(self, turn):
         """Sets the turn indicator.
         
-        The turn indicator is displayed as a rounded rectangle around
-        the hand matching the specified seat.
+        The hand of the player on turn is drawn opaque;
+        the other hands are drawn translucent.
         
         @param turn: a member of Seat, or None.
         """
@@ -282,25 +282,10 @@ class CardArea(CairoCanvas):
             opacity = (seat is turn) and 1 or 0.5
             self.update_item('hand-%s' % seat, opacity=opacity)
 
-#        # TODO: select colours that don't clash with the background.
-#        # TODO: one colour if user can play card from hand, another if not.
-#        width = self.hands[turn]['surface'].get_width() + 20
-#        height = self.hands[turn]['surface'].get_height() + 20
-#        surface, context = self.new_surface(width, height)
-#        context.set_source_rgb(0.3, 0.6, 0)  # Green.
-#        context.paint_with_alpha(0.5)
-#        
-#        xy = self.items['hand-%s' % turn]['xy']  # Use same xy as hand.
-#        
-#        if id in self.items:
-#            self.update_item(id, source=surface, xy=xy)
-#        else:
-#            self.add_item(id, surface, xy, -1)
 
-
-    def button_release(self, widget, event):
+    def button_press(self, widget, event):
         """Determines if a card was clicked: if so, calls card_selected."""
-        if event.button == 1:
+        if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
             found_hand = False
             
             # Determine the hand which was clicked.
