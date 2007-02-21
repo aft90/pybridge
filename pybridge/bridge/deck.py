@@ -141,9 +141,14 @@ class Deck:
             deal[seat] = []
             for k in range(13, 0, -1):
                 # Find the largest n such that comb(n, k) <= indexes[seat].
-                n = 0
+                n = k-1  # n < k implies comb(n, k) = 0
+
+                # comb(n+1, k) =
+                #   n-k = -1  => comb(n, k) * (n+1)
+                #   otherwise => (comb(n, k) * (n+1)) / (n+1 - k)
                 while comb(n+1, k) <= indexes[seat]:
                     n += 1
+
                 # Remove card index from indices, add card to hand.
                 indexes[seat] -= comb(n, k)
                 card = cardSeq[n]
