@@ -16,8 +16,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import pybridge.environment as env
-
 # Set up client with UI event handler.
 from pybridge.network.client import client
 from eventhandler import eventhandler
@@ -26,52 +24,11 @@ client.setEventHandler(eventhandler)
 PORT = 5040  # Default port for PyBridge.
 
 
+import pybridge.environment as env
+from pybridge.settings import Settings
 
-
-import ConfigParser
-
-
-class Settings:
-    """"""
-
-    connection = {}
-    general = {}
-
-
-    def __init__(self, filename):
-        self.config = ConfigParser.SafeConfigParser()
-        self.filename = filename
-        self.read()
-
-
-    def read(self):
-        """"""
-        self.config.read(self.filename)
-        
-        # Create sections if they do not exist.
-        for section in ('Connection', 'General'):
-            if not self.config.has_section(section):
-                self.config.add_section(section)
-                self.write()
-        
-        for key, value in self.config.items('Connection'):
-            self.connection[key] = value
-        for key, value in self.config.items('General'):
-            self.general[key] = value
-
-
-    def write(self):
-        """"""
-        for key, value in self.connection.items():
-            self.config.set('Connection', key, value)
-        for key, value in self.general.items():
-            self.config.set('General', key, value)
-        self.config.write(file(self.filename, 'w'))
-
-
-settings = Settings(env.find_config_client('client.cfg'))
-
-
+file = env.find_config_client('client.cfg')
+settings = Settings(file, ['Connection', 'General'])
 
 
 import imp
@@ -123,7 +80,7 @@ from twisted.internet import reactor
 def quit():
     """Shutdown gracefully."""
     client.disconnect()
-    settings.write()  # Save settings.
+    settings.save()  # Save settings.
     reactor.stop()
     gtk.main_quit()
 
