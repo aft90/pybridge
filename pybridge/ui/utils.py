@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,13 +10,13 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from pybridge.environment import environment
+import pybridge.environment as env
 
 # Set up client with UI event handler.
 from pybridge.network.client import client
@@ -49,21 +49,27 @@ class Settings:
         self.config.read(self.filename)
         
         # Create sections if they do not exist.
-        if not self.config.has_section('Connection'):
-            self.config.add_section('Connection')
-            self.write()
+        for section in ('Connection', 'General'):
+            if not self.config.has_section(section):
+                self.config.add_section(section)
+                self.write()
+        
         for key, value in self.config.items('Connection'):
             self.connection[key] = value
+        for key, value in self.config.items('General'):
+            self.general[key] = value
 
 
     def write(self):
         """"""
         for key, value in self.connection.items():
             self.config.set('Connection', key, value)
+        for key, value in self.general.items():
+            self.config.set('General', key, value)
         self.config.write(file(self.filename, 'w'))
 
 
-settings = Settings(environment.find_configfile('client.cfg'))
+settings = Settings(env.find_config_client('client.cfg'))
 
 
 

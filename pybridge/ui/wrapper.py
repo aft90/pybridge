@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -21,13 +21,13 @@ import gtk
 import gtk.glade
 import sys
 
-from pybridge.environment import environment
+import pybridge.environment as env
 
-GLADE_PATH = environment.find_glade("pybridge.glade")
+GLADE_PATH = env.find_glade("pybridge.glade")
 if sys.platform == 'win32':  # Win32 should use the ICO icon.
-    ICON_PATH = environment.find_pixmap("pybridge.ico")
+    ICON_PATH = env.find_pixmap("pybridge.ico")
 else:  # All other platforms should use the PNG icon.
-    ICON_PATH = environment.find_pixmap("pybridge.png")
+    ICON_PATH = env.find_pixmap("pybridge.png")
 
 
 class GladeWrapper:

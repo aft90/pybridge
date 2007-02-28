@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,13 +10,11 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-
-from pybridge.environment import environment
 
 def run():
     """"""
@@ -28,8 +26,9 @@ def run():
     
     import locale
     import gettext
+    import pybridge.environment as env
     locale.setlocale(locale.LC_ALL, '')
-    gettext.bindtextdomain('pybridge', environment.get_localedir())
+    gettext.bindtextdomain('pybridge', env.get_localedir())
     gettext.textdomain('pybridge')
     gettext.install('pybridge')
     

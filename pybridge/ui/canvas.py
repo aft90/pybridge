@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -19,7 +19,7 @@
 import gtk
 import cairo
 
-from pybridge.environment import environment
+import pybridge.environment as env
 
 
 class CairoCanvas(gtk.DrawingArea):
@@ -28,7 +28,7 @@ class CairoCanvas(gtk.DrawingArea):
     Overlapping items.
     """
 
-    background_path = environment.find_pixmap('baize.png')
+    background_path = env.find_pixmap('baize.png')
     background = cairo.ImageSurface.create_from_png(background_path)
     pattern = cairo.SurfacePattern(background)
     pattern.set_extend(cairo.EXTEND_REPEAT)

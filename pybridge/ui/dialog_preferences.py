@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -20,7 +20,7 @@ import gtk
 import os
 from wrapper import GladeWrapper
 
-from pybridge.environment import environment
+import pybridge.environment as env
 import utils
 
 
@@ -36,7 +36,7 @@ class DialogPreferences(GladeWrapper):
         self.carddeck.pack_start(cell, True)
         self.carddeck.add_attribute(cell, 'text', 0)
         # Populate list of card decks.
-        path = environment.find_pixmap('')
+        path = env.find_pixmap('')
         for filename in os.listdir(path):
             if filename.endswith('.png'):
                 iter = model.append((filename,))

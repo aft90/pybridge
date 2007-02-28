@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,76 +20,95 @@ import os
 import sys
 
 
-class Environment:
-    """This module provides path location services for PyBridge."""
+"""
+This module provides path location services for PyBridge.
+
+Note to PyBridge packagers:
+
+The packaging policy of your distribution may specify a filesystem organisation
+standard, which conflicts with the directory structure defined in this module.
+
+This is the only module that you should need to modify to make PyBridge
+compliant with distribution policy.
+"""
 
 
-    def __init__(self):
-        # Locate base directory.
-        if hasattr(sys, 'frozen'):  # If py2exe distribution.
-            currentdir = os.path.dirname(sys.executable)
-            self.basedir = os.path.abspath(currentdir)
-        else:  # Typically /usr/ or root of source distribution.
-            currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
-            self.basedir = os.path.normpath(os.path.join(currentdir, '..'))
-        
-        # Locate shared resources directory, typically /usr/share/.
-        if os.path.exists(os.path.join(self.basedir, 'share')):
-            self.sharedir = os.path.join(self.basedir, 'share')
-        else:  # Root of source distribution.
-            self.sharedir = self.basedir
-        
-        # Locate config directory.
-        self.configdir = os.path.join(os.path.expanduser('~'), '.pybridge')
-        if not os.path.exists(self.configdir):
-            os.mkdir(self.configdir)  # Create directory.
+# Locate base directory.
+if hasattr(sys, 'frozen'):  # If py2exe distribution.
+    currentdir = os.path.dirname(sys.executable)
+    basedir = os.path.abspath(currentdir)
+else:  # Typically /usr/ (if installed) or root of source distribution.
+    currentdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    basedir = os.path.normpath(os.path.join(currentdir, '..'))
+
+# Locate shared resources directory, typically /usr/share/.
+if os.path.exists(os.path.join(basedir, 'share')):
+    sharedir = os.path.join(basedir, 'share')
+else:  # Root of source distribution.
+    sharedir = basedir
+
+# Locate client configuration directory, typically ~/.pybridge/.
+clientconfigdir = os.path.join(os.path.expanduser('~'), '.pybridge')
+if not os.path.exists(clientconfigdir):
+    os.mkdir(clientconfigdir)  # Create directory.
+
+# Locate server configuration directory.
+serverconfigdir = clientconfigdir
 
 
-    def find_configfile(self, name):
-        """A config file is located in <configdir>/"""
-        return os.path.join(self.configdir, name)
+def find_config_client(name):
+    """A client configuration file is located in:
+    
+    <clientconfigdir>/
+    """
+    return os.path.join(clientconfigdir, name)
 
 
-    def find_doc(self, name):
-        """A documentation file may be located in:
-        
-        <sharedir>/doc/pybridge/ (installed)
-        <basedir>/               (source)
-        """
-        if self.sharedir == self.basedir:
-            return os.path.join(self.basedir, name)
-        else:
-            return os.path.join(self.sharedir, 'doc', 'pybridge', name)
+def find_config_server(name):
+    """A server configuration file is located in:
+
+    <serverconfigdir>/
+    """
+    return os.path.join(serverconfigdir, name)
 
 
-    def find_glade(self, name):
-        """A Glade interface file may be located in:
-        
-        <sharedir>/pybridge/glade/ (installed)
-        <basedir>/glade/           (source)
-        """
-        if self.sharedir == self.basedir:
-            return os.path.join(self.basedir, 'glade', name)
-        else:
-            return os.path.join(self.sharedir, 'pybridge', 'glade', name)
+def find_doc(name):
+    """A documentation file may be located in:
+    
+    <sharedir>/doc/pybridge/ (installed)
+    <basedir>/               (source)
+    """
+    if sharedir == basedir:
+        return os.path.join(basedir, name)
+    else:
+        return os.path.join(sharedir, 'doc', 'pybridge', name)
 
 
-    def find_pixmap(self, name):
-        """A pixmap file may be located in:
-        
-        <sharedir>/pybridge/pixmaps/ (installed)
-        <basedir>/pixmaps/           (source)
-        """
-        if self.sharedir == self.basedir:
-            return os.path.join(self.basedir, 'pixmaps', name)
-        else:
-            return os.path.join(self.sharedir, 'pybridge', 'pixmaps', name)
+def find_glade(name):
+    """A Glade interface file may be located in:
+    
+    <sharedir>/pybridge/glade/ (installed)
+    <basedir>/glade/           (source)
+    """
+    if sharedir == basedir:
+        return os.path.join(basedir, 'glade', name)
+    else:
+        return os.path.join(sharedir, 'pybridge', 'glade', name)
 
 
-    def get_localedir(self):
-        """Returns the path of the locale directory."""
-        return os.path.join(self.sharedir, 'locale')
+def find_pixmap(name):
+    """A pixmap file may be located in:
+    
+    <sharedir>/pybridge/pixmaps/ (installed)
+    <basedir>/pixmaps/           (source)
+    """
+    if sharedir == basedir:
+        return os.path.join(basedir, 'pixmaps', name)
+    else:
+        return os.path.join(sharedir, 'pybridge', 'pixmaps', name)
 
 
-environment = Environment()
+def get_localedir():
+    """Returns the path of the locale directory."""
+    return os.path.join(sharedir, 'locale')
 

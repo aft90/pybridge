@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -21,7 +21,7 @@ import cairo
 import pango
 import pangocairo
 
-from pybridge.environment import environment
+import pybridge.environment as env
 from canvas import CairoCanvas
 
 from pybridge.bridge.card import Card, Rank, Suit
@@ -44,7 +44,7 @@ class CardArea(CairoCanvas):
     """
 
     # Load card mask.
-    card_mask_path = environment.find_pixmap('bonded.png')
+    card_mask_path = env.find_pixmap('bonded.png')
     card_mask = cairo.ImageSurface.create_from_png(card_mask_path)
     
     font_description = pango.FontDescription('Sans Bold 10')

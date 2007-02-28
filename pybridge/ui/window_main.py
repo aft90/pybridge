@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -21,15 +21,15 @@ from wrapper import GladeWrapper
 
 import webbrowser
 
-from pybridge import __version__
-from pybridge.environment import environment
+from pybridge import __version__ as version
+import pybridge.environment as env
 from pybridge.network.client import client
 
 from eventhandler import eventhandler
 import utils
 
-TABLE_ICON = environment.find_pixmap("table.png")
-USER_ICON = environment.find_pixmap("user.png")
+TABLE_ICON = env.find_pixmap("table.png")
+USER_ICON = env.find_pixmap("user.png")
 
 
 class WindowMain(GladeWrapper):
@@ -209,16 +209,16 @@ class WindowMain(GladeWrapper):
     def on_about_activate(self, widget, *args):
         about = gtk.AboutDialog()
         about.set_name('PyBridge')
-        about.set_version(__version__)
-        about.set_copyright('Copyright (C) 2004-2006 Michael Banks')
+        about.set_version(version)
+        about.set_copyright('Copyright (C) 2004-2007 Michael Banks')
         about.set_comments(_('A free online bridge game.'))
         about.set_website('http://pybridge.sourceforge.net/')
-        license = file(environment.find_doc('COPYING')).read()
+        license = file(env.find_doc('COPYING')).read()
         about.set_license(license)
-        authorsfile = file(environment.find_doc('AUTHORS'))
+        authorsfile = file(env.find_doc('AUTHORS'))
         authors = [author.strip() for author in authorsfile]
         about.set_authors(authors)
-        logo_path = environment.find_pixmap('pybridge.png')
+        logo_path = env.find_pixmap('pybridge.png')
         logo = gtk.gdk.pixbuf_new_from_file(logo_path)
         about.set_logo(logo)
         
