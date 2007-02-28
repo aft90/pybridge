@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,16 +10,19 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from datetime import datetime
 from twisted.python import log
 
-from database import database
-import pybridge
+import database as db
+from pybridge import __version__
+
+from pybridge.network.error import DeniedRequest, IllegalRequest
 from pybridge.network.tablemanager import LocalTableManager
 from pybridge.network.usermanager import LocalUserManager
 
@@ -32,13 +35,14 @@ class Server:
     def __init__(self):
         self.tables = LocalTableManager()
         self.users = LocalUserManager()
-        self.version = pybridge.__version__
+        self.version = __version__
         self.supported = ['bridge']
 
 
     def userConnects(self, user):
         """"""
         self.users.userLoggedIn(user)
+        db.UserAccount.byUsername(user.name).set(lastLogin=datetime.now())
         log.msg("User %s connected" % user.name)
 
 
@@ -51,11 +55,26 @@ class Server:
 # Methods invoked by user perspectives.
 
 
-    def userRegister(self, username, password):
+    def registerUser(self, username, password):
+        """Registers a new user account in the database.
+        
+        @param username: the unique username requested by user.
+        @param password: the password to be associated with the account.
+        """
+        # Check that username has not already been registered.
+        if db.UserAccount.selectBy(username=username).count() > 0:
+            raise DeniedRequest, "Username already registered"
+        try:
+            # Create user account.
+            db.UserAccount(username=username, password=password, allowLogin=True)
+            log.msg("New user %s registered" % username)
+        except ValueError, err:
+            raise IllegalRequest, err
+
+
+    def userChangePassword(self, user, password):
         """"""
-        d = database.addUser(username, password=password)
-        log.msg("New user %s registered" % username)
-        return d
+        pass
 
 
     def createTable(self, tableid, tabletype):

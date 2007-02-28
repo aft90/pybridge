@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -21,7 +21,7 @@ from twisted.internet import defer
 from twisted.python import failure, log
 from zope.interface import implements
 
-from database import database
+import database as db
 
 
 class Checker:
@@ -34,35 +34,33 @@ class Checker:
 
 
     def __init__(self):
-        self.database = database
         self.users = {}  # Users online, from Server object.
 
 
     def requestAvatarId(self, credentials):
-        
-        def gotUser(user):
-            password = user.get('password', '')
-            d = defer.maybeDeferred(credentials.checkPassword, password)
-            d.addCallback(passwordMatch)
-            return d
-        
+
+        def unauthorized(reason):
+            log.msg("Login failed for %s: %s" % (credentials.username, reason))
+            return failure.Failure(error.UnauthorizedLogin(reason))
+
         def passwordMatch(matched):
             if matched:
-                if credentials.username in self.users.keys():
-                    raise unauthorized('Already logged in')
+                if credentials.username in self.users:
+                    # TODO: delete old session and use this one instead?
+                    return unauthorized("User is already logged in")
                 else:
                     return credentials.username
             else:
-                return unauthorized('Incorrect password')
-        
-        def unauthorized(reason):
-            log.msg('Login failed for %s: %s' % (credentials.username, reason))
-            return failure.Failure(error.UnauthorizedLogin(reason))
-        
+                return unauthorized("Incorrect password for user")
+
         if credentials.username == '':
-            return checkers.ANONYMOUS
-        else:
-            d = self.database.getUser(credentials.username)
-            d.addCallbacks(gotUser, lambda e: unauthorized('No user account'))
-            return d
+            return checkers.ANONYMOUS  # TODO: if allowAnonymousRegistration.
+
+        users = db.UserAccount.selectBy(username=credentials.username)
+        if users.count() is 0:
+            return unauthorized("User not known on server")
+
+        d = defer.maybeDeferred(credentials.checkPassword, users[0].password)
+        d.addCallback(passwordMatch)
+        return d
 

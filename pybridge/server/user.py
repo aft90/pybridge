@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,13 +10,15 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 import re
+#from twisted.internet import defer
+#from twisted.python import failure
 from twisted.spread import pb
 
 from pybridge.network.error import DeniedRequest, IllegalRequest
@@ -73,13 +75,13 @@ class User(pb.Avatar):
     def perspective_hostTable(self, tableid, tabletype):
         """Creates a new table."""
         if not isinstance(tableid, str):
-            raise IllegalRequest, 'Invalid parameter for table identifier'
+            raise IllegalRequest, "Invalid parameter for table identifier"
         elif not(0 < len(tableid) < 21) or re.search("[^A-Za-z0-9_ ]", tableid):
-            raise IllegalRequest, 'Invalid table identifier format'
+            raise IllegalRequest, "Invalid table identifier format"
         elif tableid in self.server.tables:
-            raise DeniedRequest, 'Table name exists'
+            raise DeniedRequest, "Table name exists"
         elif tabletype not in self.server.supported:
-            raise DeniedRequest, 'Table type not suppported by this server'
+            raise DeniedRequest, "Table type not suppported by this server"
         
         self.server.createTable(tableid, tabletype)
         return self.perspective_joinTable(tableid)  # Force join to table.
@@ -88,11 +90,11 @@ class User(pb.Avatar):
     def perspective_joinTable(self, tableid):
         """Joins an existing table."""
         if not isinstance(tableid, str):
-            raise IllegalRequest, 'Invalid parameter for table name'
+            raise IllegalRequest, "Invalid parameter for table name"
         elif tableid not in self.server.tables:
-            raise DeniedRequest, 'No such table'
+            raise DeniedRequest, "No such table"
         elif tableid in self.tables:
-            raise DeniedRequest, 'Already joined table'
+            raise DeniedRequest, "Already joined table"
         
         table = self.server.tables[tableid]
         self.tables[tableid] = table
@@ -103,11 +105,11 @@ class User(pb.Avatar):
     def perspective_leaveTable(self, tableid):
         """Leaves a table."""
         if not isinstance(tableid, str):
-            raise IllegalRequest, 'Invalid parameter for table name'
+            raise IllegalRequest, "Invalid parameter for table name"
         elif tableid not in self.tables:
-            raise DeniedRequest, 'Not joined to table'
+            raise DeniedRequest, "Not joined to table"
         
-        del self.tables[tableid]
+        del self.tables[tableid]  # Implicitly removes user from table.
 
 
 
@@ -116,11 +118,7 @@ class AnonymousUser(pb.Avatar):
 
 
     def perspective_register(self, username, password):
-        """Register a user account with given username and password."""
-        if not isinstance(username, str):
-            raise IllegalRequest, 'Invalid parameter for user name'
-        elif not isinstance(password, str):
-            raise IllegalRequest, 'Invalid parameter for password'
-        
-        self.server.userRegister(username, password)
+        """Create a user account with specified username and password."""
+        # TODO: consider defer.succeed, defer.fail, failure.Failure
+        self.server.registerUser(username, password)
 
