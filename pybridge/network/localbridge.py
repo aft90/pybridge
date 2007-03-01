@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -37,9 +37,7 @@ pb.setUnjellyableForClass(Card, Card)
 from pybridge.bridge.deck import Deck
 from pybridge.bridge.game import Game, GameError
 from pybridge.bridge.scoring import scoreDuplicate
-
-# Enumerations.
-from pybridge.bridge.deck import Seat
+from pybridge.bridge.symbols import Player
 
 
 class LocalBridgeTable(LocalTable):
@@ -57,12 +55,12 @@ class LocalBridgeTable(LocalTable):
         self.dealer = None
         self.deck = Deck()
         self.game = None
-        self.players = dict.fromkeys(Seat, None)
+        self.players = dict.fromkeys(Player, None)
         self.scoring = scoreDuplicate
         
         self.handsSeen = {}
-        for seat in Seat:
-            self.handsSeen[seat] = []
+        for player in Player:
+            self.handsSeen[player] = []
         
         self.pendingDeals = []   # Queue of deals for successive games.
         
@@ -83,13 +81,13 @@ class LocalBridgeTable(LocalTable):
             if self.game.playing:
                 state['game']['declarer'] = self.game.playing.declarer.key
                 state['game']['played'] = {}
-                for seat, played in self.game.playing.played.items():
-                    state['game']['played'][seat.key] = played
+                for player, played in self.game.playing.played.items():
+                    state['game']['played'][player.key] = played
             # Add visible hands.
             state['game']['deal'] = {}
-            for seat, hand in self.game.deal.items():
-                if self.game.isHandVisible(seat, viewer=None):
-                    state['game']['deal'][seat.key] = hand
+            for player, hand in self.game.deal.items():
+                if self.game.isHandVisible(player, viewer=None):
+                    state['game']['deal'][player.key] = hand
         else:
             state['game'] = None
         
@@ -118,7 +116,7 @@ class LocalBridgeTable(LocalTable):
             raise DeniedRequest, 'Not a player'
         
         try:
-            self.game.makeCall(call=call, seat=position)
+            self.game.makeCall(call=call, player=position)
         except GameError, error:
             raise DeniedRequest, error
         
@@ -142,7 +140,7 @@ class LocalBridgeTable(LocalTable):
                 raise DeniedRequest, 'Dummy cannot play cards'
         
         try:
-            self.game.playCard(card=card, seat=position)
+            self.game.playCard(card=card, player=position)
         except GameError, error:
             raise DeniedRequest, error
         
@@ -164,9 +162,9 @@ class LocalBridgeTable(LocalTable):
         if (self.game is None or self.game.isComplete()) \
         and len([p for p in self.players.values() if p is None]) == 0:
             
-            deal = deal or self.deck.dealRandom()
+            deal = deal or self.deck.randomDeal()
             vulnNS, vulnEW = False, False
-            self.dealer = dealer or (self.dealer and Seat[(self.dealer.index + 1) % 4]) or Seat.North
+            self.dealer = dealer or (self.dealer and Player[(self.dealer.index + 1) % 4]) or Player.North
             self.game = Game(self.dealer, deal, self.scoring, vulnNS, vulnEW)
             self.updateObservers('gameStarted', dealer=self.dealer.key, vulnNS=vulnNS, vulnEW=vulnEW)
             
@@ -198,7 +196,7 @@ class LocalBridgeTable(LocalTable):
         """
         # TODO: what about observers?
         for viewer, player in self.players.items():
-            for seat in Seat:
+            for seat in Player:
                 if seat not in self.handsSeen[viewer] and self.game.isHandVisible(seat, viewer):
                     self.handsSeen[viewer].append(seat)
                     hand = self.game.deal[seat]

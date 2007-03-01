@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,17 +10,14 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 from card import Card
-
-# Enumerations.
-from card import Suit
-from deck import Seat
+from symbols import Player, Suit
 
 
 class Playing:
@@ -32,19 +29,19 @@ class Playing:
 
 
     def __init__(self, declarer, trumps):
-        assert declarer in Seat
+        assert declarer in Player
         assert trumps in Suit or trumps is None  # (None = No Trumps)
         self.trumps = trumps
         
         self.declarer = declarer
-        self.dummy = Seat[(declarer.index + 2) % 4]
-        self.lho = Seat[(declarer.index + 1) % 4]
-        self.rho = Seat[(declarer.index + 3) % 4]
+        self.dummy = Player[(declarer.index + 2) % 4]
+        self.lho = Player[(declarer.index + 1) % 4]
+        self.rho = Player[(declarer.index + 3) % 4]
         
         # Each trick corresponds to a cross-section of lists.
         self.played = {}
-        for seat in Seat:
-            self.played[seat] = []
+        for player in Player:
+            self.played[player] = []
         self.winners = []  # Winning player of each trick.
 
 
@@ -63,17 +60,17 @@ class Playing:
         @param: trick index, in range 0 to 12.
         @return: a (leader, cards) trick tuple.
         """
-        assert(index in range(13))
+        assert 0 <= index < 13
         
         if index == 0:  # First trick.
             leader = self.lho  # Leader is declarer's left-hand opponent.
         else:  # Leader is winner of previous trick.
             leader = self.winners[index - 1]
         cards = {}
-        for seat in Seat:
+        for player in Player:
             # If length of list exceeds index value, player's card in trick.
-            if len(self.played[seat]) > index:
-                cards[seat] = self.played[seat][index]
+            if len(self.played[player]) > index:
+                cards[player] = self.played[player][index]
         return leader, cards
 
 
@@ -116,7 +113,7 @@ class Playing:
         """Card is playable if and only if:
         
         - Play session is not complete.
-        - Seat is on turn to play.
+        - Player is on turn to play.
         - Card exists in hand.
         - Card has not been previously played.
         
@@ -174,7 +171,7 @@ class Playing:
             if len(cards) == 4:  # If trick is complete, trick winner's turn.
                 return self.whoPlayed(self.winningCard(trick))
             else:  # Otherwise, turn is next (clockwise) player in trick.
-                return Seat[(leader.index + len(cards)) % 4]
+                return Player[(leader.index + len(cards)) % 4]
         return False
 
 

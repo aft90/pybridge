@@ -20,11 +20,8 @@ from copy import copy
 from operator import mul
 from random import shuffle
 
-from card import Card, Rank, Suit
-
-from pybridge.enum import Enum
-
-Seat = Enum('North', 'East', 'South', 'West')  # Clockwise.
+from card import Card
+from symbols import Player, Rank, Suit
 
 
 # See http://mail.python.org/pipermail/edu-sig/2001-May/001288.html for details.
@@ -39,7 +36,7 @@ class Deck:
     A hand is a collection of 13 cards from the deck.
     A deal is a distribution of all 52 cards to four hands.
     
-    A deal is represented as a dictionary, mapping Seat labels to lists (hands)
+    A deal is represented as a dictionary, mapping Player labels to lists (hands)
     of Card objects.
     
     There are exactly 52! / (13!)**4 (comb(52,13) * comb(39,13) * comb(26,13))
@@ -59,7 +56,7 @@ class Deck:
     def isValidDeal(self, deal):
         """Checks that structure of deal conforms to requirements:
 
-          * 4-element dict, mapping Seat objects to hand lists.
+          * 4-element dict, mapping Player objects to hand lists.
           * Hand lists contain exactly 13 Card objects.
           * No card may be repeated in the same hand, or between hands.
           * The cards in hands may be in any order.
@@ -70,17 +67,17 @@ class Deck:
         return True  # TODO
 
 
-    def dealRandom(self):  # randomDeal
+    def randomDeal(self):
         """Shuffles the deck and generates a random deal of hands.
         
         @return: a deal dictionary.
         """
         shuffle(self.cards)
         hands = {}
-        for seat in Seat:
-            hands[seat] = []
+        for player in Player:
+            hands[player] = []
         for index, card in enumerate(self.cards):
-            hands[Seat[index % len(Seat)]].append(card)
+            hands[Player[index % len(Player)]].append(card)
         for hand in hands.values():
             hand.sort()
         return hands
@@ -101,20 +98,20 @@ class Deck:
         indexes = {}
 
         # For each hand, compute indexes of cards in cardSeq.
-        for seat in (Seat.North, Seat.East, Seat.South):
-            indexes[seat] = 0
-            deal[seat].sort(reverse=False)
+        for player in (Player.North, Player.East, Player.South):
+            indexes[player] = 0
+            deal[player].sort(reverse=False)
             # It is desirable to remove cards from cardSeq when adding their
             # indexes, instead of doing so in an extra step.
             # Removing cards backwards preserves the indexes of later cards.
-            for i, card in enumerate(deal[seat]):
-                indexes[seat] += comb(cardSeq.index(card), 13-i)
+            for i, card in enumerate(deal[player]):
+                indexes[player] += comb(cardSeq.index(card), 13-i)
                 cardSeq.remove(card)
 
         # Deal index = (Nindex * Emax * Smax) + (Eindex * Smax) + Sindex
-        indexes[Seat.North] *= self.Emax * self.Smax
-        indexes[Seat.East]  *= self.Smax
-        return sum(indexes.values())
+        indexes[Player.North] *= self.Emax * self.Smax
+        indexes[Player.East]  *= self.Smax
+        return long(sum(indexes.values()))
 
 
     def indexToDeal(self, num):
@@ -133,28 +130,28 @@ class Deck:
         deal = {}
 
         # Split index into hand indexes.
-        indexes = {Seat.North : (num / self.Smax) / self.Emax,
-                   Seat.East  : (num / self.Smax) % self.Emax,
-                   Seat.South : (num % self.Smax) }
+        indexes = {Player.North : (num / self.Smax) / self.Emax,
+                   Player.East  : (num / self.Smax) % self.Emax,
+                   Player.South : (num % self.Smax) }
 
-        for seat in (Seat.North, Seat.East, Seat.South):
-            deal[seat] = []
+        for player in (Player.North, Player.East, Player.South):
+            deal[player] = []
             for k in range(13, 0, -1):
-                # Find the largest n such that comb(n, k) <= indexes[seat].
+                # Find the largest n such that comb(n, k) <= indexes[player].
                 n = k-1  # n < k implies comb(n, k) = 0
 
                 # comb(n+1, k) =
                 #   n-k = -1  => comb(n, k) * (n+1)
                 #   otherwise => (comb(n, k) * (n+1)) / (n+1 - k)
-                while comb(n+1, k) <= indexes[seat]:
+                while comb(n+1, k) <= indexes[player]:
                     n += 1
 
                 # Remove card index from indices, add card to hand.
-                indexes[seat] -= comb(n, k)
+                indexes[player] -= comb(n, k)
                 card = cardSeq[n]
-                deal[seat].append(card)
+                deal[player].append(card)
                 cardSeq.remove(card)
-        
-        deal[Seat.West] = cardSeq  # South has the remaining cards.
+
+        deal[Player.West] = cardSeq  # West has the remaining cards.
         return deal
 

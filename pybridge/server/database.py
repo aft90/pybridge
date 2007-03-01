@@ -22,7 +22,7 @@ from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 
 import pybridge.environment as env
-from pybridge.bridge.deck import Seat
+from pybridge.bridge.symbols import Player
 
 
 backend = "sqlite"
@@ -119,10 +119,9 @@ class BridgeGame(Game):
     """Captures game attributes specific to bridge games.
     
     """
-    
     board = ForeignKey('BridgeBoard')
 
-    declarer = EnumCol(enumValues=list(Seat))
+    declarer = EnumCol(enumValues=list(Player))
 #    contract = 
     trickCount = IntCol()  # Number of tricks won by 
     score = IntCol()
@@ -145,6 +144,6 @@ class BridgeBoard(SQLObject):
     """
 
     deal = IntCol()
-    dealer = EnumCol(enumValues=list(Seat))
+    dealer = EnumCol(enumValues=list(Player))
     vuln = EnumCol(enumValues=['none', 'ns', 'ew', 'all'])
 

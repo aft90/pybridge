@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -18,18 +18,11 @@
 
 from twisted.spread import pb
 
-from pybridge.enum import Enum
-
-
-# Bid levels.
-Level = Enum('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven')
-
-# Bid strains, or denominations.
-Strain = Enum('Club', 'Diamond', 'Heart', 'Spade', 'NoTrump')
+from symbols import Level, Strain
 
 
 class Call(pb.Copyable, pb.RemoteCopy):
-    """Superclass for bids, passes, doubles and redoubles."""
+    """Abstract class, inherited by Bid, Pass, Double and Redouble."""
 
 
 class Bid(Call):
@@ -44,12 +37,13 @@ class Bid(Call):
 
 
     def __cmp__(self, other):
-        assert issubclass(other.__class__, Call)
+        if not issubclass(other.__class__, Call):
+            raise TypeError, "Expected Call, got %s" % type(other)
         
         if isinstance(other, Bid):  # Compare two bids.
-            selfVal = self.level.index*len(Strain) + self.strain.index
-            otherVal = other.level.index*len(Strain) + other.strain.index
-            return cmp(selfVal, otherVal)
+            selfIndex = self.level.index*len(Strain) + self.strain.index
+            otherIndex = other.level.index*len(Strain) + other.strain.index
+            return cmp(selfIndex, otherIndex)
         else:  # Comparing non-bid calls returns true.
             return 1
 

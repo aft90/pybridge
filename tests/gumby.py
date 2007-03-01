@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -12,7 +12,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -47,8 +47,7 @@ from pybridge.interfaces.serverstate import IServerEvents
 from pybridge.network.client import client
 
 from pybridge.bridge.call import Bid, Double, Redouble, Pass
-from pybridge.bridge.call import Level, Strain
-from pybridge.bridge.deck import Seat
+from pybridge.bridge.symbols import Level, Strain
 
 
 # Give the bot some "personality".

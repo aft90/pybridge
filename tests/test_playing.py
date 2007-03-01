@@ -4,19 +4,16 @@ import random
 from pybridge.bridge.card import Card
 from pybridge.bridge.deck import Deck
 from pybridge.bridge.playing import Playing
-
-# Enumerations.
-from pybridge.bridge.card import Suit
-from pybridge.bridge.deck import Seat
+from pybridge.bridge.symbols import Player, Rank, Suit
 
 
 class TestPlaying(unittest.TestCase):
 
     
     def setUp(self):
-        declarer = random.choice(Seat)
+        declarer = random.choice(Player)
         trumps = random.choice(list(Suit) + [None])
-        self.deal = Deck().dealRandom()
+        self.deal = Deck().randomDeal()
         self.playing = Playing(declarer, trumps)
 
 
@@ -34,7 +31,7 @@ class TestPlaying(unittest.TestCase):
             if len(cards) == 4:
                 turn = self.playing.whoPlayed(self.playing.winningCard(trick))
             else:
-                turn = Seat[(leader.index + len(cards)) % 4]
+                turn = Player[(leader.index + len(cards)) % 4]
 
             # Check that whoseTurn() works.
             self.assertEqual(self.playing.whoseTurn(), turn)
@@ -45,8 +42,6 @@ class TestPlaying(unittest.TestCase):
                 if self.playing.isValidPlay(card, turn, hand):
                     break
             self.playing.playCard(card, turn, hand)
-
-
 
 
 def main():

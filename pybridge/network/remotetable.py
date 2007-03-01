@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -21,8 +21,7 @@ from zope.interface import implements
 
 from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
-
-from pybridge.bridge.deck import Seat  # XX TODO: Try to avoid this.
+from pybridge.bridge.symbols import Player  # XX TODO: Try to avoid this.
 
 
 class RemoteTable(pb.RemoteCache):
@@ -87,13 +86,13 @@ class RemoteTable(pb.RemoteCache):
 
 
     def observe_playerAdded(self, player, position):
-        position = getattr(Seat, position)  # XX
+        position = getattr(Player, position)  # XX
         self.players[position] = player
         self.eventHandler.playerAdded(self, player, position)
 
 
     def observe_playerRemoved(self, player, position):
-        position = getattr(Seat, position)  # XX
+        position = getattr(Player, position)  # XX
         self.players[position] = None
         self.eventHandler.playerRemoved(self, player, position)
 

@@ -3,10 +3,7 @@ import random
 
 from pybridge.bridge.bidding import Bidding
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
-
-# Enumerations.
-from pybridge.bridge.call import Level, Strain
-from pybridge.bridge.deck import Seat
+from pybridge.bridge.symbols import Level, Player, Strain
 
 
 class TestBidding(unittest.TestCase):
@@ -16,9 +13,8 @@ class TestBidding(unittest.TestCase):
     bids = [Bid(l, s) for l in Level for s in Strain]
 
 
-
     def setUp(self):
-        dealer = random.choice(Seat)
+        dealer = random.choice(Player)
         self.bidding = Bidding(dealer)
 
 
@@ -30,13 +26,13 @@ class TestBidding(unittest.TestCase):
         """getCurrentCall"""
         for calltype in [Bid, Pass, Double, Redouble]:
             self.assertEqual(self.bidding.getCurrentCall(calltype), None)
-        
+
         for call, calltype in [(Pass(), Pass), (Bid(Level.One, Strain.Club), Bid),
                                (Double(), Double), (Redouble(), Redouble)]:
             self.assertEqual(self.bidding.getCurrentCall(calltype), None)
             self.bidding.makeCall(call)
             self.assertEqual(self.bidding.getCurrentCall(calltype), call)
-        
+
         # A bid should clear types Pass, Double, Redouble.
         bid = Bid(Level.One, Strain.Diamond)
         self.bidding.makeCall(bid)
@@ -48,19 +44,17 @@ class TestBidding(unittest.TestCase):
     def testWhoseTurn(self):
         """whoseTurn"""
         # Tests whoseTurn() before and after making calls.
-        turn = Seat[self.bidding.dealer.index]
+        turn = Player[self.bidding.dealer.index]
         for call in self.bids:
             self.assertEqual(self.bidding.whoseTurn(), turn)
             self.bidding.makeCall(call)
-            turn = Seat[(turn.index + 1) % 4]
+            turn = Player[(turn.index + 1) % 4]
             self.assertEqual(self.bidding.whoseTurn(), turn)
 
 
     def testIsValidCall(self):
         """isValidCall"""
         pass
-
-
 
 
 def main():

@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not write to the Free Software
 # Foundation Inc. 51 Franklin Street Fifth Floor Boston MA 02110-1301 USA.
@@ -18,19 +18,15 @@
 
 from bidding import Bidding
 from playing import Playing
-
-# Enumerations.
-from card import Suit
-from deck import Seat
+from symbols import Player, Suit
 
 
-class GameError(Exception): pass
+class GameError(Exception):
+    pass
 
 
 class Game:
-    """A bridge game models the bidding, playing, scoring sequence.
-    
-    """
+    """A bridge game models the bidding, playing, scoring sequence."""
 
 
     def __init__(self, dealer, deal, scoring, vulnNS, vulnEW):
@@ -55,7 +51,7 @@ class Game:
             return self.bidding.isPassedOut()
 
 
-    def isHandVisible(self, seat, viewer):
+    def isHandVisible(self, player, viewer):
         """A hand is visible if one of the following conditions is met:
         
         1. The hand is the viewer's own hand.
@@ -63,23 +59,23 @@ class Game:
         3. Bidding complete and hand is dummy's, and first card of
            first trick has been played.
         """
-        return seat == viewer \
+        return player == viewer \
         or self.isComplete() \
-        or (self.bidding.isComplete() and seat == self.playing.dummy and \
+        or (self.bidding.isComplete() and player == self.playing.dummy and \
             len(self.playing.getTrick(0)[1]) >= 1)
 
 
-    def makeCall(self, seat, call):
-        """Makes call from seat."""
+    def makeCall(self, player, call):
+        """Makes call from player."""
         if self.bidding.isComplete():
             raise GameError('not in bidding')
         
-        if self.bidding.whoseTurn() is not seat:
+        if self.bidding.whoseTurn() is not player:
             raise GameError('out of turn')
-        elif not self.bidding.isValidCall(call, seat):
+        elif not self.bidding.isValidCall(call, player):
             raise GameError('invalid call')
         
-        self.bidding.makeCall(call, seat)
+        self.bidding.makeCall(call, player)
         
         # If bidding is complete, start playing.
         if self.bidding.isComplete() and not self.bidding.isPassedOut():
@@ -90,31 +86,31 @@ class Game:
             self.playing = Playing(contract['declarer'], trumpSuit)
 
 
-    def playCard(self, seat, card):
-        """Plays card from seat."""
+    def playCard(self, player, card):
+        """Plays card from player."""
         if not self.bidding.isComplete() or self.bidding.isPassedOut():
             raise GameError('not in play')
         elif self.playing.isComplete():
             raise GameError('not in play')
         
-        hand = self.deal[seat]
-        if self.playing.whoseTurn() is not seat:
+        hand = self.deal[player]
+        if self.playing.whoseTurn() is not player:
             raise GameError('out of turn')
-        elif not self.playing.isValidPlay(card, seat, hand):
+        elif not self.playing.isValidPlay(card, player, hand):
             raise GameError('invalid card')
         
         self.playing.playCard(card)
 
 
-    def getHand(self, seat, viewer=None):
-        """Returns the hand of player specified by seat.
+    def getHand(self, player, viewer=None):
+        """Returns the hand of specified player.
         
         If viewer player is specified, then the ability of viewer
         to "see" the hand will be examined.
         """
-        if viewer and not self.isHandVisible(seat, viewer):
+        if viewer and not self.isHandVisible(player, viewer):
             raise GameError('hand not visible')
-        return self.deal[seat]
+        return self.deal[player]
 
 
     def getTrickCount(self):
@@ -165,9 +161,9 @@ class Game:
         else:
             contract = self.bidding.getContract()
             declarer = contract['declarer']
-            dummy = Seat[(declarer.index + 2) % 4]
-            vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + \
-                         (self.vulnEW and declarer in (Seat.West, Seat.East))
+            dummy = Player[(declarer.index + 2) % 4]
+            vulnerable = (self.vulnNS and declarer in (Player.North, Player.South)) + \
+                         (self.vulnEW and declarer in (Player.West, Player.East))
             
             tricksMade = 0  # Count of tricks won by declarer or dummy.
             for index in range(len(self.playing.winners)):
@@ -183,7 +179,7 @@ class Game:
 
 
     def whoseTurn(self):
-        """Returns the seat that is next to call or play card."""
+        """Returns the player that is next to call or play card."""
         if not self.isComplete():
             if self.bidding.isComplete():
                 return self.playing.whoseTurn()

@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -18,23 +18,15 @@
 
 from twisted.spread import pb
 
-from pybridge.enum import Enum
-
-
-# Card ranks.
-Rank = Enum('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-            'Ten', 'Jack', 'Queen', 'King', 'Ace')
-
-# Card suits.
-Suit = Enum('Club', 'Diamond', 'Heart', 'Spade')
+from symbols import Rank, Suit
 
 
 class Card(pb.Copyable, pb.RemoteCopy):
     """A card has a rank and a suit."""
 
+
     def __init__(self, rank, suit):
-        assert(rank in Rank)
-        assert(suit in Suit)
+        assert rank in Rank and suit in Suit
         self.rank = rank
         self.suit = suit
 
@@ -51,7 +43,9 @@ class Card(pb.Copyable, pb.RemoteCopy):
         
         Care must be taken when comparing cards of different suits.
         """
-        assert isinstance(other, Card)
+        if not isinstance(other, Card):
+            raise TypeError, "Expected Card, got %s" % type(other)
+
         selfIndex = self.suit.index*13 + self.rank.index
         otherIndex = other.suit.index*13 + other.rank.index
         return cmp(selfIndex, otherIndex)

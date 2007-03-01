@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,17 +10,14 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 from call import Call, Bid, Pass, Double, Redouble
-
-
-from call import Level, Strain
-from deck import Seat
+from symbols import Level, Player, Strain
 
 
 class Bidding:
@@ -31,7 +28,7 @@ class Bidding:
 
 
     def __init__(self, dealer):
-        assert dealer in Seat
+        assert dealer in Player
         self.calls  = []
         self.dealer = dealer
 
@@ -75,7 +72,7 @@ class Bidding:
             redouble = self.getCurrentCall(Redouble)
             # Determine declarer.
             partnership = (self.whoCalled(bid), \
-                           Seat[(self.whoCalled(bid).index + 2) % 4])
+                           Player[(self.whoCalled(bid).index + 2) % 4])
             for call in self.calls:
                 if isinstance(call, Bid) and call.strain == bid.strain \
                 and self.whoCalled(call) in partnership:
@@ -125,8 +122,8 @@ class Bidding:
         @param player: the player attempting to call, or None.
         @return: True if call is available, False if not.
         """
-        assert(isinstance(call, Call))
-        assert(player in Seat or player is None)
+        assert isinstance(call, Call)
+        assert player in Player or player is None
         
         # The bidding must not be complete.
         if self.isComplete():
@@ -153,15 +150,15 @@ class Bidding:
             # A double must be made on the current bid from opponents,
             # with has not been already doubled by partnership.
             if isinstance(call, Double):
-                opposition = (Seat[(self.whoseTurn().index + 1) % 4],
-                              Seat[(self.whoseTurn().index + 3) % 4])
+                opposition = (Player[(self.whoseTurn().index + 1) % 4],
+                              Player[(self.whoseTurn().index + 3) % 4])
                 return not self.getCurrentCall(Double) and bidder in opposition
             
             # A redouble must be made on the current bid from partnership,
             # which has been doubled by an opponent.
             elif isinstance(call, Redouble):
                 partnership = (self.whoseTurn(),
-                               Seat[(self.whoseTurn().index + 2) % 4])
+                               Player[(self.whoseTurn().index + 2) % 4])
                 return self.getCurrentCall(Double) and bidder in partnership
         
         return False  # Otherwise unavailable.
@@ -175,7 +172,7 @@ class Bidding:
         """
         assert isinstance(call, Call)
         if call in self.calls:
-            return Seat[(self.calls.index(call) + self.dealer.index) % 4]
+            return Player[(self.calls.index(call) + self.dealer.index) % 4]
         return False  # Call not made by any player.
 
 
@@ -184,6 +181,6 @@ class Bidding:
         
         @return: the player next to call.
         """
-        player = Seat[(len(self.calls) + self.dealer.index) % 4]
-        return not(self.isComplete()) and player
+        player = Player[(len(self.calls) + self.dealer.index) % 4]
+        return not self.isComplete() and player
 

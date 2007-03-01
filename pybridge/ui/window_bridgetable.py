@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -24,11 +24,7 @@ from eventhandler import eventhandler
 import utils
 
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
-
-# Enumerations.
-from pybridge.bridge.call import Level, Strain
-from pybridge.bridge.card import Rank
-from pybridge.bridge.deck import Seat
+from pybridge.bridge.symbols import Level, Strain, Player, Rank
 
 
 # Translatable symbols for elements of bridge.
@@ -51,8 +47,8 @@ STRAIN_SYMBOLS = {Strain.Club    : u'\N{BLACK CLUB SUIT}',
                   Strain.Spade   : u'\N{BLACK SPADE SUIT}',
                   Strain.NoTrump : u'NT', }
 
-SEAT_SYMBOLS = {Seat.North : _('North'), Seat.East : _('East'),
-                Seat.South : _('South'), Seat.West : _('West') }
+SEAT_SYMBOLS = {Player.North : _('North'), Player.East : _('East'),
+                Player.South : _('South'), Player.West : _('West') }
 
 
 class WindowBridgetable(GladeWrapper):
@@ -72,11 +68,11 @@ class WindowBridgetable(GladeWrapper):
         # Set up "Take Seat" menu.
         items = {}
         menu = gtk.Menu()
-        for seat in Seat:
-            items[seat] = gtk.MenuItem(SEAT_SYMBOLS[seat], True)
-            items[seat].connect('activate', self.on_seat_activated, seat)
-            items[seat].show()
-            menu.append(items[seat])
+        for player in Player:
+            items[player] = gtk.MenuItem(SEAT_SYMBOLS[player], True)
+            items[player].connect('activate', self.on_seat_activated, player)
+            items[player].show()
+            menu.append(items[player])
         self.takeseat.set_menu(menu)
         self.takeseat_items = items
         
@@ -92,8 +88,8 @@ class WindowBridgetable(GladeWrapper):
         # Set up bidding history and column display.
         self.call_store = gtk.ListStore(str, str, str, str)
         self.biddingview.set_model(self.call_store)
-        for index, seat in enumerate(Seat):
-            title = SEAT_SYMBOLS[seat]
+        for index, player in enumerate(Player):
+            title = SEAT_SYMBOLS[player]
             column = gtk.TreeViewColumn(str(title), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
@@ -102,8 +98,8 @@ class WindowBridgetable(GladeWrapper):
         # Set up trick history and column display.
         self.trick_store = gtk.ListStore(str, str, str, str)
         self.trickview.set_model(self.trick_store)
-        for index, seat in enumerate(Seat):
-            title = SEAT_SYMBOLS[seat]
+        for index, player in enumerate(Player):
+            title = SEAT_SYMBOLS[player]
             column = gtk.TreeViewColumn(str(title), renderer, text=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
@@ -152,8 +148,8 @@ class WindowBridgetable(GladeWrapper):
             self.setTurnIndicator()
             
             for call in table.game.bidding.calls:
-                seat = table.game.bidding.whoCalled(call)
-                self.addCall(call, seat)
+                player = table.game.bidding.whoCalled(call)
+                self.addCall(call, player)
             
             self.setDealer(table.dealer)
             self.setVuln(table.game.vulnNS, table.game.vulnEW)
@@ -165,9 +161,9 @@ class WindowBridgetable(GladeWrapper):
             
             # If playing, set trick counts.
             if table.game.playing:
-                for seat, cards in table.game.playing.played.items():
+                for player, cards in table.game.playing.played.items():
                     for card in cards:
-                        self.addCard(card, seat)
+                        self.addCard(card, player)
                 self.setTrickCount(table.game.getTrickCount())
             
             # If user is a player and bidding in progress, open bidding box.
@@ -180,7 +176,7 @@ class WindowBridgetable(GladeWrapper):
             self.takeseat_items[seat].set_property('sensitive', available)
             if player:
                 self.event_playerAdded(table, player, seat)
-            else:  # Seat vacant.
+            else:  # Player vacant.
                 self.event_playerRemoved(table, None, seat)
 
         # Initialise observer listing.
@@ -238,8 +234,8 @@ class WindowBridgetable(GladeWrapper):
     def addScore(self, contract, made, score):
         textContract = self.getContractFormat(contract)
         textMade = '%s' % made
-        if contract['declarer'] in (Seat.North, Seat.South) and score > 0 \
-        or contract['declarer'] in (Seat.East, Seat.West) and score < 0:
+        if contract['declarer'] in (Player.North, Player.South) and score > 0 \
+        or contract['declarer'] in (Player.East, Player.West) and score < 0:
             textNS, textEW = '%s' % abs(score), ''
         else:
             textNS, textEW = '', '%s' % abs(score)
@@ -374,7 +370,7 @@ class WindowBridgetable(GladeWrapper):
             widget.set_property('sensitive', True)
             # Reset player label.
             label = getattr(self, 'label_%s' % position.key.lower())
-            label.set_markup('<i>%s</i>' % _('Seat vacant'))
+            label.set_markup('<i>%s</i>' % _('Player vacant'))
             
             # If we are not seated, ensure Take Seat is enabled.
             if not table.seated:
