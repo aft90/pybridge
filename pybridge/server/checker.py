@@ -25,7 +25,7 @@ import database as db
 
 
 class Checker:
-    """"""
+    """A database-driven implementation of ICredentialsChecker."""
 
     implements(checkers.ICredentialsChecker)
 
@@ -45,11 +45,7 @@ class Checker:
 
         def passwordMatch(matched):
             if matched:
-                if credentials.username in self.users:
-                    # TODO: delete old session and use this one instead?
-                    return unauthorized("User is already logged in")
-                else:
-                    return credentials.username
+                return credentials.username
             else:
                 return unauthorized("Incorrect password for user")
 
@@ -59,6 +55,11 @@ class Checker:
         users = db.UserAccount.selectBy(username=credentials.username)
         if users.count() is 0:
             return unauthorized("User not known on server")
+        elif users[0].allowLogin is False:
+            return unauthorized("User account is disabled")
+        elif credentials.username in self.users:
+            # TODO: delete old session and use this one instead?
+            return unauthorized("User is already logged in")
 
         d = defer.maybeDeferred(credentials.checkPassword, users[0].password)
         d.addCallback(passwordMatch)
