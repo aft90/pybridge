@@ -20,8 +20,9 @@
 This module contains enumeration types used for the implementation of bridge.
 
 The particular ordering of the values in each enumeration is assumed throughout
-Pybridge, so it is vital that the order is not changed.
+PyBridge, so it is vital that the order is not changed.
 """
+
 
 from pybridge.enum import Enum
 
@@ -43,5 +44,11 @@ Suit = Enum('Club', 'Diamond', 'Heart', 'Spade')
 
 # Player compass positions.
 
-Player = Enum('North', 'East', 'South', 'West')  # Clockwise order.
+Direction = Enum('North', 'East', 'South', 'West')  # Clockwise order.
+Player = Direction  # TODO: remove
+
+
+# Vulnerability indicators.
+
+Vulnerable = Enum('None', 'NorthSouth', 'EastWest', 'All')
 
