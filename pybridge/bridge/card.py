@@ -21,14 +21,27 @@ from twisted.spread import pb
 from symbols import Rank, Suit
 
 
-class Card(pb.Copyable, pb.RemoteCopy):
-    """A card has a rank and a suit."""
+class Card(object, pb.Copyable, pb.RemoteCopy):
+    """A card has a rank and a suit.
+    
+    @param rank: the rank of the card.
+    @type rank: L{Rank}
+    @param suit: the suit of the card.
+    @type suit: L{Suit}
+    """
+
+    rank = property(lambda self: self.__rank)
+    suit = property(lambda self: self.__suit)
 
 
     def __init__(self, rank, suit):
-        assert rank in Rank and suit in Suit
-        self.rank = rank
-        self.suit = suit
+        if rank not in Rank:
+            raise TypeError, "Expected Rank, got %s" % type(rank)
+        if suit not in Suit:
+            raise TypeError, "Expected Suit, got %s" % type(suit)
+
+        self.__rank = rank
+        self.__suit = suit
 
 
     def __eq__(self, other):
@@ -56,13 +69,10 @@ class Card(pb.Copyable, pb.RemoteCopy):
 
 
     def getStateToCopy(self):
-        state = {}
-        state['rank'] = self.rank.key
-        state['suit'] = self.suit.key
-        return state
+        return {'rank' : self.rank.key, 'suit' : self.suit.key}
 
 
     def setCopyableState(self, state):
-        self.rank = getattr(Rank, state['rank'])
-        self.suit = getattr(Suit, state['suit'])
+        self.__rank = getattr(Rank, state['rank'])
+        self.__suit = getattr(Suit, state['suit'])
 
