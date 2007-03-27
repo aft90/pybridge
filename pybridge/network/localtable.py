@@ -21,22 +21,33 @@ from twisted.internet import reactor
 from twisted.spread import pb
 from zope.interface import implements
 
+from pybridge.interfaces.observer import ISubject, IListener
 from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
-from pybridge.bridge.symbols import Player  # XX TODO: Try to avoid this.
 
 
 class LocalTable(pb.Cacheable):
-    """"""
+    """An implementation of ITable suitable for server-side table instances.
+    
+    A LocalTable maintains the "master" game object and provides synchronisation
+    services for remote tables to mirror the game state.
+    """
 
-    implements(ITable)
+    implements(ITable, ISubject, IListener)
 
 
-    def __init__(self, id):
+    def __init__(self, id, gametype):
+        self.listeners = []
+
         self.id = id
+        self.gametype = gametype
+        self.game = gametype()  # Initialise game.
+        self.game.attach(self)  # Listen for game events.
+
         self.config = {}
-        self.observers = {}  # For each perspective, a remote ITableEvents observer.
-        self.players = {}    # For each position, the player's perspective.
+        self.observers = {}  # For each user perspective, a remote ITableEvents.
+        self.players = {}  # Positions mapped to perspectives of game players.
+        self.view = LocalTableViewable(self)  # For remote clients.
         
         # Configuration variables.
         self.config['closeWhenEmpty'] = True
@@ -44,63 +55,110 @@ class LocalTable(pb.Cacheable):
 
 
     def getStateToCacheAndObserveFor(self, perspective, observer):
-        self.updateObservers('observerAdded', observer=perspective.name)
+        # Inform existing observers that a new user has joined.
+        self.notify('addObserver', observer=perspective.name)
         self.observers[perspective] = observer
-        
-        return self.getState()  # For observer.
-        
 
-    def getState(self):
-        """Build a dict of public information about the table."""
+        # Build a dict of public information about the table.
         state = {}
-        
         state['id'] = self.id
         state['observers'] = [p.name for p in self.observers.keys()]
-        state['players'] = {}
-        for position, perspective in self.players.items():
-            state['players'][position.key] = getattr(perspective, 'name', None)
-#        state['timeCreated'] = self.config['timeCreated']
-        
-        return state
+        state['players'] = dict([(pos, p.name)
+                                 for pos, p in self.players.items()])
+        state['gametype'] = self.gametype.__name__
+        state['gamestate'] = self.game.getState()
+
+        return state  # To observer.
 
 
     def stoppedObserving(self, perspective, observer):
+        # If user was playing, then remove their player(s) from game.
+        for position, user in self.players.items():
+            if perspective == user:
+                self.leaveGame(perspective, position)
+
         del self.observers[perspective]
-        
-        # If user was a player, then remove player.
-        if self.getPositionOfPlayer(perspective):
-            self.removePlayer(perspective)
-        
-        self.updateObservers('observerRemoved', observer=perspective.name)
-        
+        self.notify('removeObserver', observer=perspective.name)
+
         # If there are no remaining observers, close table.
-        if self.config.get('closeWhenEmpty') and len(self.observers) == 0:
+        if self.config.get('closeWhenEmpty') and not self.observers:
             self.server.tables.closeTable(self)
 
 
-# Methods implementing ITable.
+# Implementation of ISubject.
 
 
-    def addPlayer(self, position, player):
-        # Check that player is not already playing at table.
-        if self.getPositionOfPlayer(player):
-            raise DeniedRequest('already playing at table')
-        # Check that position is not occupied by another player.
-        if self.players.get(position) is not None:
-            raise DeniedRequest('position occupied by another player')
+    def attach(self, listener):
+        self.listeners.append(listener)
+
+
+    def detach(self, listener):
+        self.listeners.remove(listener)
+
+
+    def notify(self, event, *args, **kwargs):
+        for listener in self.listeners:
+            listener.update(event, *args, **kwargs)
+        # For all observers, calls event handler with provided arguments.
+        for observer in self.observers.values():
+            self.notifyObserver(observer, event, *args, **kwargs)
+
+
+    def notifyObserver(self, obs, event, *args, **kwargs):
+        """Calls observer's event handler with provided arguments.
         
-        self.players[position] = player
-        self.updateObservers('playerAdded', player=player.name, position=position.key)
+        @param obs: an observer object.
+        @type obs: RemoteCacheObserver
+        @param event: the name of the event.
+        @type event: str
+        """
+        # Event handlers are called on the next iteration of the reactor,
+        # to allow the caller of this method to return a result.
+        reactor.callLater(0, obs.callRemote, event, *args, **kwargs)
 
 
-    def removePlayer(self, player):
-        position = self.getPositionOfPlayer(player)
-        # Check that player is playing at table:
-        if not position:
-            raise DeniedRequest('not playing at table')
-        
-        self.players[position] = None
-        self.updateObservers('playerRemoved', player=player.name, position=position.key)
+# Implementation of IListener.
+
+
+    def update(self, event, *args, **kwargs):
+        # Expected to be called only by methods of self.game.
+        for observer in self.observers.values():
+            self.notifyObserver(observer, 'gameUpdate', event, *args, **kwargs)
+
+
+# Implementation of ITable.
+
+
+    def joinGame(self, user, position):
+        if position not in self.game.positions:
+            raise IllegalRequest, "Invalid position type"
+        # Check that user is not already playing at table.
+        if not self.config.get('allowUserMultiplePlayers'):
+            if user in self.players.values():
+                raise DeniedRequest, "Already playing in game"
+
+        player = self.game.addPlayer(position)  # May raise GameError.
+        self.players[position] = user
+        self.notify('joinGame', player=user.name, position=position)
+
+        # If no game is active and all players are ready, start game.
+        if not self.game.inProgress():
+            if len(self.players) == len(self.game.positions):
+                self.game.start()
+
+        return player
+
+
+    def leaveGame(self, user, position):
+        if position not in self.game.positions:
+            raise IllegalRequest, "Invalid position type"
+        # Ensure that user is playing at specified position.
+        if self.players.get(position) != user:
+            raise DeniedRequest, "Not playing at position"
+
+        self.game.removePlayer(position)  # May raise GameError.
+        del self.players[position]
+        self.notify('leaveGame', player=user.name, position=position)
 
 
     def sendMessage(self, message, sender, recipients):
@@ -112,49 +170,19 @@ class LocalTable(pb.Cacheable):
         else:  # Broadcast message to all observers.
             recipients = names
             sendTo = self.observers.values()
-        
+
         for observer in sendTo:
-            observer.callRemote('messageReceived', message, sender.name, recipients)
-
-
-# Utility methods.
-
-
-    def getPositionOfPlayer(self, user):
-        """If observer is playing, returns position of player.
-        Otherwise, returns False.
-        
-        @param user: observer identifier.
-        @return: position of player, or False.
-        """
-        for position, player in self.players.items():
-            if player == user:
-                return position
-        return False
-
-
-    def informObserver(self, obs, event, *args, **kwargs):
-        """Calls observer's event handler with provided args and kwargs.
-        
-        Event handlers are called on the next iteration of the reactor,
-        to allow the caller of this method to return a result.
-        """
-        reactor.callLater(0, obs.callRemote, event, *args, **kwargs)
-
-
-    def updateObservers(self, event, *args, **kwargs):
-        """For each observer, calls event handler with provided kwargs."""
-        for observer in self.observers.values():
-            self.informObserver(observer, event, *args, **kwargs)
+            self.notifyObserver(observer, 'sendMessage', message=message,
+                                sender=sender.name, recipients=recipients)
 
 
 
 
 class LocalTableViewable(pb.Viewable):
-    """
+    """Provides a public front-end to an instantiated LocalTable.
     
     Serialization flavors are mutually exclusive and cannot be mixed,
-    so this class provides a pb.Viewable front-end to LocalTable.
+    so this class is a subclass of pb.Viewable.
     """
 
 
@@ -166,15 +194,14 @@ class LocalTableViewable(pb.Viewable):
         self.table = table
 
 
-    def view_addPlayer(self, user, position, player=None):
-        position = getattr(Player, position)  # XX
-        self.table.addPlayer(position, user)
+    def view_joinGame(self, user, position):
+        return self.table.joinGame(user, position)
 
 
-    def view_removePlayer(self, user, player=None):
-        self.table.removePlayer(user)
+    def view_leaveGame(self, user, position):
+        return self.table.leaveGame(user, position)
 
 
     def view_sendMessage(self, user, message, sender=None, recipients=[]):
-        self.table.sendMessage(message, user, recipients)
+        return self.table.sendMessage(message, sender=user, recipients=recipients)
 

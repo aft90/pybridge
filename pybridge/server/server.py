@@ -26,7 +26,8 @@ from pybridge.network.error import DeniedRequest, IllegalRequest
 from pybridge.network.tablemanager import LocalTableManager
 from pybridge.network.usermanager import LocalUserManager
 
-from pybridge.network.localbridge import LocalBridgeTable
+from pybridge.network.localtable import LocalTable
+from pybridge.bridge.game import BridgeGame
 
 
 class Server:
@@ -80,7 +81,7 @@ class Server:
     def createTable(self, tableid, tabletype):
         # Ignore specified tabletype, for now.
         if tableid not in self.tables:
-            table = LocalBridgeTable(tableid)
+            table = LocalTable(tableid, BridgeGame)
             table.id = tableid
             table.server = self
             self.tables.openTable(table)

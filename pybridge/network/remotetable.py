@@ -19,27 +19,31 @@
 from twisted.spread import pb
 from zope.interface import implements
 
+from pybridge.interfaces.observer import ISubject
 from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
-from pybridge.bridge.symbols import Player  # XX TODO: Try to avoid this.
 
 
 class RemoteTable(pb.RemoteCache):
-    """
+    """A client-side implementation of ITable providing a "front-end" to a
+    remote server-side LocalTable.
     
+    RemoteTable mirrors the state of LocalTable as a local cache. External code
+    may, therefore, read the table state without network communication. Actions
+    which change the table state are forwarded to the LocalTable.
     """
 
-    implements(ITable)
+    implements(ITable, ISubject)
 
 
     def __init__(self):
         self.master = None  # Server-side ITable object.
-        self.eventHandler = None  # Expected to be set.
-        
+        self.listeners = []
+
         self.id = None
-        self.observers = []
-        self.players = {}
-        self.seated = None  # If user is playing at table.
+        self.game = None
+        self.observers = []  # Observers of master table.
+        self.players = {}  # Positions mapped to player identifiers.
 
 
     def setCopyableState(self, state):
@@ -47,23 +51,31 @@ class RemoteTable(pb.RemoteCache):
         self.observers = state['observers']
         self.players = state['players']
 
+        # TODO: do this by magic.
+        if state['gametype'] in ['BridgeGame']:
+            from pybridge.bridge.game import BridgeGame
+            self.gametype = BridgeGame
+        else:
+            raise NameError, "Unknown game type %s" % state['gametype']
 
-    def setEventHandler(self, handler):
-        self.eventHandler = handler
+        self.game = self.gametype()
+        self.game.setState(state['gamestate'])
 
 
-# Methods implementing ITable.
+# Implementation of ITable.
 
 
-    def addPlayer(self, position, player=None):
-        d = self.master.callRemote('addPlayer', position.key)
-        d.addCallback(lambda _: setattr(self, 'seated', position))
+    def setEventHandler(self, e):
+        print "called event handler - remove this!"
+
+
+    def joinGame(self, position, user=None):
+        d = self.master.callRemote('joinGame', position.key)
         return d
 
 
-    def removePlayer(self, player=None):
-        d = self.master.callRemote('removePlayer')
-        d.addCallback(lambda _: setattr(self, 'seated', None))
+    def leaveGame(self, position, user=None):
+        d = self.master.callRemote('leaveGame', position.key)
         return d
 
 
@@ -72,46 +84,52 @@ class RemoteTable(pb.RemoteCache):
         return d
 
 
+# Implementation of ISubject.
+
+
+    def attach(self, listener):
+        self.listeners.append(listener)
+
+
+    def detach(self, listener):
+        self.listeners.remove(listener)
+
+
+    def notify(self, event, *args, **kwargs):
+        for listener in self.listeners:
+            listener.update(event, *args, **kwargs)
+
+
 # Remote update methods.
 
 
-    def observe_observerAdded(self, observer):
+    def observe_addObserver(self, observer):
         self.observers.append(observer)
-        self.eventHandler.observerAdded(self, observer)
+        self.notify('addObserver', observer)
 
 
-    def observe_observerRemoved(self, observer):
+    def observe_removeObserver(self, observer):
         self.observers.remove(observer)
-        self.eventHandler.observerRemoved(self, observer)
+        self.notify('removeObserver', observer)
 
 
-    def observe_playerAdded(self, player, position):
-        position = getattr(Player, position)  # XX
+    def observe_joinGame(self, player, position):
+        position = getattr(self.game.positions, position)
         self.players[position] = player
-        self.eventHandler.playerAdded(self, player, position)
+        self.notify('joinGame', player, position)
 
 
-    def observe_playerRemoved(self, player, position):
-        position = getattr(Player, position)  # XX
-        self.players[position] = None
-        self.eventHandler.playerRemoved(self, player, position)
+    def observe_leaveGame(self, player, position):
+        position = getattr(self.game.positions, position)
+        del self.players[position]
+        self.notify('leaveGame', player, position)
 
 
-    def observe_messageReceived(self, message, sender, recipients):
-        self.eventHandler.messageReceived(self, message, sender, recipients)
+    def observe_sendMessage(self, message, sender, recipients):
+        # TODO: add to message log?
+        self.notify('sendMessage', message, sender, recipients)
 
 
-# Utility methods.
-
-
-    def getPositionOfPlayer(self, user=None):
-        """If user is playing, returns position of player, otherwise False.
-        
-        @param user: observer identifier. 
-        @return: position of player, or False.
-        """
-        for position, player in self.players.items():
-            if player == user:
-                return position
-        return False
+    def observe_gameUpdate(self, event, *args, **kwargs):
+        self.game.updateState(event, *args, **kwargs)
 
