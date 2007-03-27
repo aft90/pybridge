@@ -33,3 +33,7 @@ class IllegalRequest(pb.Error):
     Please report any bugs which you discover in PyBridge!
     """
 
+
+class GameError(pb.Error):
+    """Raised by game in response to an unsatisfiable or erroneous request."""
+
