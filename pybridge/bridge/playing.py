@@ -17,31 +17,41 @@
 
 
 from card import Card
-from symbols import Player, Suit
+from symbols import Direction, Suit
 
 
-class Playing:
+class Playing(object):
     """This class models the trick-taking phase of a game of bridge.
     
     This code is generalised, and could easily be adapted to support a
     variety of trick-taking card games.
     """
 
+    # TODO: tricks, leader, winner properties?
 
-    def __init__(self, declarer, trumps):
-        assert declarer in Player
-        assert trumps in Suit or trumps is None  # (None = No Trumps)
-        self.trumps = trumps
+
+    def __init__(self, declarer, trumpSuit):
+        """
+        @param declarer: the declarer from the auction.
+        @type declarer: Direction
+        @param trumpSuit: the trump suit from the auction.
+        @type trumpSuit: Suit or None
+        """
+        if declarer not in Direction:
+            raise TypeError, "Expected Direction, got %s" % type(declarer)
+        if trumpSuit not in Suit and trumpSuit is not None:  # None => No Trumps
+            raise TypeError, "Expected Suit, got %s" % type(suit)
         
+        self.trumps = trumpSuit
         self.declarer = declarer
-        self.dummy = Player[(declarer.index + 2) % 4]
-        self.lho = Player[(declarer.index + 1) % 4]
-        self.rho = Player[(declarer.index + 3) % 4]
+        self.dummy = Direction[(declarer.index + 2) % 4]
+        self.lho = Direction[(declarer.index + 1) % 4]
+        self.rho = Direction[(declarer.index + 3) % 4]
         
         # Each trick corresponds to a cross-section of lists.
         self.played = {}
-        for player in Player:
-            self.played[player] = []
+        for position in Direction:
+            self.played[position] = []
         self.winners = []  # Winning player of each trick.
 
 
@@ -67,10 +77,10 @@ class Playing:
         else:  # Leader is winner of previous trick.
             leader = self.winners[index - 1]
         cards = {}
-        for player in Player:
+        for position in Direction:
             # If length of list exceeds index value, player's card in trick.
-            if len(self.played[player]) > index:
-                cards[player] = self.played[player][index]
+            if len(self.played[position]) > index:
+                cards[position] = self.played[position][index]
         return leader, cards
 
 
@@ -82,6 +92,25 @@ class Playing:
         # Index of current trick is length of longest played list minus 1.
         index = max(0, max([len(cards) for cards in self.played.values()]) - 1)
         return self.getTrick(index)
+
+
+    def getTrickCount(self):
+        """Returns the number of tricks won by declarer/dummy and by defenders.
+        
+        @return: the declarer trick count, the defender trick count.
+        @rtype: tuple
+        """
+        declarerCount, defenderCount = 0, 0
+
+        for i in range(len(self.winners)):
+            trick = self.getTrick(i)
+            winner = self.whoPlayed(self.winningCard(trick))
+            if winner in (self.declarer, self.dummy):
+                declarerCount += 1
+            else:  # Trick won by defenders.
+                defenderCount += 1
+
+        return declarerCount, defenderCount
 
 
     def playCard(self, card, player=None, hand=[]):
@@ -113,7 +142,7 @@ class Playing:
         """Card is playable if and only if:
         
         - Play session is not complete.
-        - Player is on turn to play.
+        - Direction is on turn to play.
         - Card exists in hand.
         - Card has not been previously played.
         
@@ -171,7 +200,7 @@ class Playing:
             if len(cards) == 4:  # If trick is complete, trick winner's turn.
                 return self.whoPlayed(self.winningCard(trick))
             else:  # Otherwise, turn is next (clockwise) player in trick.
-                return Player[(leader.index + len(cards)) % 4]
+                return Direction[(leader.index + len(cards)) % 4]
         return False
 
 
