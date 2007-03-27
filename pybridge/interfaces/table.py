@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -20,33 +20,49 @@ from zope.interface import Interface
 
 
 class ITable(Interface):
-    """ITable defines generic methods for use with any table.
+    """ITable defines methods which are common to all table implementations.
     
-    This interface makes no assumptions about the game to be played,
-    besides that it has players.
+    A table is the abstraction of "the place where a game is played".
+    Implementations of ITable are expected to provide the following services:
+    
+    - Synchronisation of game state between the server and connected clients.
+      This should be transparent to external code.
+    
+    - Functionality shared by all games, such as:
+    
+        - Game management: players joining and leaving the game, closure of
+          table when all observers have left.
+        
+        - Communication between users.
     """
 
 
-    def addPlayer(self, position, player):
-        """Registers an observer as an active player, provided:
+    def joinGame(self, user, position):
+        """Registers a user as an active player, provided that the specified
+        position is vacant.
         
-        - observer is not already playing at this table.
-        - the specified position is vacant.
+        The interface supports a single user playing at multiple positions.
+        Implementations may disable this feature.
         
-        @param player: player identifier.
+        @param user: user identifier.
         @param position: position which player takes.
         """
 
 
-    def removePlayer(self, player):
+    def leaveGame(self, user, position):
         """Removes player from their position.
         
-        @param player: player identifier.
+        Specification of position is required, if the user is playing at
+        multiple positions.
+        
+        @param user: user identifier.
+        @param position: position which player takes.
         """
 
 
     def sendMessage(self, message, sender, recipients):
-        """Issues message from sender to all named recipients, or to all observers.
+        """Issues message from sender to all named recipients,
+        or to all observers.
         
         @param message: message text string.
         @param sender: identifier of sender.
@@ -78,7 +94,7 @@ class ITableEvents(Interface):
         """
 
 
-    def playerAdded(self, table, player, position):
+    def playerJoined(self, table, player, position):
         """Called when a player takes the position.
         
         @param table: reference to table.
@@ -87,7 +103,7 @@ class ITableEvents(Interface):
         """
 
 
-    def playerRemoved(self, table, player, position):
+    def playerLeft(self, table, player, position):
         """Called when a player is removed from their position.
         
         @param table: reference to table.
