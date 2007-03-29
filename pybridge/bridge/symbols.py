@@ -24,31 +24,74 @@ PyBridge, so it is vital that the order is not changed.
 """
 
 
-from pybridge.enum import Enum
+from twisted.spread import pb
+
+from pybridge.enum import Enum, EnumValue
+
+
+class WeakEnumValue(EnumValue, pb.Copyable, pb.RemoteCopy):
+    """A variant of EnumValue which may be copied across the network.
+    
+    Since the enumtype reference (an Enum object) cannot be maintained when this
+    object is copied, it is discarded. An undesirable side-effect is that
+    comparisons between WeakEnumValue objects with identical indexes and keys
+    (but belonging to different Enum types) will result in True.
+    """
+
+    enumtype = property(lambda self: None)
+
+
+    def __repr__(self):
+        return "WeakEnumValue(%s, %s)" % (self.index, self.key)
+
+
+    def __cmp__(self, other):
+        try:
+            assert self.key == other.key
+            result = cmp(self.index, other.index)
+        except (AssertionError, AttributeError):
+            result = NotImplemented
+        return result
+
+
+    def getStateToCopy(self):
+        return (self.index, self.key)
+
+
+    def setCopyableState(self, (index, key)):
+        # self = WeakEnumValue(None, index, key)
+        self.__init__(None, index, key)
+
+
+pb.setUnjellyableForClass(WeakEnumValue, WeakEnumValue)
+
+
 
 
 # Bid levels and strains (denominations).
 
-Level = Enum('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven')
+Level = Enum('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
+             value_type=WeakEnumValue)
 
-Strain = Enum('Club', 'Diamond', 'Heart', 'Spade', 'NoTrump')
+Strain = Enum('Club', 'Diamond', 'Heart', 'Spade', 'NoTrump',
+              value_type=WeakEnumValue)
 
 
 # Card ranks and suits.
 
 Rank = Enum('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-            'Ten', 'Jack', 'Queen', 'King', 'Ace')
+            'Ten', 'Jack', 'Queen', 'King', 'Ace', value_type=WeakEnumValue)
 
-Suit = Enum('Club', 'Diamond', 'Heart', 'Spade')
+Suit = Enum('Club', 'Diamond', 'Heart', 'Spade', value_type=WeakEnumValue)
 
 
-# Player compass positions.
+# Player compass positions, in clockwise order.
 
-Direction = Enum('North', 'East', 'South', 'West')  # Clockwise order.
-Player = Direction  # TODO: remove
+Direction = Enum('North', 'East', 'South', 'West', value_type=WeakEnumValue)
 
 
 # Vulnerability indicators.
 
-Vulnerable = Enum('None', 'NorthSouth', 'EastWest', 'All')
+Vulnerable = Enum('None', 'NorthSouth', 'EastWest', 'All',
+                  value_type=WeakEnumValue)
 
