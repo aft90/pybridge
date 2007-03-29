@@ -157,7 +157,7 @@ class Playing(object):
             return False
         elif hand and card not in hand:
             return False  # Playing a card not in hand.
-        elif player and player is not self.whoseTurn():
+        elif player and player != self.whoseTurn():
             return False  # Playing out of turn.
         elif self.whoPlayed(card):
             return False  # Card played previously.

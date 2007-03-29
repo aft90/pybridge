@@ -17,10 +17,10 @@
 
 
 from call import Call, Bid, Pass, Double, Redouble
-from symbols import Level, Player, Strain
+from symbols import Direction, Level, Strain
 
 
-class Bidding:
+class Bidding(object):
     """This class models the bidding (auction) phase of a game of bridge.
     
     A bidding session is a list of Call objects and the dealer.
@@ -28,7 +28,8 @@ class Bidding:
 
 
     def __init__(self, dealer):
-        assert dealer in Player
+        if dealer not in Direction:
+            raise TypeError, "Expected Direction, got %s" % type(dealer)
         self.calls  = []
         self.dealer = dealer
 
@@ -72,7 +73,7 @@ class Bidding:
             redouble = self.getCurrentCall(Redouble)
             # Determine declarer.
             partnership = (self.whoCalled(bid), \
-                           Player[(self.whoCalled(bid).index + 2) % 4])
+                           Direction[(self.whoCalled(bid).index + 2) % 4])
             for call in self.calls:
                 if isinstance(call, Bid) and call.strain == bid.strain \
                 and self.whoCalled(call) in partnership:
@@ -123,7 +124,7 @@ class Bidding:
         @return: True if call is available, False if not.
         """
         assert isinstance(call, Call)
-        assert player in Player or player is None
+        assert player in Direction or player is None
         
         # The bidding must not be complete.
         if self.isComplete():
@@ -150,15 +151,15 @@ class Bidding:
             # A double must be made on the current bid from opponents,
             # with has not been already doubled by partnership.
             if isinstance(call, Double):
-                opposition = (Player[(self.whoseTurn().index + 1) % 4],
-                              Player[(self.whoseTurn().index + 3) % 4])
+                opposition = (Direction[(self.whoseTurn().index + 1) % 4],
+                              Direction[(self.whoseTurn().index + 3) % 4])
                 return bidder in opposition and not self.getCurrentCall(Double)
             
             # A redouble must be made on the current bid from partnership,
             # which has been doubled by an opponent.
             elif isinstance(call, Redouble):
                 partnership = (self.whoseTurn(),
-                               Player[(self.whoseTurn().index + 2) % 4])
+                               Direction[(self.whoseTurn().index + 2) % 4])
                 return bidder in partnership and self.getCurrentCall(Double) \
                        and not self.getCurrentCall(Redouble)
         
@@ -173,15 +174,17 @@ class Bidding:
         """
         assert isinstance(call, Call)
         if call in self.calls:
-            return Player[(self.calls.index(call) + self.dealer.index) % 4]
+            return Direction[(self.calls.index(call) + self.dealer.index) % 4]
         return False  # Call not made by any player.
 
 
     def whoseTurn(self):
-        """If bidding is not complete, returns the player who is next to call.
+        """Returns position of player who is next to make a call.
         
-        @return: the player next to call.
+        @return: the current turn.
+        @rtype: Direction
         """
-        player = Player[(len(self.calls) + self.dealer.index) % 4]
-        return not self.isComplete() and player
+        if self.isComplete():
+            return None
+        return Direction[(len(self.calls) + self.dealer.index) % 4]
 
