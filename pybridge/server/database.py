@@ -22,7 +22,6 @@ from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 
 import pybridge.environment as env
-from pybridge.bridge.symbols import Player
 
 
 backend = "sqlite"
@@ -56,7 +55,7 @@ class UserAccount(SQLObject):
         if not isinstance(value, str) or not(1 <= len(value) <= 20):
             raise ValueError, "Invalid specification of username"
         if re.search("[^A-z0-9_]", value):
-            raise ValueError, "Username can only contain alphanumeric characters"
+            raise ValueError, "Username may only be alphanumeric characters"
         self._SO_set_username(value)
 
     def _set_password(self, value):
@@ -78,6 +77,8 @@ for table in [UserAccount]:
 # The following tables are not used by PyBridge 0.3.
 # They will be enhanced and used in future releases.
 
+
+'''
 
 class UserFriend(SQLObject):
     """Models the social interconnections that exist between users.
@@ -144,6 +145,8 @@ class BridgeBoard(SQLObject):
     """
 
     deal = IntCol()
-    dealer = EnumCol(enumValues=list(Player))
-    vuln = EnumCol(enumValues=['none', 'ns', 'ew', 'all'])
+    dealer = EnumCol(enumValues=list(Direction))
+    vuln = EnumCol(enumValues=list(Vulnerable))
+
+'''
 
