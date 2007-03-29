@@ -69,10 +69,12 @@ class Card(object, pb.Copyable, pb.RemoteCopy):
 
 
     def getStateToCopy(self):
-        return {'rank' : self.rank.key, 'suit' : self.suit.key}
+        return self.rank, self.suit
 
 
     def setCopyableState(self, state):
-        self.__rank = getattr(Rank, state['rank'])
-        self.__suit = getattr(Suit, state['suit'])
+        self.__rank, self.__suit = state
+
+
+pb.setUnjellyableForClass(Card, Card)
 

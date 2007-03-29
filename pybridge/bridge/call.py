@@ -26,20 +26,32 @@ class Call(pb.Copyable, pb.RemoteCopy):
 
 
 class Bid(Call):
-    """A Bid represents a statement of a level and a strain."""
+    """A Bid represents a statement of a level and a strain.
+    
+    @param level: the level of the bid.
+    @type level: L{Level}
+    @param strain: the strain (denomination) of the bid.
+    @type strain: L{Strain}
+    """
+
+    level = property(lambda self: self.__level)
+    strain = property(lambda self: self.__strain)
+
 
     def __init__(self, level, strain):
-        assert level in Level
-        assert strain in Strain
-        
-        self.level = level
-        self.strain = strain
+        if level not in Level:
+            raise TypeError, "Expected Level, got %s" % type(level)
+        if strain not in Strain:
+            raise TypeError, "Expected Strain, got %s" % type(strain)
+
+        self.__level = level
+        self.__strain = strain
 
 
     def __cmp__(self, other):
         if not issubclass(other.__class__, Call):
             raise TypeError, "Expected Call, got %s" % type(other)
-        
+
         if isinstance(other, Bid):  # Compare two bids.
             selfIndex = self.level.index*len(Strain) + self.strain.index
             otherIndex = other.level.index*len(Strain) + other.strain.index
@@ -53,15 +65,14 @@ class Bid(Call):
 
 
     def getStateToCopy(self):
-        state = {}
-        state['level'] = self.level.key
-        state['strain'] = self.strain.key
-        return state
+        return self.level, self.strain
 
 
     def setCopyableState(self, state):
-        self.level = getattr(Level, state['level'])
-        self.strain = getattr(Strain, state['strain'])
+        self.__level, self.__strain = state
+
+
+pb.setUnjellyableForClass(Bid, Bid)
 
 
 class Pass(Call):
@@ -71,6 +82,9 @@ class Pass(Call):
         return "Pass"
 
 
+pb.setUnjellyableForClass(Pass, Pass)
+
+
 class Double(Call):
     """A Double over an opponent's current bid."""
 
@@ -78,9 +92,15 @@ class Double(Call):
         return "Double"
 
 
+pb.setUnjellyableForClass(Double, Double)
+
+
 class Redouble(Call):
     """A Redouble over an opponent's double of partnership's current bid."""
 
     def __str__(self):
         return "Redouble"
+
+
+pb.setUnjellyableForClass(Redouble, Redouble)
 
