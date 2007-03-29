@@ -152,14 +152,15 @@ class Bidding:
             if isinstance(call, Double):
                 opposition = (Player[(self.whoseTurn().index + 1) % 4],
                               Player[(self.whoseTurn().index + 3) % 4])
-                return not self.getCurrentCall(Double) and bidder in opposition
+                return bidder in opposition and not self.getCurrentCall(Double)
             
             # A redouble must be made on the current bid from partnership,
             # which has been doubled by an opponent.
             elif isinstance(call, Redouble):
                 partnership = (self.whoseTurn(),
                                Player[(self.whoseTurn().index + 2) % 4])
-                return self.getCurrentCall(Double) and bidder in partnership
+                return bidder in partnership and self.getCurrentCall(Double) \
+                       and not self.getCurrentCall(Redouble)
         
         return False  # Otherwise unavailable.
 
