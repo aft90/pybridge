@@ -57,13 +57,14 @@ class Board(dict):
         self['deal'] = deck.randomDeal()
 
         self['num'] = self.get('num', 0) + 1
-        self['time'] = time.localtime()
+        self['time'] = tuple(time.localtime())
 
         if self.get('dealer'):  # Rotate dealer.
-            self['dealer'] = Direction((self['dealer'].index+1) % len(Direction))
+            self['dealer'] = Direction[(self['dealer'].index + 1) % 4]
         else:  # Select any player as the dealer.
             self['dealer'] = random.choice(Direction)
 
         if result:
             self['vuln'] = Vulnerable.All  # TODO
-
+        else:
+            self['vuln'] = Vulnerable.None  # The default value.
