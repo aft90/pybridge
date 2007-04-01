@@ -16,7 +16,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from call import Call, Bid, Pass, Double, Redouble
+from pybridge.network.error import GameError
+
+from call import Bid, Pass, Double, Redouble
 from symbols import Direction, Level, Strain
 
 
@@ -39,17 +41,18 @@ class Bidding(object):
         and the last 3 calls are Pass calls.
 
         @return: True if bidding is complete, False if not.
+        @rtype: bool
         """
         passes = len([c for c in self.calls[-3:] if isinstance(c, Pass)])
         return len(self.calls) >= 4 and passes == 3
 
 
     def isPassedOut(self):
-        """Bidding is passed out if each player has called Pass on their
-        first turn. This implies no contract has been established.
-        Note that this is a special case of isComplete().
-
+        """Bidding is passed out if each player has passed on their first turn.
+        In this case, the bidding is complete, but no contract is established.
+        
         @return: True if bidding is passed out, False if not.
+        @rtype: bool
         """
         passes = len([call for call in self.calls if isinstance(call, Pass)])
         return len(self.calls) == 4 and passes == 4
@@ -58,22 +61,24 @@ class Bidding(object):
     def getContract(self):
         """When the bidding is complete, the contract is the last and highest
         bid, which may be doubled or redoubled.
-
+        
         Hence, the contract represents the "final state" of the bidding.
         
-        @return['bid']: the last and highest bid.
-        @return['declarer']: the partner who first called the contract strain.
-        @return['doubleBy']: the opponent who doubled the contract, or None.
-        @return['redoubleBy']: the partner who redoubled an opponent's double
-                               on the contract, or None.
+        @return: a dict containing the keywords:
+        @keyword bid: the last and highest bid.
+        @keyword declarer: the partner who first bid the contract strain.
+        @keyword doubleBy: the opponent who doubled the contract, or None.
+        @keyword redoubleBy: the partner who redoubled an opponent's double
+                             on the contract, or None.
         """
-        bid = self.getCurrentCall(Bid)
-        if bid and self.isComplete() and not self.isPassedOut():
+        if self.isComplete() and not self.isPassedOut():
+            bid = self.getCurrentCall(Bid)
             double = self.getCurrentCall(Double)
             redouble = self.getCurrentCall(Redouble)
+            # Determine partnership.
+            caller = self.whoCalled(bid)
+            partnership = (caller, Direction[(caller.index + 2) % 4])
             # Determine declarer.
-            partnership = (self.whoCalled(bid), \
-                           Direction[(self.whoCalled(bid).index + 2) % 4])
             for call in self.calls:
                 if isinstance(call, Bid) and call.strain == bid.strain \
                 and self.whoCalled(call) in partnership:
@@ -87,15 +92,17 @@ class Bidding(object):
         return None  # Bidding passed out or not complete, no contract.
 
 
-    def getCurrentCall(self, type):
+    def getCurrentCall(self, calltype):
         """Returns most recent current call of specified type, or None.
         
-        @param type: call type, in (Bid, Pass, Double, Redouble).
+        @param calltype: call type, in (Bid, Pass, Double, Redouble).
         @return: most recent call matching type, or None.
         """
-        assert issubclass(type, Call)
+        if calltype not in (Bid, Pass, Double, Redouble):
+            raise GameError, "Expected call type, got %s" % type(calltype)
+
         for call in self.calls[::-1]:
-            if isinstance(call, type):
+            if isinstance(call, calltype):
                 return call
             elif isinstance(call, Bid):
                 break
@@ -108,11 +115,12 @@ class Bidding(object):
         @param call: the Call object representing player's call.
         @param player: the player making call, or None.
         """
-        assert isinstance(call, Call)
-        valid = self.isValidCall(call, player)
-        assert valid
-        if valid:  # In case assert is disabled.
-            self.calls.append(call)
+        if not isinstance(call, (Bid, Pass, Double, Redouble)):
+            raise GameError, "Expected call type, got %s" % type(call)
+        if not self.isValidCall(call, player):
+            raise GameError, "Invalid call"
+
+        self.calls.append(call)
 
 
     def isValidCall(self, call, player=None):
@@ -123,7 +131,8 @@ class Bidding(object):
         @param player: the player attempting to call, or None.
         @return: True if call is available, False if not.
         """
-        assert isinstance(call, Call)
+        if not isinstance(call, (Bid, Pass, Double, Redouble)):
+            raise GameError, "Expected call type, got %s" % type(call)
         assert player in Direction or player is None
         
         # The bidding must not be complete.
@@ -172,7 +181,9 @@ class Bidding(object):
         @param call: a Call.
         @return: the player who made call, or False.
         """
-        assert isinstance(call, Call)
+        if not isinstance(call, (Bid, Pass, Double, Redouble)):
+            raise GameError, "Expected call type, got %s" % type(call)
+
         if call in self.calls:
             return Direction[(self.calls.index(call) + self.dealer.index) % 4]
         return False  # Call not made by any player.
@@ -185,6 +196,6 @@ class Bidding(object):
         @rtype: Direction
         """
         if self.isComplete():
-            return None
+            raise GameError, "Bidding complete"
         return Direction[(len(self.calls) + self.dealer.index) % 4]
 
