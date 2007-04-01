@@ -36,7 +36,7 @@ class LocalTable(pb.Cacheable):
     implements(ITable, ISubject, IListener)
 
 
-    def __init__(self, id, gametype):
+    def __init__(self, id, gametype, config={}):
         self.listeners = []
 
         self.id = id
@@ -44,14 +44,16 @@ class LocalTable(pb.Cacheable):
         self.game = gametype()  # Initialise game.
         self.game.attach(self)  # Listen for game events.
 
-        self.config = {}
         self.observers = {}  # For each user perspective, a remote ITableEvents.
         self.players = {}  # Positions mapped to perspectives of game players.
         self.view = LocalTableViewable(self)  # For remote clients.
-        
+
         # Configuration variables.
-        self.config['closeWhenEmpty'] = True
-        self.config['timeCreated'] = time.localtime()
+        self.config = {}
+        self.config['CloseWhenEmpty'] = True
+        self.config['MultiplePlayersPerUser'] = False
+        self.config['TimeCreated'] = tuple(time.localtime())
+        self.config.update(config)
 
 
     def getStateToCacheAndObserveFor(self, perspective, observer):
@@ -62,26 +64,26 @@ class LocalTable(pb.Cacheable):
         # Build a dict of public information about the table.
         state = {}
         state['id'] = self.id
+        state['gametype'] = self.gametype.__name__
+        state['gamestate'] = self.game.getState()
         state['observers'] = [p.name for p in self.observers.keys()]
         state['players'] = dict([(pos, p.name)
                                  for pos, p in self.players.items()])
-        state['gametype'] = self.gametype.__name__
-        state['gamestate'] = self.game.getState()
 
         return state  # To observer.
 
 
     def stoppedObserving(self, perspective, observer):
+        del self.observers[perspective]
+
         # If user was playing, then remove their player(s) from game.
         for position, user in self.players.items():
             if perspective == user:
                 self.leaveGame(perspective, position)
-
-        del self.observers[perspective]
         self.notify('removeObserver', observer=perspective.name)
 
         # If there are no remaining observers, close table.
-        if self.config.get('closeWhenEmpty') and not self.observers:
+        if self.config.get('CloseWhenEmpty') and not self.observers:
             self.server.tables.closeTable(self)
 
 
@@ -133,7 +135,7 @@ class LocalTable(pb.Cacheable):
         if position not in self.game.positions:
             raise IllegalRequest, "Invalid position type"
         # Check that user is not already playing at table.
-        if not self.config.get('allowUserMultiplePlayers'):
+        if not self.config.get('MultiplePlayersPerUser'):
             if user in self.players.values():
                 raise DeniedRequest, "Already playing in game"
 
@@ -195,6 +197,7 @@ class LocalTableViewable(pb.Viewable):
 
 
     def view_joinGame(self, user, position):
+        # TODO: return a deferred?
         return self.table.joinGame(user, position)
 
 
@@ -203,5 +206,6 @@ class LocalTableViewable(pb.Viewable):
 
 
     def view_sendMessage(self, user, message, sender=None, recipients=[]):
-        return self.table.sendMessage(message, sender=user, recipients=recipients)
+        return self.table.sendMessage(message, sender=user,
+                                      recipients=recipients)
 
