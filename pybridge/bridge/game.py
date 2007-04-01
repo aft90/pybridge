@@ -27,7 +27,9 @@ from bidding import Bidding
 from board import Board
 from playing import Playing
 
-from symbols import Direction, Suit, Strain
+from call import Bid, Pass, Double, Redouble
+from card import Card
+from symbols import Direction, Suit, Strain, Vulnerable
 
 
 class BridgeGame(object):
@@ -62,6 +64,7 @@ class BridgeGame(object):
         self.play = None
 
         self.boardQueue = []  # Boards for successive games.
+        self.visibleHands = {}  # A subset of deal, containing revealed hands.
         self.players = {}  # One-to-one mapping from Direction to BridgePlayer.
 
 
@@ -79,10 +82,12 @@ class BridgeGame(object):
         self.bidding = Bidding(self.board['dealer'])  # Start bidding.
         self.contract = None
         self.play = None
+        self.visibleHands.clear()
 
-        # Remove deal from board, so it does not appear to players.
+        # Remove deal from board, so it does not appear to clients.
         visibleBoard = self.board.copy()
-        del visibleBoard['deal']
+        visibleBoard['deal'] = self.visibleHands
+
         self.notify('start', board=visibleBoard)
 
 
@@ -96,13 +101,12 @@ class BridgeGame(object):
 
 
     def getState(self):
-        # TODO: all flag?
         state = {}
 
         if self.inProgress():
-            # Remove deal from board, so it does not appear to players.
+            # Remove hidden hands from deal.
             visibleBoard = self.board.copy()
-            del visibleBoard['deal']
+            visibleBoard['deal'] = self.visibleHands
             state['board'] = visibleBoard
 
         if self.bidding:
@@ -123,33 +127,23 @@ class BridgeGame(object):
         if state.get('board'):
             self.start(state['board'])
 
-            # Comprehensive error checking is suppressed.
             for call in state.get('calls', []):
                 turn = self.getTurn()
-                self.makeCall(call, self.players[turn])
-#                self.bidding.makeCall(call, player=turn)
+                self.makeCall(call, turn)
 
-            # If a contract has been reached, start the play.
-#            contract = self.bidding.getContract()
-#            if contract:
-#                self.contract = contract
-#                trumpSuit = self.trumpMap[self.contract['bid'].strain]
-#                self.play = Playing(contract['declarer'], trumpSuit)
-
-            # Comprehensive error checking is suppressed.
             for card in state.get('played', []):
                 turn = self.getTurn()
-                self.playCard(card, self.players[turn])
-                #self.play.playCard(card, player=turn)
+                # TODO: remove this hack
+                if turn == self.play.dummy:
+                    turn = self.play.declarer
+                self.playCard(card, turn)
 
 
     def updateState(self, event, *args, **kwargs):
-        allowed = ['start', 'makeCall', 'playCard']
+        allowed = ['start', 'makeCall', 'playCard', 'revealHand']
         if event in allowed:
             handler = getattr(self, event)
             handler(*args, **kwargs)
-#        else:
-#            print "updateState unknown attempted", event
 
 
     def addPlayer(self, position):
@@ -158,7 +152,7 @@ class BridgeGame(object):
         if position in self.players:
             raise GameError, "Position %s is taken" % position
 
-        player = BridgePlayer(self)
+        player = BridgePlayer(self, position)
         self.players[position] = player
         self.notify('addPlayer', position=position)
 
@@ -195,107 +189,128 @@ class BridgeGame(object):
 # Bridge-specific methods.
 
 
-    def makeCall(self, call, player):
+    def makeCall(self, call, position):
         """Make a call in the current bidding session.
         
-        @param call: the call.
+        @param call: a Call object.
         @type call: Bid or Pass or Double or Redouble
-        @param player: a player identifier.
-        @type player: BridgePlayer
+        @param position: the position of the player making the call.
+        @type position: Direction
         """
-        position = self.getPositionOfPlayer(player)
-        if position is None:
-            raise GameError, "Invalid player reference"
+        if not isinstance(call, (Bid, Pass, Double, Redouble)):
+            raise TypeError, "Expected Call, got %s" % type(call)
+        if position not in Direction:
+            raise TypeError, "Expected Direction, got %s" % type(position)
 
         # Validate call according to game state.
         if not self.bidding or self.bidding.isComplete():
             raise GameError, "Game not running or bidding complete"
-        if self.getTurn() is not position:
+        if self.getTurn() != position:
             raise GameError, "Call made out of turn"
         if not self.bidding.isValidCall(call, position):
             raise GameError, "Call cannot be made"
 
         self.bidding.makeCall(call, position)
+
+        if self.bidding.isComplete() and not self.bidding.isPassedOut():
+            self.contract = self.bidding.getContract()  # TODO: make a property
+            trumpSuit = self.trumpMap[self.contract['bid'].strain]
+            self.play = Playing(self.contract['declarer'], trumpSuit)
+
         self.notify('makeCall', call=call, position=position)
 
-        if self.bidding.isComplete():
-            # If a contract has been reached, start the play.
-            contract = self.bidding.getContract()
-            if contract:
-                self.contract = contract
-                trumpSuit = self.trumpMap[self.contract['bid'].strain]
-                self.play = Playing(contract['declarer'], trumpSuit)
-            elif self.bidding.isPassedOut():
-                self.notify('gameOver')
+        if self.bidding.isPassedOut():
+            self.notify('gameOver')  # TODO: reveal all hands
 
 
-    def signalAlert(self, alert, player):
+    def signalAlert(self, alert, position):
         pass  # TODO
 
 
-    def playCard(self, card, player):
+    def playCard(self, card, position):
         """Play a card in the current play session.
         
+        The position specified is that of the player of the card: in particular,
+        declarer plays cards from dummy's hand when it is dummy's turn. 
+        
         @param card: a Card object.
-        @param player: a BridgePlayer object.
+        @type card: Card
+        @param position: the position of the player playing the card.
+        @type position: Direction
         """
-        position = self.getPositionOfPlayer(player)
-        if position is None:
-            raise GameError, "Invalid player reference"
+        if not isinstance(card, Card):
+            raise TypeError, "Expected Card, got %s" % type(card)
+        if position not in Direction:
+            raise TypeError, "Expected Direction, got %s" % type(position)
+
         if not self.play or self.play.isComplete():
             raise GameError, "Game not running or play complete"
 
-        if self.getTurn() is self.play.dummy:  # Dummy's turn.
-            if position is self.play.declarer:
-                position = self.play.dummy  # Declarer can play dummy's cards.
-            elif position is self.play.dummy:
-                raise GameError, "Dummy cannot play cards"
-        elif self.getTurn() is not position:
+        playfrom = position
+
+        # Declarer controls dummy's turn.
+        if self.getTurn() == self.play.dummy:
+            if position == self.play.declarer:
+                playfrom = self.play.dummy  # Declarer can play from dummy.
+            elif position == self.play.dummy:
+                raise GameError, "Dummy cannot play hand"
+
+        if self.getTurn() != playfrom:
             raise GameError, "Card played out of turn"
 
-        hand = self.board['deal'][position]  # May be empty, if hand unknown.
-        if not self.play.isValidPlay(card, position, hand):
+        hand = self.board['deal'].get(playfrom, [])  # Empty if hand unknown.
+        if not self.play.isValidPlay(card, playfrom, hand):
             raise GameError, "Card cannot be played from hand"
 
         self.play.playCard(card)
         self.notify('playCard', card=card, position=position)
 
+        # Dummy's hand is revealed when the first card of first trick is played.
+        if len(self.play.getTrick(0)[1]) == 1:
+            dummyhand = self.board['deal'].get(self.play.dummy)
+            if dummyhand:  # Reveal hand only if known.
+                self.revealHand(dummyhand, self.play.dummy)
+       # TODO: if game over, reveal all hands
+ 
 
-    def getHand(self, position, player):
+    def revealHand(self, hand, position):
+        """Reveal hand to all observers.
+        
+        @param hand: a hand of Card objects.
+        @type hand: list
+        @param position: the position of the player with hand.
+        @type position: Direction
+        """
+        if position not in Direction:
+            raise TypeError, "Expected Direction, got %s" % type(position)
+
+        self.visibleHands[position] = hand
+        # Add hand to board only if it was previously unknown.
+        if not self.board['deal'].get(position):
+            self.board['deal'][position] = hand
+
+        self.notify('revealHand', hand=hand, position=position)
+
+
+    def getHand(self, position):
         """If specified hand is visible, returns the list of cards in hand.
         
-        A hand is visible if one of the following conditions is met:
-        
-        1. The hand is the player's own hand.
-        2. The game is finished.
-        3. The bidding is complete and the hand is dummy's, and first card of
-           first trick has been played.
-        
-        @param position: the hand identifier.
+        @param position: the position of the requested hand.
         @type position: Direction
-        @param player: a player identifier.
-        @type player: BridgePlayer
+        @return: the hand of player at position.
         """
-        viewer = self.getPositionOfPlayer(player)
-        if viewer is None:
-            raise GameError, "Invalid player reference"
-        if not self.inProgress() and self.bidding is None:
-            raise GameError, "No game in progress"
+        if position not in Direction:
+            raise TypeError, "Expected Direction, got %s" % type(position)
 
-        if player == viewer or not self.inProgress():
-            return self.board.deal[position]
-        if self.bidding.isComplete() and position == self.play.dummy:
-            leader, cards = self.play.getTrick(0)
-            if len(cards) >= 1:
-                return self.board.deal[position]
-
-        # At this point, checks have been exhausted.
-        raise GameError, "Hand is not visible"
+        if self.board and self.board['deal'].get(position):
+            return self.board['deal'][position]
+        else:
+            raise GameError, "Hand unknown"
 
 
     def getTurn(self):
         if self.inProgress():
-            if self.play:  # Currently in the play.
+            if self.bidding.isComplete():  # In trick play.
                 return self.play.whoseTurn()
             else:  # Currently in the bidding.
                 return self.bidding.whoseTurn()
@@ -355,9 +370,12 @@ class BridgeGame(object):
 
         contract = self.bidding.getContract()
         declarer = contract['declarer']
-        dummy = Seat[(declarer.index + 2) % 4]
-        vulnerable = (self.vulnNS and declarer in (Seat.North, Seat.South)) + \
-                     (self.vulnEW and declarer in (Seat.West, Seat.East))
+        dummy = Direction[(declarer.index + 2) % 4]
+
+        if declarer in (Direction.North, Direction.South):
+            vulnerable = (self.board['vuln'] in (Vulnerable.NorthSouth, Vulnerable.All))
+        else:  # East or West
+            vulnerable = (self.board['vuln'] in (Vulnerable.EastWest, Vulnerable.All))
 
         tricksMade = 0  # Count of tricks won by declarer or dummy.
         for index in range(len(self.play.winners)):
@@ -371,36 +389,28 @@ class BridgeGame(object):
         return self.scoring(result)
 
 
-    def getPositionOfPlayer(self, player):
-        """If player is playing, returns position of player, otherwise None.
-        
-        @param player: a BridgePlayer object.
-        @type player: BridgePlayer
-        @return: the position of player.
-        @rtype: Direction or None
-        """
-        for position, p in self.players.items():
-            if p == player:
-                return position
-        return None
-
-
 
 
 class BridgePlayer(pb.Referenceable):
     """Actor representing a player's view of a BridgeGame object."""
 
 
-    def __init__(self, game):
+    def __init__(self, game, position):
         self.__game = game  # Provide access to game only through this object.
+        self.__position = position
+
+
+    def getHand(self):
+        return self.__game.getHand(self.__position)
 
 
     def makeCall(self, call):
-        self.__game.makeCall(call, player=self)
+        return self.__game.makeCall(call, self.__position)
 
 
     def playCard(self, card):
-        self.__game.playCard(card, player=self)
+        # TODO: need try/except block on each.
+        return self.__game.playCard(card, self.__position)
 
 
     def nextGame(self):
@@ -409,11 +419,7 @@ class BridgePlayer(pb.Referenceable):
 
 # Aliases for remote-callable methods.
 
-
-    def remote_makeCall(self, call):
-        self.makeCall(call)
-
-
-    def remote_playCard(self, card):
-        self.playCard(card)
+    remote_getHand = getHand
+    remote_makeCall = makeCall
+    remote_playCard = playCard
 
