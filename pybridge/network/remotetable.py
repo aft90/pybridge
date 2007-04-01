@@ -24,6 +24,11 @@ from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
 
 
+# TODO: move to somewhere more appropriate.
+from pybridge.bridge.game import BridgeGame
+GAMETYPES = {'BridgeGame' : BridgeGame}
+
+
 class RemoteTable(pb.RemoteCache):
     """A client-side implementation of ITable providing a "front-end" to a
     remote server-side LocalTable.
@@ -42,24 +47,22 @@ class RemoteTable(pb.RemoteCache):
 
         self.id = None
         self.game = None
+        self.gametype = None
         self.observers = []  # Observers of master table.
         self.players = {}  # Positions mapped to player identifiers.
 
 
     def setCopyableState(self, state):
         self.id = state['id']
-        self.observers = state['observers']
-        self.players = state['players']
-
-        # TODO: do this by magic.
-        if state['gametype'] in ['BridgeGame']:
-            from pybridge.bridge.game import BridgeGame
-            self.gametype = BridgeGame
+        if state['gametype'] in GAMETYPES:
+            self.gametype = GAMETYPES[state['gametype']]
+            self.game = self.gametype()
+            self.game.setState(state['gamestate'])
         else:
             raise NameError, "Unknown game type %s" % state['gametype']
 
-        self.game = self.gametype()
-        self.game.setState(state['gamestate'])
+        self.observers = state['observers']
+        self.players = state['players']
 
 
 # Implementation of ITable.
@@ -70,12 +73,12 @@ class RemoteTable(pb.RemoteCache):
 
 
     def joinGame(self, position, user=None):
-        d = self.master.callRemote('joinGame', position.key)
+        d = self.master.callRemote('joinGame', position)
         return d
 
 
     def leaveGame(self, position, user=None):
-        d = self.master.callRemote('leaveGame', position.key)
+        d = self.master.callRemote('leaveGame', position)
         return d
 
 
@@ -114,13 +117,11 @@ class RemoteTable(pb.RemoteCache):
 
 
     def observe_joinGame(self, player, position):
-        position = getattr(self.game.positions, position)
         self.players[position] = player
         self.notify('joinGame', player, position)
 
 
     def observe_leaveGame(self, player, position):
-        position = getattr(self.game.positions, position)
         del self.players[position]
         self.notify('leaveGame', player, position)
 
