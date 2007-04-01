@@ -19,7 +19,7 @@
 import gtk
 from wrapper import GladeWrapper
 
-from eventhandler import eventhandler
+from eventhandler import SimpleEventHandler
 
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 from pybridge.bridge.call import Level, Strain
@@ -36,7 +36,7 @@ STRAIN_NAMES = {'club' : Strain.Club, 'diamond' : Strain.Diamond,
                 'nt' : Strain.NoTrump, }
 
 ALL_CALLS = [Pass(), Double(), Redouble()] + \
-            [Bid(l, s) for l, s in zip(list(Level)*5, list(Strain)*7)]
+            [Bid(l, s) for l in Level for s in Strain]
 
 
 class WindowBidbox(GladeWrapper):
@@ -49,19 +49,16 @@ class WindowBidbox(GladeWrapper):
 
     glade_name = 'window_bidbox'
 
-    callbacks = ('gameCallMade',)
-
 
     def new(self):
-        table = self.parent.table
-        self.set_available_calls(table.seated, table.game.bidding)
-        
-        eventhandler.registerCallbacksFor(self, self.callbacks)
+        self.eventHandler = SimpleEventHandler(self)
+        self.parent.table.game.attach(self.eventHandler)
+        self.set_available_calls(self.parent.position, self.parent.table.game.bidding)
 
 
-    def set_available_calls(self, seat, bidding):
+    def set_available_calls(self, position, bidding):
         """Enables buttons representing the given calls."""
-        if bidding.whoseTurn() == seat:
+        if bidding.whoseTurn() == position:
             self.window.set_property('sensitive', True)
             for call in ALL_CALLS:
                 button = self.get_button_from_call(call)
@@ -73,9 +70,8 @@ class WindowBidbox(GladeWrapper):
 # Registered event handlers.
 
 
-    def event_gameCallMade(self, table, call, position):
-        if table == self.parent.table:
-            self.set_available_calls(table.seated, table.game.bidding)
+    def event_makeCall(self, call, position):
+        self.set_available_calls(self.parent.position, self.parent.table.game.bidding)
 
 
 # Utility methods.
@@ -108,11 +104,10 @@ class WindowBidbox(GladeWrapper):
 
     def on_call_clicked(self, widget, *args):
         """Builds a call object and submits."""
-        table = self.parent.table
         # Do not check validity of call: the server will do that.
         # If call is invalid, ignore the resultant errback.
         call = self.get_call_from_button(widget)
-        d = table.gameMakeCall(call)
+        d = self.parent.player.callRemote('makeCall', call)
         d.addErrback(lambda r: True)  # Ignore any error.
 
 
