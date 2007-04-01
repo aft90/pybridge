@@ -25,7 +25,7 @@ import pybridge.environment as env
 from canvas import CairoCanvas
 
 from pybridge.bridge.card import Card
-from pybridge.bridge.symbols import Player, Rank, Suit
+from pybridge.bridge.symbols import Direction, Rank, Suit
 
 # The order in which card graphics are expected in card mask.
 CARD_MASK_RANKS = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,
@@ -64,7 +64,7 @@ class CardArea(CairoCanvas):
         
         self.hands = {}
         self.trick = None
-        self.set_player_mapping(Player.South)
+        self.set_player_mapping(Direction.South)
         
         self.connect('button_press_event', self.button_press)
         self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
@@ -98,7 +98,7 @@ class CardArea(CairoCanvas):
         infrequently and multiple calls to draw_card() are expensive.
         
         @param hand: a list of Card objects.
-        @param player: a member of Player.
+        @param player: a member of Direction.
         @param facedown: if True, cards are drawn face-down.
         @param omit: a list of elements of hand not to draw.
         """
@@ -218,13 +218,13 @@ class CardArea(CairoCanvas):
             self.add_item(id, surface, xy[player], 2)
 
 
-    def set_player_mapping(self, focus=Player.South):
+    def set_player_mapping(self, focus=Direction.South):
         """Sets the mapping between players at table and positions of hands.
         
-        @param focus: the Player to be drawn "closest" to the observer.
+        @param focus: the Direction to be drawn "closest" to the observer.
         """
-        # Assumes Player elements are ordered clockwise from North.
-        order = Player[focus.index:] + Player[:focus.index]
+        # Assumes Direction elements are ordered clockwise from North.
+        order = Direction[focus.index:] + Direction[:focus.index]
         for player, attr in zip(order, ('BOTTOM', 'LEFT', 'TOP', 'RIGHT')):
             setattr(self, attr, player)
         # TODO: set player labels.
@@ -240,9 +240,9 @@ class CardArea(CairoCanvas):
               self.LEFT : (0.425, 0.5), self.RIGHT : (0.575, 0.5), }
         
         if trick:
-            # The order of play is the leader, then clockwise around Player.
+            # The order of play is the leader, then clockwise around Direction.
             leader = trick[0]
-            order = Player[leader.index:] + Player[:leader.index]
+            order = Direction[leader.index:] + Direction[:leader.index]
             for i, player in enumerate(order):
                 id = 'trick-%s' % player
                 old_card = self.trick and self.trick[1].get(player) or None
@@ -272,14 +272,15 @@ class CardArea(CairoCanvas):
         The hand of the player on turn is drawn opaque;
         the other hands are drawn translucent.
         
-        @param turn: a member of Player, or None.
+        @param turn: the position of the turn indicator.
+        @type turn: Direction or None
         """
         if turn is None:
             return
         
-        for player in Player:
-            opacity = (player is turn) and 1 or 0.5
-            self.update_item('hand-%s' % player, opacity=opacity)
+        for position in Direction:
+            opacity = (position is turn) and 1 or 0.5
+            self.update_item('hand-%s' % position, opacity=opacity)
 
 
     def button_press(self, widget, event):
