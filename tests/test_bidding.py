@@ -3,7 +3,7 @@ import random
 
 from pybridge.bridge.bidding import Bidding
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
-from pybridge.bridge.symbols import Level, Player, Strain
+from pybridge.bridge.symbols import Direction, Level, Strain
 
 
 class TestBidding(unittest.TestCase):
@@ -14,7 +14,7 @@ class TestBidding(unittest.TestCase):
 
 
     def setUp(self):
-        dealer = random.choice(Player)
+        dealer = random.choice(Direction)
         self.bidding = Bidding(dealer)
 
 
@@ -44,11 +44,11 @@ class TestBidding(unittest.TestCase):
     def testWhoseTurn(self):
         """whoseTurn"""
         # Tests whoseTurn() before and after making calls.
-        turn = Player[self.bidding.dealer.index]
+        turn = Direction[self.bidding.dealer.index]
         for call in self.bids:
             self.assertEqual(self.bidding.whoseTurn(), turn)
             self.bidding.makeCall(call)
-            turn = Player[(turn.index + 1) % 4]
+            turn = Direction[(turn.index + 1) % 4]
             self.assertEqual(self.bidding.whoseTurn(), turn)
 
 

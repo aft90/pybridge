@@ -4,14 +4,14 @@ import random
 from pybridge.bridge.card import Card
 from pybridge.bridge.deck import Deck
 from pybridge.bridge.playing import Playing
-from pybridge.bridge.symbols import Player, Rank, Suit
+from pybridge.bridge.symbols import Direction, Rank, Suit
 
 
 class TestPlaying(unittest.TestCase):
 
     
     def setUp(self):
-        declarer = random.choice(Player)
+        declarer = random.choice(Direction)
         trumps = random.choice(list(Suit) + [None])
         self.deal = Deck().randomDeal()
         self.playing = Playing(declarer, trumps)
@@ -31,7 +31,7 @@ class TestPlaying(unittest.TestCase):
             if len(cards) == 4:
                 turn = self.playing.whoPlayed(self.playing.winningCard(trick))
             else:
-                turn = Player[(leader.index + len(cards)) % 4]
+                turn = Direction[(leader.index + len(cards)) % 4]
 
             # Check that whoseTurn() works.
             self.assertEqual(self.playing.whoseTurn(), turn)
