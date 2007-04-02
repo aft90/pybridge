@@ -160,20 +160,19 @@ class WindowBridgetable(GladeWrapper):
                 position = self.table.game.bidding.whoCalled(call)
                 self.addCall(call, position)
 
-            self.setDealer(self.table.game.board['dealer'])
-            self.setVuln(self.table.game.board['vuln'])
+            self.setDealer()
+            self.setVulnerability()
 
             # If contract, set contract.
             if self.table.game.bidding.isComplete():
-                contract = self.table.game.bidding.getContract()
-                self.setContract(contract)
+                self.setContract()
 
             # If playing, set trick counts.
             if self.table.game.play:
                 for position, cards in self.table.game.play.played.items():
                     for card in cards:
                         self.addCard(card, position)
-                self.setTrickCount(self.table.game.getTrickCount())
+                self.setTrickCount()
 
             # If user is a player and bidding in progress, open bidding box.
             if self.player and not self.table.game.bidding.isComplete():
@@ -201,8 +200,8 @@ class WindowBridgetable(GladeWrapper):
 #        self.cardarea.clear()
         self.call_store.clear()   # Reset bidding history.
         self.trick_store.clear()  # Reset trick history.
-        self.setContract(None)    # Reset contract.
-        self.setTrickCount(None)  # Reset trick counts.
+        self.setContract()    # Reset contract.
+        self.setTrickCount()  # Reset trick counts.
 
 
     def addCall(self, call, position):
@@ -244,7 +243,7 @@ class WindowBridgetable(GladeWrapper):
 
 
     def addScore(self, contract, made, score):
-        textContract = self.getContractFormat(contract)
+        textContract = self.formatContract(contract)
         textMade = '%s' % made
         if contract['declarer'] in (Direction.North, Direction.South) and score > 0 \
         or contract['declarer'] in (Direction.East, Direction.West) and score < 0:
@@ -288,6 +287,54 @@ class WindowBridgetable(GladeWrapper):
         self.cardarea.set_trick(trick)
 
 
+# Methods to set information displayed on side panel.
+
+
+    def setContract(self):
+        """Sets the contract label from contract."""
+        format = "<span size=\"x-large\">%s</span>"
+
+        if self.table.game.contract:
+            text = self.formatContract(self.table.game.contract)
+            self.label_contract.set_markup(format % text)
+            self.label_contract.set_property('sensitive', True)
+        else:
+            self.label_contract.set_markup(format % _('No contract'))
+            self.label_contract.set_property('sensitive', False)
+
+
+    def setDealer(self):
+        format = "<b>%s</b>"
+
+        dealer = ''
+        if self.table.game.inProgress():
+            dealer = DIRECTION_SYMBOLS[self.table.game.board['dealer']]
+
+        self.label_dealer.set_markup(format % dealer)
+
+
+    def setTrickCount(self):
+        """Sets the trick counter labels for declarer and defence."""
+        format = "<span size=\"x-large\"><b>%s</b> (%s)</span>"
+
+        if self.table.game.play:
+            declarer, defence = self.table.game.play.getTrickCount()
+            required = self.table.game.contract['bid'].level.index + 7
+            declarerNeeds = max(0, required - declarer)
+            defenceNeeds = max(0, 13 + 1 - required - defence)
+
+            self.label_declarer.set_markup(format % (declarer, declarerNeeds))
+            self.label_defence.set_markup(format % (defence, defenceNeeds))
+            self.frame_declarer.set_property('sensitive', True)
+            self.frame_defence.set_property('sensitive', True)
+
+        else:  # Reset trick counters.
+            self.label_declarer.set_markup(format % (0, 0))
+            self.label_defence.set_markup(format % (0, 0))
+            self.frame_declarer.set_property('sensitive', False)
+            self.frame_defence.set_property('sensitive', False)
+
+
     def setTurnIndicator(self):
         """Sets the statusbar text to indicate which player is on turn."""
         context = self.statusbar.get_context_id('turn')
@@ -301,36 +348,15 @@ class WindowBridgetable(GladeWrapper):
         self.cardarea.set_turn(turn)
 
 
-    def setContract(self, contract=None):
-        """Sets the contract label from contract."""
-        format = (contract and self.getContractFormat(contract)) or _('No contract')
-        self.label_contract.set_property('sensitive', contract!=None)
-        self.label_contract.set_markup('<span size="x-large">%s</span>' % format)
+    def setVulnerability(self):
+        """Sets the vulnerability indicators."""
+        format = "<b>%s</b>"
 
+        vulnerable = ''
+        if self.table.game.inProgress():
+            vulnerable = VULN_SYMBOLS[self.table.game.board['vuln']]
 
-    def setDealer(self, dealer):
-        self.label_dealer.set_markup('<b>%s</b>' % DIRECTION_SYMBOLS[dealer])
-
-
-    def setTrickCount(self, count=None):
-        """Sets the trick counter labels for declarer and defence.
-        
-        @param count:
-        """
-        if count:
-            declarer = count['declarerWon'], count['declarerNeeds']
-            defence = count['defenceWon'], count['defenceNeeds']
-        else:
-            declarer = defence = (0, 0)
-        
-        self.frame_declarer.set_property('sensitive', count!=None)
-        self.frame_defence.set_property('sensitive', count!=None)
-        self.label_declarer.set_markup('<span size="x-large"><b>%s</b> (%s)</span>' % declarer)
-        self.label_defence.set_markup('<span size="x-large"><b>%s</b> (%s)</span>' % defence)
-
-
-    def setVuln(self, vulnerable):
-        self.label_vuln.set_markup('<b>%s</b>' % VULN_SYMBOLS[vulnerable])
+        self.label_vuln.set_markup(format % vulnerable)
 
 
 # Registered event handlers.
@@ -387,8 +413,8 @@ class WindowBridgetable(GladeWrapper):
             self.redrawHand(position)
 
         self.setTurnIndicator()
-        self.setDealer(board['dealer'])
-        self.setVuln(board['vuln'])
+        self.setDealer()
+        self.setVulnerability()
 
         if self.player:
             d = self.player.callRemote('getHand')
@@ -402,8 +428,7 @@ class WindowBridgetable(GladeWrapper):
         self.setTurnIndicator()
         if self.table.game.bidding.isComplete():
             self.children.close('window_bidbox')  # If playing.
-            contract = self.table.game.bidding.getContract()
-            self.setContract(contract)
+            self.setContract()
 
 
     def event_playCard(self, card, position):
@@ -411,8 +436,7 @@ class WindowBridgetable(GladeWrapper):
         playfrom = self.table.game.play.whoPlayed(card)
         self.addCard(card, playfrom)
         self.setTurnIndicator()
-        count = self.table.game.getTrickCount()
-        self.setTrickCount(count)
+        self.setTrickCount()
         self.redrawTrick()
         self.redrawHand(playfrom)
 
@@ -430,7 +454,7 @@ class WindowBridgetable(GladeWrapper):
             score = self.table.game.score()
             self.addScore(contract, trickCount['declarerWon'], score)
 
-            textContract = _('Contract %s') % self.getContractFormat(contract)
+            textContract = _('Contract %s') % self.formatContract(contract)
             textTrick = (offset > 0 and _('made by %s tricks') % offset) or \
                         (offset < 0 and _('failed by %s tricks') % abs(offset)) or \
                         _('made exactly')
@@ -459,21 +483,24 @@ class WindowBridgetable(GladeWrapper):
 # Utility methods.
 
 
-    def getContractFormat(self, contract):
-        """Returns a format string representing the contract.
+    def formatContract(self, contract):
+        """Produce a format string representing the contract.
         
-        @param contract: a dict from bidding.getContract().
+        @param contract: a contract object.
+        @type contract: dict
+        @return: a format string representing the contract.
+        @rtype: str
         """
         bidlevel = LEVEL_SYMBOLS[contract['bid'].level]
         bidstrain = STRAIN_SYMBOLS[contract['bid'].strain]
-        double = ''
+        doubled = ''
         if contract['redoubleBy']:
-            double = CALLTYPE_SYMBOLS[Redouble]
+            doubled = ' (%s)' % CALLTYPE_SYMBOLS[Redouble]
         elif contract['doubleBy']:
-            double = CALLTYPE_SYMBOLS[Double]
+            doubled = ' (%s)' % CALLTYPE_SYMBOLS[Double]
         declarer = contract['declarer']
-        
-        return _('%s%s%s by %s') % (bidlevel, bidstrain, double, declarer)
+
+        return _('%s%s%s by %s') % (bidlevel, bidstrain, doubled, declarer)
 
 
 # Signal handlers.
@@ -517,6 +544,7 @@ class WindowBridgetable(GladeWrapper):
     def on_leaveseat_clicked(self, widget, *args):
         
         def success(r):
+            self.player = None
             self.position = None
             self.takeseat.set_property('sensitive', True)
             self.leaveseat.set_property('sensitive', False)
@@ -562,6 +590,7 @@ class WindowBridgetable(GladeWrapper):
 
 
     def on_window_delete_event(self, widget, *args):
+        # TODO: if playing, "are you sure" dialog?
         d = self.parent.leaveTable(self.table.id)
         d.addCallback(lambda _: utils.windows.close(self.glade_name, instance=self))
         return True  # Stops window deletion taking place.
