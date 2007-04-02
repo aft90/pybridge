@@ -65,13 +65,16 @@ class BridgeGame(object):
 
         self.boardQueue = []  # Boards for successive games.
         self.visibleHands = {}  # A subset of deal, containing revealed hands.
-        self.players = {}  # One-to-one mapping from Direction to BridgePlayer.
+        self.players = {}  # One-to-one mapping from BridgePlayer to Direction.
 
 
 # Implementation of ICardGame.
 
 
     def start(self, board=None):
+        if self.inProgress():
+            raise GameError, "Game in progress"
+
         if board:  # Use specified board.
             self.board = board
         elif self.board:  # Advance to next deal.
@@ -129,31 +132,34 @@ class BridgeGame(object):
 
             for call in state.get('calls', []):
                 turn = self.getTurn()
-                self.makeCall(call, turn)
+                self.makeCall(call, position=turn)
 
             for card in state.get('played', []):
                 turn = self.getTurn()
                 # TODO: remove this hack
                 if turn == self.play.dummy:
                     turn = self.play.declarer
-                self.playCard(card, turn)
+                self.playCard(card, position=turn)
 
 
     def updateState(self, event, *args, **kwargs):
         allowed = ['start', 'makeCall', 'playCard', 'revealHand']
         if event in allowed:
-            handler = getattr(self, event)
-            handler(*args, **kwargs)
+            try:
+                handler = getattr(self, event)
+                handler(*args, **kwargs)
+            except GameError, e:
+                print "Unexpected error when updating game state:", e
 
 
     def addPlayer(self, position):
         if position not in Direction:
             raise TypeError, "Expected Direction, got %s" % type(position)
-        if position in self.players:
+        if position in self.players.values():
             raise GameError, "Position %s is taken" % position
 
-        player = BridgePlayer(self, position)
-        self.players[position] = player
+        player = BridgePlayer(self)
+        self.players[player] = position
         self.notify('addPlayer', position=position)
 
         return player
@@ -162,11 +168,14 @@ class BridgeGame(object):
     def removePlayer(self, position):
         if position not in Direction:
             raise TypeError, "Expected Direction, got %s" % type(position)
-        if position not in self.players:
+        if position not in self.players.values():
             raise GameError, "Position %s is vacant" % position
 
-        player = self.players[position]
-        del self.players[position]
+        for player, pos in self.players.items():
+            if pos == position:
+                del self.players[player]
+                break
+
         self.notify('removePlayer', position=position)
 
 
@@ -189,22 +198,31 @@ class BridgeGame(object):
 # Bridge-specific methods.
 
 
-    def makeCall(self, call, position):
+    def makeCall(self, call, player=None, position=None):
         """Make a call in the current bidding session.
+        
+        This method expects to receive either a player argument or a position.
+        If both are given, the position argument is disregarded.
         
         @param call: a Call object.
         @type call: Bid or Pass or Double or Redouble
-        @param position: the position of the player making the call.
-        @type position: Direction
+        @param player: if specified, a player object.
+        @type player: BridgePlayer or None
+        @param position: if specified, the position of the player making call.
+        @type position: Direction or None
         """
         if not isinstance(call, (Bid, Pass, Double, Redouble)):
             raise TypeError, "Expected Call, got %s" % type(call)
+        if player:
+            if player not in self.players:
+                raise GameError, "Player unknown to this game"
+            position = self.players[player]
         if position not in Direction:
             raise TypeError, "Expected Direction, got %s" % type(position)
 
         # Validate call according to game state.
         if not self.bidding or self.bidding.isComplete():
-            raise GameError, "Game not running or bidding complete"
+            raise GameError, "No game in progress, or bidding complete"
         if self.getTurn() != position:
             raise GameError, "Call made out of turn"
         if not self.bidding.isValidCall(call, position):
@@ -227,24 +245,33 @@ class BridgeGame(object):
         pass  # TODO
 
 
-    def playCard(self, card, position):
+    def playCard(self, card, player=None, position=None):
         """Play a card in the current play session.
         
-        The position specified is that of the player of the card: in particular,
-        declarer plays cards from dummy's hand when it is dummy's turn. 
+        This method expects to receive either a player argument or a position.
+        If both are given, the position argument is disregarded.
+        
+        If position is specified, it must be that of the player of the card:
+        declarer plays cards from dummy's hand when it is dummy's turn.
         
         @param card: a Card object.
         @type card: Card
-        @param position: the position of the player playing the card.
-        @type position: Direction
+        @param player: if specified, a player object.
+        @type player: BridgePlayer or None
+        @param position: if specified, the position of the player of the card.
+        @type position: Direction or None
         """
         if not isinstance(card, Card):
             raise TypeError, "Expected Card, got %s" % type(card)
+        if player:
+            if player not in self.players:
+                raise GameError, "Invalid player reference"
+            position = self.players[player]
         if position not in Direction:
             raise TypeError, "Expected Direction, got %s" % type(position)
 
         if not self.play or self.play.isComplete():
-            raise GameError, "Game not running or play complete"
+            raise GameError, "No game in progress, or play complete"
 
         playfrom = position
 
@@ -278,7 +305,7 @@ class BridgeGame(object):
         
         @param hand: a hand of Card objects.
         @type hand: list
-        @param position: the position of the player with hand.
+        @param position: the position of the hand.
         @type position: Direction
         """
         if position not in Direction:
@@ -316,45 +343,6 @@ class BridgeGame(object):
                 return self.bidding.whoseTurn()
         else:  # Not in game.
             raise GameError, "No game in progress"
-
-
-    def getTrickCount(self):
-        """Returns various
-        
-        @return: a dictionary of result information.
-        @rtype: dict
-        
-        
-        ['declarerWon']: number of tricks won by declarer/dummy.
-        @return['defenceWon']: number of tricks won by defenders.
-        @return['declarerNeeds']: number of extra tricks required by declarer
-                                  to make contract.
-        @return['defenceNeeds']: number of extra tricks required by defenders
-                                 to break contract.
-        @return['required']: number of tricks required from contract level.
-        
-        """
-        if self.play is None:
-            raise GameError, "Not in play"
-        
-        count = dict.fromkeys(('declarerWon', 'declarerNeeds',
-                               'defenceWon', 'defenceNeeds'), 0)
-        
-        for index in range(len(self.play.winners)):
-            trick = self.play.getTrick(index)
-            winner = self.play.whoPlayed(self.play.winningCard(trick))
-            if winner in (self.play.declarer, self.play.dummy):
-                count['declarerWon'] += 1
-            else:  # Trick won by defenders.
-                count ['defenceWon'] += 1
-        
-        contract = self.bidding.getContract()
-        # Get index value of bid level, increment, add 6.
-        count['required'] = contract['bid'].level.index + 7
-        count['declarerNeeds'] = max(0, count['required'] - count['declarerWon'])
-        count['defenceNeeds'] = max(0, 13 - count['required'] - count['defenceWon'] + 1)
-        
-        return count
 
 
     def getScore(self):
@@ -395,22 +383,22 @@ class BridgePlayer(pb.Referenceable):
     """Actor representing a player's view of a BridgeGame object."""
 
 
-    def __init__(self, game, position):
+    def __init__(self, game):
         self.__game = game  # Provide access to game only through this object.
-        self.__position = position
 
 
     def getHand(self):
-        return self.__game.getHand(self.__position)
+        position = self.__game.players[self]
+        return self.__game.getHand(position)
 
 
     def makeCall(self, call):
-        return self.__game.makeCall(call, self.__position)
+        return self.__game.makeCall(call, player=self)
 
 
     def playCard(self, card):
         # TODO: need try/except block on each.
-        return self.__game.playCard(card, self.__position)
+        return self.__game.playCard(card, player=self)
 
 
     def nextGame(self):
