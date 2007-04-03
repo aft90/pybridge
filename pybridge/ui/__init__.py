@@ -16,26 +16,34 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.internet import gtk2reactor
+gtk2reactor.install()
+import gtk
+
+from twisted.internet import reactor
+
+import pybridge.environment as env
+from pybridge.settings import Settings
+
+import locale
+import gettext
+locale.setlocale(locale.LC_ALL, '')
+gettext.bindtextdomain('pybridge', env.get_localedir())
+gettext.textdomain('pybridge')
+gettext.install('pybridge')
+
+filename = env.find_config_client('client.cfg')
+settings = Settings(filename, ['Connection', 'General'])
+
+
 def run():
-    """"""
-    from twisted.internet import gtk2reactor
-    gtk2reactor.install()
-    
-    import gtk
-    from twisted.internet import reactor
-    
-    import locale
-    import gettext
-    import pybridge.environment as env
-    locale.setlocale(locale.LC_ALL, '')
-    gettext.bindtextdomain('pybridge', env.get_localedir())
-    gettext.textdomain('pybridge')
-    gettext.install('pybridge')
-    
-    import utils
-    utils.windows.open('dialog_connection')
-    
-    # Start the program.
+    """Starts the PyBridge client UI."""
+
+    from manager import wm
+    from window_main import WindowMain
+    wm.open(WindowMain)
+
+    # Start the event loop.
     reactor.run()
     gtk.main()
 
