@@ -19,14 +19,23 @@
 import gtk
 from wrapper import GladeWrapper
 
+from twisted.internet import reactor
 import webbrowser
 
-from pybridge import __version__ as version
+from pybridge import __version__ as PYBRIDGE_VERSION
 import pybridge.environment as env
 from pybridge.network.client import client
 
-from eventhandler import eventhandler
-import utils
+from eventhandler import SimpleEventHandler
+from manager import WindowManager, wm
+from pybridge.ui import settings
+
+from dialog_connection import DialogConnection
+from dialog_newtable import DialogNewtable
+from dialog_preferences import DialogPreferences
+from window_bridgetable import WindowBridgetable
+
+from eventhandler import SimpleEventHandler, eventhandler  # TODO: remove
 
 TABLE_ICON = env.find_pixmap("table.png")
 USER_ICON = env.find_pixmap("user.png")
@@ -42,8 +51,9 @@ class WindowMain(GladeWrapper):
     peopleview_icon = gtk.gdk.pixbuf_new_from_file_at_size(USER_ICON, 48, 48)
 
 
-    def new(self):
-        self.tables = {}   # For each observed table, reference to window.
+    def setUp(self):
+        # Use a private WindowManager for table window instances.
+        self.tables = WindowManager()
         
         # Set up table model and icon view.
         self.tableview.set_text_column(0)
@@ -61,20 +71,41 @@ class WindowMain(GladeWrapper):
         self.peopleview.set_model(self.peopleview_model)
         
         # Register event callbacks.
-        eventhandler.registerCallbacksFor(self, self.callbacks)
+        self.eventHandler = SimpleEventHandler(self)
+        client.attach(self.eventHandler)
+        client.setEventHandler(eventhandler)  # REMOVE
+        eventhandler.registerCallbacksFor(self, self.callbacks)  # REMOVE
+
+        if not wm.get(DialogConnection):
+            wm.open(DialogConnection, parent=self)
 
 
-    def cleanup(self):
-        eventhandler.unregister(self, self.callbacks)
-        for instance in self.tables.values():
-            utils.windows.close('window_bridgetable', instance)
+    def tearDown(self):
+        #eventhandler.unregister(self, self.callbacks)
+
+        # Close all windows.
+        for window in wm.values():
+            wm.close(window)
+        client.disconnect()
+
+        settings.save()  # Save configuration.
+
+
+    def quit(self):
+        """Shut down gracefully."""
+        wm.close(self)
+        reactor.stop()
+        gtk.main_quit()
+
+
+    def errback(self, failure):
+        print "Error: %s" % failure.getErrorMessage()
 
 
     def joinTable(self, tableid, host=False):
         
         def success(table):
-            window = utils.windows.open('window_bridgetable', parent=self)
-            self.tables[table.id] = window
+            window = self.tables.open(WindowBridgetable, id=tableid)
             window.setTable(table)
             
         d = client.joinTable(tableid, host)
@@ -93,6 +124,27 @@ class WindowMain(GladeWrapper):
 
 
 # Registered event handlers.
+
+
+    def event_connect(self):
+        self.notebook.set_property('sensitive', True)
+        self.menu_connect.set_property('visible', False)
+        self.menu_disconnect.set_property('visible', True)
+
+
+    def event_disconnect(self):
+        for table in self.tables.values():
+            self.tables.close(table)
+
+        self.notebook.set_property('sensitive', False)
+        self.menu_connect.set_property('visible', True)
+        self.menu_disconnect.set_property('visible', False)
+        self.tableview_model.clear()
+        self.peopleview_model.clear()
+
+
+    def event_leaveTable(self, tableid):
+        self.tables.close(self.tables[tableid])
 
 
     def event_tableOpened(self, tableid):
@@ -174,13 +226,12 @@ class WindowMain(GladeWrapper):
 
 
     def on_window_main_delete_event(self, widget, *args):
-        utils.quit()
-#        return True
+        self.quit()
 
 
     def on_newtable_clicked(self, widget, *args):
-        if not utils.windows.get('dialog_newtable'):
-            utils.windows.open('dialog_newtable', parent=self)
+        if not wm.get(DialogNewtable):
+            wm.open(DialogNewtable)
 
 
     def on_jointable_clicked(self, widget, *args):
@@ -188,18 +239,41 @@ class WindowMain(GladeWrapper):
         self.on_tableview_item_activated(self.tableview, path)
 
 
+    def on_connect_activate(self, widget, *args):
+        if not wm.get(DialogConnection):
+            wm.open(DialogConnection)
+
+
     def on_disconnect_activate(self, widget, *args):
-        client.disconnect()
-        utils.windows.close(self.glade_name)
-        utils.windows.open('dialog_connection')
+        do_disconnect = True
+
+        #if len([True for table in self.tables if table.player]) > 0:
+        if self.tables:
+            dialog = gtk.MessageDialog(parent=self.window,
+                                       flags=gtk.DIALOG_MODAL,
+                                       type=gtk.MESSAGE_QUESTION)
+            dialog.set_title(_('Disconnect from Server'))
+            dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+            dialog.add_button(gtk.STOCK_DISCONNECT, gtk.RESPONSE_OK)
+            dialog.set_markup(_('Are you sure you wish to disconnect?'))
+            dialog.format_secondary_text(_('You are playing a game. Disconnecting may forfeit the game, or incur penalties.'))
+
+            do_disconnect = (dialog.run() == gtk.RESPONSE_OK)
+            dialog.destroy()
+
+        if do_disconnect:
+            # Close all table windows, triggers stoppedObserving() on all tables.
+            # TODO: should do this on_disconnected
+            client.disconnect()
 
 
     def on_quit_activate(self, widget, *args):
-        utils.quit()
+        self.quit()
 
 
     def on_preferences_activate(self, widget, *args):
-        utils.windows.open('dialog_preferences')
+        if not wm.get(DialogPreferences):
+            wm.open(DialogPreferences)
 
 
     def on_homepage_activate(self, widget, *args):
@@ -209,7 +283,7 @@ class WindowMain(GladeWrapper):
     def on_about_activate(self, widget, *args):
         about = gtk.AboutDialog()
         about.set_name('PyBridge')
-        about.set_version(version)
+        about.set_version(PYBRIDGE_VERSION)
         about.set_copyright('Copyright (C) 2004-2007 Michael Banks')
         about.set_comments(_('A free online bridge game.'))
         about.set_website('http://pybridge.sourceforge.net/')
