@@ -30,9 +30,9 @@ else:  # All other platforms should use the PNG icon.
     ICON_PATH = env.find_pixmap("pybridge.png")
 
 
-class GladeWrapper:
+class GladeWrapper(object):
     """A superclass for Glade-based application windows.
-
+    
     Modified from: http://www.pixelbeat.org/libs/libglade.py
     """
 
@@ -44,18 +44,17 @@ class GladeWrapper:
         self.widgets = gtk.glade.XML(GLADE_PATH, self.glade_name,
                                      gettext.textdomain())
         self.window = self.widgets.get_widget(self.glade_name)
-        
+
         instance_attributes = {}
         for attribute in dir(self.__class__):
             instance_attributes[attribute] = getattr(self, attribute)
         self.widgets.signal_autoconnect(instance_attributes)
-        
+
         self.window.set_icon_from_file(ICON_PATH)
         if parent is not None:
             self.window.set_transient_for(parent.window)
-        self.parent = parent
-        
-        self.new()
+
+        self.setUp()
 
 
     def __getattr__(self, attribute):
@@ -67,12 +66,12 @@ class GladeWrapper:
         return widget
 
 
-    def new(self):
-        """Called when this window is opened."""
+    def setUp(self):
+        """Override this method to run code when this window is created."""
         pass
 
 
-    def cleanup(self):
-        """Called when this window is closed."""
+    def tearDown(self):
+        """Override this method to run code when this window is destroyed."""
         pass
 
