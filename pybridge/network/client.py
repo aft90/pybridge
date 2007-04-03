@@ -20,10 +20,13 @@ import sha
 from twisted.cred import credentials
 from twisted.internet import reactor
 from twisted.spread import pb
+from zope.interface import implements
 
-from pybridge.network.localbridge import LocalBridgeTable
-from pybridge.network.remotebridge import RemoteBridgeTable
-pb.setUnjellyableForClass(LocalBridgeTable, RemoteBridgeTable)
+from pybridge.interfaces.observer import ISubject
+
+from pybridge.network.localtable import LocalTable
+from pybridge.network.remotetable import RemoteTable
+pb.setUnjellyableForClass(LocalTable, RemoteTable)
 
 from pybridge.network.tablemanager import LocalTableManager, RemoteTableManager
 pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
@@ -35,21 +38,49 @@ pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
 class NetworkClient(pb.Referenceable):
     """Provides the glue between the client code and the server."""
 
+    implements(ISubject)
+
 
     def __init__(self):
+        self.listeners = []
+
         self.avatar = None  # Remote avatar reference.
         self.factory = pb.PBClientFactory()
-        self.eventHandler = None
-        
+        self.factory.clientConnectionLost = self.connectionLost
+
         self.username = None
         self.tables = {}  # Tables observed.
         self.tablesAvailable = None
         self.usersOnline = None
 
 
+    def connectionLost(self, connector, reason):
+        print "Connection lost:", reason.getErrorMessage()
+        self.notify('connectionLost', message=reason.getErrorMessage())
+
+
+# Implementation of ISubject.
+
+
+    def attach(self, listener):
+        self.listeners.append(listener)
+
+
+    def detach(self, listener):
+        self.listeners.remove(listener)
+
+
+    def notify(self, event, *args, **kwargs):
+        for listener in self.listeners:
+            listener.update(event, *args, **kwargs)
+
+
+# Methods
+
+
     def setEventHandler(self, handler):
+        print "REMOVE THIS"
         self.eventHandler = handler
-        self.factory.clientConnectionLost = handler.connectionLost
 
 
     def connect(self, hostname, port):
@@ -66,6 +97,7 @@ class NetworkClient(pb.Referenceable):
         self.factory.disconnect()
         self.avatar = None
         self.username = None
+        self.notify('disconnect')
 
 
     def login(self, username, password):
@@ -94,6 +126,7 @@ class NetworkClient(pb.Referenceable):
             """Actions to perform when connection succeeds."""
             self.avatar = avatar
             self.username = username
+            self.notify('connect')
             avatar.callRemote('getTables').addCallback(gotTables)
             avatar.callRemote('getUsers').addCallback(gotUsers)
         
@@ -112,6 +145,7 @@ class NetworkClient(pb.Referenceable):
             """Register user account on server."""
             hash = sha.new(password).hexdigest()
             d = avatar.callRemote('register', username, hash)
+            print "TODO: after registration, need to disconnect from server"
             return d
         
         anon = credentials.UsernamePassword('', '')
@@ -126,11 +160,10 @@ class NetworkClient(pb.Referenceable):
 
     def joinTable(self, tableid, host=False):
         
-        def success(args):
-            table, remote = args  # RemoteBridgeTable, RemoteReference.
-            table.master = remote  # Set RemoteReference.
-            table.setEventHandler(self.eventHandler)
+        def success((table, remote)):
+            table.master = remote  # Set RemoteReference for RemoteBridgeTable.
             self.tables[tableid] = table
+            self.notify('joinTable', tableid=tableid, table=table)
             return table
         
         if host:
@@ -146,6 +179,7 @@ class NetworkClient(pb.Referenceable):
         
         def success(r):
             del self.tables[tableid]
+            self.notify('leaveTable', tableid=tableid)
         
         d = self.avatar.callRemote('leaveTable', tableid=tableid)
         d.addCallback(success)
