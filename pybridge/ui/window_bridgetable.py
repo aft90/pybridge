@@ -24,6 +24,8 @@ from pybridge.network.client import client
 from eventhandler import SimpleEventHandler
 from manager import WindowManager
 
+from window_bidbox import WindowBidbox
+
 from pybridge.network.error import GameError
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 from pybridge.bridge.symbols import Direction, Level, Strain, Rank, Vulnerable
@@ -124,11 +126,11 @@ class WindowBridgetable(GladeWrapper):
 
 
     def tearDown(self):
-        print "Cleaning up"
-        self.table = None  # Dereference table.
         # Close all child windows.
-        for windowname in self.children.keys():
-            self.children.close(windowname)
+        for window in self.children.values():
+            self.children.close(window)
+
+        self.table = None  # Dereference table.
 
 
     def errback(self, failure):
@@ -177,7 +179,9 @@ class WindowBridgetable(GladeWrapper):
 
             # If user is a player and bidding in progress, open bidding box.
             if self.player and not self.table.game.bidding.isComplete():
-                self.children.open('window_bidbox', parent=self)
+                bidbox = self.children.open(WindowBidbox, parent=self)
+                bidbox.monitor(self.table.game, self.position, self.on_call_selected)
+
 
         # Initialise seat menu and player labels.
         for position in Direction:
@@ -421,15 +425,17 @@ class WindowBridgetable(GladeWrapper):
             d = self.player.callRemote('getHand')
             d.addCallbacks(self.table.game.revealHand, self.errback,
                            callbackKeywords={'position' : self.position})
-            self.children.open('window_bidbox', parent=self)
+            bidbox = self.children.open(WindowBidbox, parent=self)
+            bidbox.monitor(self.table.game, self.position, self.on_call_selected)
 
 
     def event_makeCall(self, call, position):
         self.addCall(call, position)
         self.setTurnIndicator()
         if self.table.game.bidding.isComplete():
-            self.children.close('window_bidbox')  # If playing.
             self.setContract()
+            if self.children.get(WindowBidbox):  # If a player.
+                self.children.close(self.children[WindowBidbox])
 
 
     def event_playCard(self, card, position):
@@ -507,11 +513,16 @@ class WindowBridgetable(GladeWrapper):
 # Signal handlers.
 
 
+    def on_call_selected(self, call):
+        if self.player:
+            d = self.player.callRemote('makeCall', call)
+            d.addErrback(self.errback)
+
+
     def on_card_clicked(self, card, position):
         if self.player:
             d = self.player.callRemote('playCard', card)
             d.addErrback(self.errback)
-            #d.addErrback(lambda _: True)  # Ignore any error.
 
 
     def on_seat_activated(self, widget, position):
@@ -528,7 +539,8 @@ class WindowBridgetable(GladeWrapper):
                 d.addCallbacks(self.table.game.revealHand, self.errback,
                                callbackKeywords={'position' : self.position})
                 if not self.table.game.bidding.isComplete():
-                    self.children.open('window_bidbox', parent=self)
+                    bidbox = self.children.open(WindowBidbox, parent=self)
+                    bidbox.monitor(self.table.game, self.position, self.on_call_selected)
         
         d = self.table.joinGame(position)
         d.addCallbacks(success, self.errback)
@@ -549,7 +561,8 @@ class WindowBridgetable(GladeWrapper):
             self.position = None
             self.takeseat.set_property('sensitive', True)
             self.leaveseat.set_property('sensitive', False)
-            self.children.close('window_bidbox')  # If open.
+            if self.children.get(WindowBidbox):
+                self.children.close(self.children[WindowBidbox])
         
         d = self.table.leaveGame(self.position)
         d.addCallbacks(success, self.errback)

@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2005 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
@@ -24,15 +24,14 @@ from eventhandler import SimpleEventHandler
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 from pybridge.bridge.call import Level, Strain
 
-CALL_NAMES = {'bid' : Bid, 'pass' : Pass,
-              'double' : Double, 'redouble' : Redouble, }
+CALL_NAMES = {'bid': Bid, 'pass': Pass, 'double': Double, 'redouble': Redouble}
 
-LEVEL_NAMES = {'1' : Level.One, '2' : Level.Two, '3' : Level.Three,
-               '4' : Level.Four, '5' : Level.Five, '6' : Level.Six,
-               '7' : Level.Seven, }
+LEVEL_NAMES = {'1': Level.One, '2': Level.Two,'3': Level.Three,
+               '4': Level.Four, '5': Level.Five, '6': Level.Six,
+               '7': Level.Seven, }
 
-STRAIN_NAMES = {'club' : Strain.Club, 'diamond' : Strain.Diamond,
-                'heart' : Strain.Heart, 'spade' : Strain.Spade,
+STRAIN_NAMES = {'club': Strain.Club, 'diamond': Strain.Diamond,
+                'heart': Strain.Heart, 'spade': Strain.Spade,
                 'nt' : Strain.NoTrump, }
 
 ALL_CALLS = [Pass(), Double(), Redouble()] + \
@@ -50,34 +49,57 @@ class WindowBidbox(GladeWrapper):
     glade_name = 'window_bidbox'
 
 
-    def new(self):
+    def setUp(self):
+        self.game = None
         self.eventHandler = SimpleEventHandler(self)
-        self.parent.table.game.attach(self.eventHandler)
-        self.set_available_calls(self.parent.position, self.parent.table.game.bidding)
 
 
-    def set_available_calls(self, position, bidding):
-        """Enables buttons representing the given calls."""
-        if bidding.whoseTurn() == position:
-            self.window.set_property('sensitive', True)
-            for call in ALL_CALLS:
-                button = self.get_button_from_call(call)
-                button.set_property('sensitive', bidding.isValidCall(call))
-        else:
-            self.window.set_property('sensitive', False)
+    def tearDown(self):
+        if self.game:
+            self.game.detach(self.eventHandler)
 
 
-# Registered event handlers.
+    def monitor(self, game, position, callSelected):
+        """Monitor the state of bidding in game.
+        
+        @param game: the BridgeGame for which to observe bidding session.
+        @param position: if user is playing, their position in the game.
+        @param callSelected: a handler to invoke when user selects a call.
+        """
+        if self.game:
+            self.game.detach(self.eventHandler)
+
+        self.game = game
+        self.position = position
+        self.callSelected = callSelected
+        self.game.attach(self.eventHandler)
+
+        self.enableCalls()
+
+
+# Event handlers.
 
 
     def event_makeCall(self, call, position):
-        self.set_available_calls(self.parent.position, self.parent.table.game.bidding)
+        self.enableCalls()
 
 
 # Utility methods.
 
 
-    def get_button_from_call(self, call):
+    def enableCalls(self):
+        """Enables buttons representing the calls available to player."""
+        if self.position == self.game.getTurn():
+            self.window.set_property('sensitive', True)
+            for call in ALL_CALLS:
+                button = self.getButtonFromCall(call)
+                isvalid = self.game.bidding.isValidCall(call)
+                button.set_property('sensitive', isvalid)
+        else:
+            self.window.set_property('sensitive', False)
+
+
+    def getButtonFromCall(self, call):
         """Returns a pointer to GtkButton object representing given call."""
         callname = [k for k,v in CALL_NAMES.items() if isinstance(call, v)][0]
         if isinstance(call, Bid):
@@ -88,14 +110,14 @@ class WindowBidbox(GladeWrapper):
             return getattr(self, 'button_%s' % callname)
 
 
-    def get_call_from_button(self, widget):
+    def getCallFromButton(self, widget):
         """Returns an instance of the call represented by given GtkButton."""
         text = widget.get_name().split('_')  # "button", calltype, level, strain
         calltype = CALL_NAMES[text[1]]
-        if calltype == Bid:
+        if calltype is Bid:
             level = LEVEL_NAMES[text[2]]
             strain = STRAIN_NAMES[text[3]]
-            return calltype(level, strain)
+            return Bid(level, strain)
         return calltype()
 
 
@@ -103,12 +125,8 @@ class WindowBidbox(GladeWrapper):
 
 
     def on_call_clicked(self, widget, *args):
-        """Builds a call object and submits."""
-        # Do not check validity of call: the server will do that.
-        # If call is invalid, ignore the resultant errback.
-        call = self.get_call_from_button(widget)
-        d = self.parent.player.callRemote('makeCall', call)
-        d.addErrback(lambda r: True)  # Ignore any error.
+        call = self.getCallFromButton(widget)
+        self.callSelected(call)  # Invoke external handler.
 
 
     def on_window_bidbox_delete_event(self, widget, *args):
