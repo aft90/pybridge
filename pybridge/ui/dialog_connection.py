@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -20,7 +20,10 @@ import gtk
 from wrapper import GladeWrapper
 
 from pybridge.network.client import client
-import utils
+from manager import wm
+from pybridge.ui import settings
+
+TCP_PORT = 5040
 
 
 class DialogConnection(GladeWrapper):
@@ -28,40 +31,34 @@ class DialogConnection(GladeWrapper):
     glade_name = 'dialog_connection'
 
 
-    def new(self):
+    def setUp(self):
         # Read connection parameters from client settings.
-        hostname = utils.settings.connection.get('hostname', '')
-        portnum = utils.settings.connection.get('portnum', str(utils.PORT))
-        username = utils.settings.connection.get('username', '')
-        password = utils.settings.connection.get('password', '')
-        
-        self.entry_hostname.set_text(hostname)
-        self.entry_portnum.set_text(portnum)
-        self.entry_username.set_text(username)
-        self.entry_password.set_text(password)
-        if password:
-            self.check_savepassword.set_active(True)
+
+        connection = settings.connection
+        if connection:
+            self.entry_hostname.set_text(connection['hostname'])
+            self.entry_portnum.set_text(connection['portnum'])
+            self.entry_username.set_text(connection['username'])
+            self.entry_password.set_text(connection['password'])
+            self.check_savepassword.set_active(connection['password'] != '')
+        else:
+            self.entry_portnum.set_text(str(TCP_PORT))
 
 
     def connectSuccess(self, avatar):
         """Actions to perform when connecting succeeds."""
-        hostname = self.entry_hostname.get_text()
-        portnum = self.entry_portnum.get_text()
-        username = self.entry_username.get_text()
-        if self.check_savepassword.get_active():
-            password = self.entry_password.get_text()
-        else:  # Flush password.
-            password = ''
-        
+
         # Save connection information.
-        utils.settings.connection['hostname'] = hostname
-        utils.settings.connection['portnum'] = portnum
-        utils.settings.connection['username'] = username
-        utils.settings.connection['password'] = password
-        
-        # Launch main window.
-        utils.windows.close('dialog_connection')
-        utils.windows.open('window_main')
+        settings.connection = {}
+        settings.connection['hostname'] = self.entry_hostname.get_text()
+        settings.connection['portnum'] = self.entry_portnum.get_text()
+        settings.connection['username'] = self.entry_username.get_text()
+        if self.check_savepassword.get_active():
+            settings.connection['password'] = self.entry_password.get_text()
+        else:  # Flush password.
+            settings.connection['password'] = ''
+
+        wm.close(self)
 
 
     def connectFailure(self, failure):
@@ -79,7 +76,7 @@ class DialogConnection(GladeWrapper):
 
 
     def on_dialog_connection_delete_event(self, widget, *args):
-        utils.quit()
+        wm.close(self)
 
 
     def on_field_changed(self, widget, *args):
@@ -100,15 +97,15 @@ class DialogConnection(GladeWrapper):
     def on_connect_clicked(self, widget, *args):
         # Prevent repeat clicks.
         self.button_connect.set_property('sensitive', False)
-        
+
         hostname = self.entry_hostname.get_text()
         port = int(self.entry_portnum.get_text())
         client.connect(hostname, port)
-        
+
         username = self.entry_username.get_text()
         password = self.entry_password.get_text()
         register = self.check_registeruser.get_active() == True
-        
+
         if register:
             # Attempt login only after registration.
             # TODO: can defer.waitForDeferred() be used here?
@@ -119,6 +116,6 @@ class DialogConnection(GladeWrapper):
         d.addCallbacks(self.connectSuccess, self.connectFailure)
 
 
-    def on_quit_clicked(self, widget, *args):
-        utils.quit()
+    def on_cancel_clicked(self, widget, *args):
+        wm.close(self)
 

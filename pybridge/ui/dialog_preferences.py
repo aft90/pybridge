@@ -21,7 +21,7 @@ import os
 from wrapper import GladeWrapper
 
 import pybridge.environment as env
-import utils
+from manager import wm
 
 
 class DialogPreferences(GladeWrapper):
@@ -53,10 +53,10 @@ class DialogPreferences(GladeWrapper):
 
     def on_cancelbutton_clicked(self, widget, *args):
         print "cancel"
-        utils.windows.close(self.glade_name)
+        wm.close(self)
 
 
     def on_okbutton_clicked(self, widget, *args):
         print "ok"
-        utils.windows.close(self.glade_name)
+        wm.close(self)
 
