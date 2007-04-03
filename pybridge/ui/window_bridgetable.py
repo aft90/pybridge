@@ -20,8 +20,10 @@ import gtk
 from wrapper import GladeWrapper
 
 from cardarea import CardArea
+from pybridge.network.client import client
 from eventhandler import SimpleEventHandler
-import utils
+from manager import WindowManager
+
 from pybridge.network.error import GameError
 from pybridge.bridge.call import Bid, Pass, Double, Redouble
 from pybridge.bridge.symbols import Direction, Level, Strain, Rank, Vulnerable
@@ -59,12 +61,11 @@ class WindowBridgetable(GladeWrapper):
     glade_name = 'window_bridgetable'
 
 
-    def new(self):
-        self.children = utils.WindowManager()
+    def setUp(self):
+        self.children = WindowManager()
         self.eventHandler = SimpleEventHandler(self)
 
         self.table = None  # Table currently displayed in window.
-        self.handler = None
         self.player, self.position = None, None
 
         # Set up "Take Seat" menu.
@@ -122,7 +123,7 @@ class WindowBridgetable(GladeWrapper):
         self.treeview_observers.append_column(column)
 
 
-    def cleanup(self):
+    def tearDown(self):
         print "Cleaning up"
         self.table = None  # Dereference table.
         # Close all child windows.
@@ -572,8 +573,8 @@ class WindowBridgetable(GladeWrapper):
 
 
     def on_leavetable_clicked(self, widget, *args):
-        d = self.parent.leaveTable(self.table.id)
-        d.addCallback(lambda _: utils.windows.close(self.glade_name, instance=self))
+        d = client.leaveTable(self.table.id)
+        d.addErrback(self.errback)
 
 
     def on_chat_message_changed(self, widget, *args):
@@ -590,8 +591,6 @@ class WindowBridgetable(GladeWrapper):
 
 
     def on_window_delete_event(self, widget, *args):
-        # TODO: if playing, "are you sure" dialog?
-        d = self.parent.leaveTable(self.table.id)
-        d.addCallback(lambda _: utils.windows.close(self.glade_name, instance=self))
+        self.on_leavetable_clicked(widget, *args)
         return True  # Stops window deletion taking place.
 
