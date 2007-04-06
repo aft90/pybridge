@@ -29,10 +29,10 @@ from pybridge.network.remotetable import RemoteTable
 pb.setUnjellyableForClass(LocalTable, RemoteTable)
 
 from pybridge.network.tablemanager import LocalTableManager, RemoteTableManager
-pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
-
 from pybridge.network.usermanager import LocalUserManager, RemoteUserManager
+pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
 pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
+
 
 
 class NetworkClient(pb.Referenceable):
@@ -50,13 +50,23 @@ class NetworkClient(pb.Referenceable):
 
         self.username = None
         self.tables = {}  # Tables observed.
-        self.tablesAvailable = None
-        self.usersOnline = None
+        self.tableRoster = None
+        self.userRoster = None
 
 
     def connectionLost(self, connector, reason):
-        print "Connection lost:", reason.getErrorMessage()
-        self.notify('connectionLost', message=reason.getErrorMessage())
+        # Reset invalidated remote references.
+        self.avatar = None
+        self.tables.clear()
+        self.tableRoster.clear()
+        self.userRoster.clear()
+
+        print "Lost connection: %s" % reason.getErrorMessage()
+        self.notify('connectionLost', reason=reason.getErrorMessage())
+
+
+    def errback(self, failure):
+        print "Error: %s" % failure.getErrorMessage()
 
 
 # Implementation of ISubject.
@@ -78,11 +88,6 @@ class NetworkClient(pb.Referenceable):
 # Methods
 
 
-    def setEventHandler(self, handler):
-        print "REMOVE THIS"
-        self.eventHandler = handler
-
-
     def connect(self, hostname, port):
         """Connect to server.
 
@@ -95,9 +100,6 @@ class NetworkClient(pb.Referenceable):
     def disconnect(self):
         """Drops connection to server."""
         self.factory.disconnect()
-        self.avatar = None
-        self.username = None
-        self.notify('disconnect')
 
 
     def login(self, username, password):
@@ -109,49 +111,48 @@ class NetworkClient(pb.Referenceable):
         The SHA-1 hash of the password string is transmitted, protecting
         the user's password from eavesdroppers.
         """
-        
-        def gotTables(tables):
-            self.tablesAvailable = tables
-            tables.setEventHandler(self.eventHandler)
-            for table in self.tablesAvailable.keys():
-                self.eventHandler.tableOpened(table)
-        
-        def gotUsers(users):
-            self.usersOnline = users
-            users.setEventHandler(self.eventHandler)
-            for user in self.usersOnline.keys():
-                self.eventHandler.userLoggedIn(user)
-        
+
+        def gotRoster(roster, name):
+            if name == 'tables':
+                self.tableRoster = roster
+            elif name == 'users':
+                self.userRoster = roster
+            self.notify('gotRoster', name=name, roster=roster)
+
         def connectedAsUser(avatar):
             """Actions to perform when connection succeeds."""
             self.avatar = avatar
             self.username = username
-            self.notify('connect')
-            avatar.callRemote('getTables').addCallback(gotTables)
-            avatar.callRemote('getUsers').addCallback(gotUsers)
-        
+            self.notify('connectedAsUser', username=username)
+
+            # Request services from server.
+            for rostername in ['tables', 'users']:
+                d = avatar.callRemote('getRoster', rostername)
+                d.addCallbacks(gotRoster, self.errback, callbackArgs=[rostername])
+
         hash = sha.new(password).hexdigest()
         creds = credentials.UsernamePassword(username, hash)
         d = self.factory.login(creds, client=self)
-        d.addCallback(connectedAsUser)
-        
+        d.addCallbacks(connectedAsUser, self.errback)
+        # for rostername...
+
         return d
 
 
     def register(self, username, password):
         """Register user account on connected server."""
-        
+
         def connectedAsAnonymousUser(avatar):
             """Register user account on server."""
             hash = sha.new(password).hexdigest()
             d = avatar.callRemote('register', username, hash)
-            print "TODO: after registration, need to disconnect from server"
+            # TODO: after registration, need to disconnect from server?
             return d
-        
+
         anon = credentials.UsernamePassword('', '')
         d = self.factory.login(anon, client=None)
         d.addCallback(connectedAsAnonymousUser)
-        
+
         return d
 
 
@@ -159,13 +160,13 @@ class NetworkClient(pb.Referenceable):
 
 
     def joinTable(self, tableid, host=False):
-        
+
         def success((table, remote)):
             table.master = remote  # Set RemoteReference for RemoteBridgeTable.
             self.tables[tableid] = table
             self.notify('joinTable', tableid=tableid, table=table)
             return table
-        
+
         if host:
             d = self.avatar.callRemote('hostTable', tableid=tableid,
                                        tabletype='bridge')
@@ -176,11 +177,11 @@ class NetworkClient(pb.Referenceable):
 
 
     def leaveTable(self, tableid):
-        
+
         def success(r):
             del self.tables[tableid]
             self.notify('leaveTable', tableid=tableid)
-        
+
         d = self.avatar.callRemote('leaveTable', tableid=tableid)
         d.addCallback(success)
         return d
