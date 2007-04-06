@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,88 +10,38 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from UserDict import UserDict
-from twisted.spread import pb
+from roster import LocalRoster, RemoteRoster
 
 
-class LocalUserManager(UserDict, pb.Cacheable):
-    """Information that the server provides to all connected clients.
-    
-    Subclassing dict.
-    """
+class LocalUserManager(LocalRoster):
 
 
-    def __init__(self):
-        UserDict.__init__(self)
-        self.observers = []
-
-
-    def getStateToCacheAndObserveFor(self, perspective, observer):
-        self.observers.append(observer)
-        
-        # TODO: iterate through users and pull out information.
-        state = {}
-        for username in self.keys():
-            state[username] = {}  # For now, just provide a blank dict.
-        
-        return state
-
-
-    def stoppedObserving(self, perspective, observer):
-        self.observers.remove(observer)
-
-    
-    def userLoggedIn(self, user):
+    def userLogin(self, user):
         self[user.name] = user
-        state = {}
-        self.updateObservers('userLoggedIn', username=user.name, info=state)
+        self.notify('userLogin', username=user.name, info=user.info)
 
 
-    def userLoggedOut(self, user):
+    def userLogout(self, user):
         del self[user.name]
-        self.updateObservers('userLoggedOut', username=user.name)
-        
-
-# Utility methods.
-
-
-    def updateObservers(self, event, **kwargs):
-        """For each observer, calls event handler with provided kwargs."""
-        for observer in self.observers:
-            observer.callRemote(event, **kwargs)
+        self.notify('userLogout', username=user.name)
 
 
 
-
-class RemoteUserManager(UserDict, pb.RemoteCache):
-    """Maintains a cache of a remote LocalUserManager.
-
-    """
+class RemoteUserManager(RemoteRoster):
 
 
-    def setCopyableState(self, state):
-        self.update(state)
-
-
-    def setEventHandler(self, handler):
-        self.eventHandler = handler
-
-
-# Remote update methods.
-
-
-    def observe_userLoggedIn(self, username, info):
+    def observe_userLogin(self, username, info):
         self[username] = info
-        self.eventHandler.userLoggedIn(username)
+        self.notify('userLogin', username=username, info=info)
 
 
-    def observe_userLoggedOut(self, username):
+    def observe_userLogout(self, username):
         del self[username]
-        self.eventHandler.userLoggedOut(username)
+        self.notify('userLogout', username=username)
 

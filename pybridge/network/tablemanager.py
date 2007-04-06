@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,87 +10,40 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from UserDict import UserDict
-from twisted.spread import pb
+from roster import LocalRoster, RemoteRoster
 
 
-class LocalTableManager(UserDict, pb.Cacheable):
-    """Information that the server provides to all connected clients.
-    
-    """
+class LocalTableManager(LocalRoster):
 
 
-    def __init__(self):
-        UserDict.__init__(self)
-        self.observers = []
-
-
-    def getStateToCacheAndObserveFor(self, perspective, observer):
-        self.observers.append(observer)
-        
-        # TODO: iterate through tables and pull out information.
-        state = {}
-        for tableid in self.keys():
-            state[tableid] = {'type' : 'bridge'}
-        
-        return state
-
-
-    def stoppedObserving(self, perspective, observer):
-        self.observers.remove(observer)
-
-    
     def openTable(self, table):
+        # TODO: don't notify clients which don't recognise game type.
         self[table.id] = table
-        state = {'type' : 'bridge'}
-        self.updateObservers('tableOpened', tableid=table.id, info=state)
+        self.notify('openTable', tableid=table.id, info=table.info)
 
 
     def closeTable(self, table):
         del self[table.id]
-        self.updateObservers('tableClosed', tableid=table.id)
-
-
-# Utility methods.
-
-
-    def updateObservers(self, event, **kwargs):
-        """For each observer, calls event handler with provided kwargs."""
-        for observer in self.observers:
-            observer.callRemote(event, **kwargs)
+        self.notify('closeTable', tableid=table.id)
 
 
 
 
-class RemoteTableManager(UserDict, pb.RemoteCache):
-    """Maintains a cache of a server-side LocalTableManager object.
-
-    """
+class RemoteTableManager(RemoteRoster):
 
 
-    def setCopyableState(self, state):
-        self.update(state)
-
-
-    def setEventHandler(self, handler):
-        self.eventHandler = handler
-
-
-# Remote update methods.
-
-
-    def observe_tableOpened(self, tableid, info):
+    def observe_openTable(self, tableid, info):
         self[tableid] = info
-        self.eventHandler.tableOpened(tableid)
+        self.notify('openTable', tableid=tableid, info=info)
 
 
-    def observe_tableClosed(self, tableid):
+    def observe_closeTable(self, tableid):
         del self[tableid]
-        self.eventHandler.tableClosed(tableid)
+        self.notify('closeTable', tableid=tableid)
 
