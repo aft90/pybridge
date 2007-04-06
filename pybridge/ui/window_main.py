@@ -96,27 +96,6 @@ class WindowMain(GladeWrapper):
         print "Error: %s" % failure.getErrorMessage()
 
 
-    def joinTable(self, tableid, host=False):
-        
-        def success(table):
-            window = self.tables.open(WindowBridgetable, id=tableid)
-            window.setTable(table)
-            
-        d = client.joinTable(tableid, host)
-        d.addCallback(success)
-        return d
-
-
-    def leaveTable(self, tableid):
-        
-        def success(r):
-            del self.tables[tableid]
-        
-        d = client.leaveTable(tableid)
-        d.addCallback(success)
-        return d
-
-
 # Event handlers.
 
 
@@ -153,6 +132,11 @@ class WindowMain(GladeWrapper):
             roster.attach(self.eventHandler)
         except KeyError:
             pass  # Ignore an unrecognised roster.
+
+
+    def event_joinTable(self, tableid, table):
+        window = self.tables.open(WindowBridgetable, id=tableid)
+        window.setTable(table)
 
 
     def event_leaveTable(self, tableid):
@@ -202,7 +186,8 @@ class WindowMain(GladeWrapper):
         iter = self.tableview_model.get_iter(path)
         tableid = self.tableview_model.get_value(iter, 0)
         if tableid not in client.tables:
-            self.joinTable(tableid)
+            d = client.joinTable(tableid)
+            d.addErrback(self.errback)
             self.jointable.set_property('sensitive', False)
 
 
