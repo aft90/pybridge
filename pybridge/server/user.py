@@ -26,6 +26,8 @@ from pybridge.network.error import DeniedRequest, IllegalRequest
 
 class User(pb.Avatar):
 
+    info = property(lambda self: {})
+
 
     def __init__(self, name):
         self.name = name  # User name.
@@ -62,14 +64,14 @@ class User(pb.Avatar):
         return info
 
 
-    def perspective_getTables(self):
-        """Provides RemoteTableManager to the client."""
-        return self.server.tables
-
-
-    def perspective_getUsers(self):
-        """Provides RemoteUserManager to the client."""
-        return self.server.users
+    def perspective_getRoster(self, name):
+        """Provides roster requested by client."""
+        if name == 'tables':
+            return self.server.tables
+        elif name == 'users':
+            return self.server.users
+        else:
+            raise DeniedRequest, "Unknown roster name \'%s\'" % name
 
 
     def perspective_hostTable(self, tableid, tabletype):

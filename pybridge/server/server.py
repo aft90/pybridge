@@ -23,34 +23,36 @@ import database as db
 from pybridge import __version__
 
 from pybridge.network.error import DeniedRequest, IllegalRequest
+from pybridge.network.localtable import LocalTable
 from pybridge.network.tablemanager import LocalTableManager
 from pybridge.network.usermanager import LocalUserManager
 
-from pybridge.network.localtable import LocalTable
 from pybridge.bridge.game import BridgeGame
 
 
-class Server:
+class Server(object):
 
 
     def __init__(self):
+        # Set up rosters.
         self.tables = LocalTableManager()
         self.users = LocalUserManager()
+
         self.version = __version__
         self.supported = ['bridge']
 
 
     def userConnects(self, user):
         """"""
-        self.users.userLoggedIn(user)
-        db.UserAccount.byUsername(user.name).set(lastLogin=datetime.now())
         log.msg("User %s connected" % user.name)
+        self.users.userLogin(user)
+        db.UserAccount.byUsername(user.name).set(lastLogin=datetime.now())
 
 
     def userDisconnects(self, user):
         """"""
-        self.users.userLoggedOut(user)
         log.msg("User %s disconnected" % user.name)
+        self.users.userLogout(user)
 
 
 # Methods invoked by user perspectives.
@@ -85,4 +87,5 @@ class Server:
             table.id = tableid
             table.server = self
             self.tables.openTable(table)
+            #self.tables[tableid] = table
 
