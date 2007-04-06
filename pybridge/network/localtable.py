@@ -35,6 +35,8 @@ class LocalTable(pb.Cacheable):
 
     implements(ITable, ISubject, IListener)
 
+    info = property(lambda self: {'game': self.gametype.__name__})
+
 
     def __init__(self, id, gametype, config={}):
         self.listeners = []

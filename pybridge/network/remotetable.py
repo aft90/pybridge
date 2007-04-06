@@ -40,6 +40,8 @@ class RemoteTable(pb.RemoteCache):
 
     implements(ITable, ISubject)
 
+    info = property(lambda self: {'game': self.gametype.__name__})
+
 
     def __init__(self):
         self.master = None  # Server-side ITable object.
@@ -66,10 +68,6 @@ class RemoteTable(pb.RemoteCache):
 
 
 # Implementation of ITable.
-
-
-    def setEventHandler(self, e):
-        print "called event handler - remove this!"
 
 
     def joinGame(self, position, user=None):
