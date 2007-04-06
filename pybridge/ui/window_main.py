@@ -35,8 +35,6 @@ from dialog_newtable import DialogNewtable
 from dialog_preferences import DialogPreferences
 from window_bridgetable import WindowBridgetable
 
-from eventhandler import SimpleEventHandler, eventhandler  # TODO: remove
-
 TABLE_ICON = env.find_pixmap("table.png")
 USER_ICON = env.find_pixmap("user.png")
 
@@ -44,8 +42,6 @@ USER_ICON = env.find_pixmap("user.png")
 class WindowMain(GladeWrapper):
 
     glade_name = 'window_main'
-
-    callbacks = ('tableOpened', 'tableClosed', 'userLoggedIn', 'userLoggedOut')
 
     tableview_icon = gtk.gdk.pixbuf_new_from_file_at_size(TABLE_ICON, 48, 48)
     peopleview_icon = gtk.gdk.pixbuf_new_from_file_at_size(USER_ICON, 48, 48)
@@ -70,18 +66,16 @@ class WindowMain(GladeWrapper):
         self.peopleview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
         self.peopleview.set_model(self.peopleview_model)
         
-        # Register event callbacks.
+        # Attach event handler to listen for events.
         self.eventHandler = SimpleEventHandler(self)
         client.attach(self.eventHandler)
-        client.setEventHandler(eventhandler)  # REMOVE
-        eventhandler.registerCallbacksFor(self, self.callbacks)  # REMOVE
 
         if not wm.get(DialogConnection):
             wm.open(DialogConnection, parent=self)
 
 
     def tearDown(self):
-        #eventhandler.unregister(self, self.callbacks)
+        # TODO: detach event handler from all attached subjects.
 
         # Close all windows.
         for window in wm.values():
@@ -123,36 +117,54 @@ class WindowMain(GladeWrapper):
         return d
 
 
-# Registered event handlers.
+# Event handlers.
 
 
-    def event_connect(self):
+    def event_connectedAsUser(self, username):
         self.notebook.set_property('sensitive', True)
         self.menu_connect.set_property('visible', False)
         self.menu_disconnect.set_property('visible', True)
+        self.menu_newtable.set_property('sensitive', True)
+        self.newtable.set_property('sensitive', True)
 
 
-    def event_disconnect(self):
+    def event_connectionLost(self, reason):
         for table in self.tables.values():
             self.tables.close(table)
 
         self.notebook.set_property('sensitive', False)
         self.menu_connect.set_property('visible', True)
         self.menu_disconnect.set_property('visible', False)
+        self.menu_newtable.set_property('sensitive', False)
+        self.newtable.set_property('sensitive', False)
+
         self.tableview_model.clear()
         self.peopleview_model.clear()
 
 
+    def event_gotRoster(self, name, roster):
+        lookup = {'tables' : (self.tableview_model, self.tableview_icon),
+                  'users' : (self.peopleview_model, self.peopleview_icon)}
+
+        try:
+            model, icon = lookup[name]
+            for id, info in roster.items():
+                model.append([id, icon])
+            roster.attach(self.eventHandler)
+        except KeyError:
+            pass  # Ignore an unrecognised roster.
+
+
     def event_leaveTable(self, tableid):
-        self.tables.close(self.tables[tableid])
+        self.tables.close(self.tables[tableid])  # Close window.
 
 
-    def event_tableOpened(self, tableid):
+    def event_openTable(self, tableid, info):
         """Adds a table to the table listing."""
         self.tableview_model.append([tableid, self.tableview_icon])
 
 
-    def event_tableClosed(self, tableid):
+    def event_closeTable(self, tableid):
         """Removes a table from the table listing."""
         
         def func(model, path, iter, user_data):
@@ -163,12 +175,12 @@ class WindowMain(GladeWrapper):
         self.tableview_model.foreach(func, tableid)
 
 
-    def event_userLoggedIn(self, user):
+    def event_userLogin(self, username, info):
         """Adds a user to the people listing."""
-        self.peopleview_model.append([user, self.peopleview_icon])
+        self.peopleview_model.append([username, self.peopleview_icon])
 
 
-    def event_userLoggedOut(self, user):
+    def event_userLogout(self, username):
         """Removes a user from the people listing."""
         
         def func(model, path, iter, user_data):
@@ -176,7 +188,7 @@ class WindowMain(GladeWrapper):
                 model.remove(iter)
                 return True
         
-        self.peopleview_model.foreach(func, user)
+        self.peopleview_model.foreach(func, username)
 
 
 # Signal handlers.
@@ -205,7 +217,7 @@ class WindowMain(GladeWrapper):
             # Display information about table.
             self.frame_tableinfo.set_property('sensitive', True)
             self.label_tableid.set_text(tableid)
-            self.label_tabletype.set_text(client.tablesAvailable[tableid]['type'])
+            self.label_tabletype.set_text(client.tableRoster[tableid]['game'])
         else:
             self.frame_tableinfo.set_property('sensitive', False)
             self.label_tableid.set_text('')
