@@ -40,7 +40,7 @@ class Playing(object):
         if declarer not in Direction:
             raise TypeError, "Expected Direction, got %s" % type(declarer)
         if trumpSuit not in Suit and trumpSuit is not None:  # None => No Trumps
-            raise TypeError, "Expected Suit, got %s" % type(suit)
+            raise TypeError, "Expected Suit, got %s" % type(trumpSuit)
         
         self.trumps = trumpSuit
         self.declarer = declarer
