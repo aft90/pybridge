@@ -41,7 +41,6 @@ from twisted.internet import reactor
 from zope.interface import implements
 
 from pybridge.interfaces.observer import IListener
-from pybridge.interfaces.serverstate import IServerEvents
 
 from pybridge.network.client import NetworkClient
 from pybridge.network.error import GameError
@@ -86,8 +85,6 @@ class Monkey:
     http://folklore.org/StoryView.py?project=Macintosh&story=Monkey_Lives.txt
     """
 
-    implements(IServerEvents)
-
 
     def __init__(self, client):
         self.client = client
@@ -115,7 +112,7 @@ class Monkey:
 
     def joinTable(self):
         print "Looking for a table to join..."
-        if self.client.tablesAvailable.get('Monkey'):
+        if self.client.tableRoster.get('Monkey'):
             d = self.client.joinTable('Monkey')
         else:
             d = self.client.joinTable('Monkey', host=True)
