@@ -84,6 +84,7 @@ class WindowBridgetable(GladeWrapper):
         # Set up CardArea widget.
         self.cardarea = CardArea()
         self.cardarea.on_card_clicked = self.on_card_clicked
+        self.cardarea.on_hand_clicked = self.on_hand_clicked
         self.cardarea.set_size_request(640, 480)
         self.scrolled_cardarea.add_with_viewport(self.cardarea)
         self.cardarea.show()
@@ -258,6 +259,44 @@ class WindowBridgetable(GladeWrapper):
         self.score_store.prepend([textContract, textMade, textNS, textEW])
 
 
+    def gameComplete(self):
+        for position in Direction:
+            self.redrawHand(position, all=True)
+        self.setTurnIndicator()
+
+        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
+                                type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK)
+        dialog.set_title(_('Game result'))
+
+        # Determine and display score in dialog box.
+        if self.table.game.contract:
+            declarerWon, defenceWon = self.table.game.play.getTrickCount()
+            required = self.table.game.contract['bid'].level.index + 7
+            offset = declarerWon - required
+            score = self.table.game.getScore()
+            self.addScore(self.table.game.contract, declarerWon, score)
+
+            contractText = self.formatContract(self.table.game.contract)
+            if offset > 0:
+                dialog.set_markup(_('Contract %s made by %s tricks.') \
+                                  % (contractText, offset))
+            elif offset < 0:
+                dialog.set_markup(_('Contract %s failed by %s tricks.') \
+                                  % (contractText, abs(offset)))
+            else:
+                dialog.set_markup(_('Contract %s made exactly.') % contractText)
+
+            scorer = (score >= 0 and _('declarer')) or _('defence')
+            dialog.format_secondary_text(_('Score %s points for %s.' % (abs(score), scorer)))
+
+        else:
+            dialog.set_markup(_('Bidding passed out.'))
+            dialog.format_secondary_text(_('No score.'))
+
+        dialog.run()
+        dialog.destroy()
+
+
     def redrawHand(self, position, all=False):
         """Redraws cards making up the hand at position.
         
@@ -349,8 +388,7 @@ class WindowBridgetable(GladeWrapper):
             text = _("It is %s's turn") % str(turn)
             self.statusbar.push(context, text)
         except GameError:  # Game not in progress
-            turn = None
-        self.cardarea.set_turn(turn)
+            pass
 
 
     def setVulnerability(self):
@@ -413,7 +451,7 @@ class WindowBridgetable(GladeWrapper):
         #self.children.close('dialog_gameresult')
         self.resetGame()
 
-        #self.redrawTrick()  # Clear trick.
+        self.redrawTrick()  # Clear trick.
         for position in Direction:
             self.redrawHand(position)
 
@@ -432,10 +470,14 @@ class WindowBridgetable(GladeWrapper):
     def event_makeCall(self, call, position):
         self.addCall(call, position)
         self.setTurnIndicator()
+
         if self.table.game.bidding.isComplete():
             self.setContract()
             if self.children.get(WindowBidbox):  # If a player.
                 self.children.close(self.children[WindowBidbox])
+
+        if not self.table.game.inProgress():
+            self.gameComplete()
 
 
     def event_playCard(self, card, position):
@@ -446,34 +488,9 @@ class WindowBridgetable(GladeWrapper):
         self.setTrickCount()
         self.redrawTrick()
         self.redrawHand(playfrom)
-
-
-    def event_gameFinished(self):
-        for position in self.table.game.deal:
-            self.redrawHand(position, all=True)
-        self.setTurnIndicator()
-
-        # Determine and display score in dialog box.
-        contract = self.table.game.bidding.getContract()
-        if contract:
-            trickCount = self.table.game.getTrickCount()
-            offset = trickCount['declarerWon'] - trickCount['required']
-            score = self.table.game.score()
-            self.addScore(contract, trickCount['declarerWon'], score)
-
-            textContract = _('Contract %s') % self.formatContract(contract)
-            textTrick = (offset > 0 and _('made by %s tricks') % offset) or \
-                        (offset < 0 and _('failed by %s tricks') % abs(offset)) or \
-                        _('made exactly')
-            scorer = (score >= 0 and _('declarer')) or _('defence')
-            textScore = _('Score %s points for %s') % (abs(score), scorer)
-
-            message = '%s %s.\n\n%s.' % (textContract, textTrick, textScore)
-        else:
-            message = _('Bidding passed out.')
-
-        dialog = self.children.open('dialog_gameresult', parent=self)
-        dialog.setup(message)
+        
+        if not self.table.game.inProgress():
+            self.gameComplete()
 
 
     def event_revealHand(self, hand, position):
@@ -519,10 +536,17 @@ class WindowBridgetable(GladeWrapper):
             d.addErrback(self.errback)
 
 
+    def on_hand_clicked(self, position):
+        if not self.player and not self.table.players.get(position):
+            # Join game at position.
+            self.on_seat_activated(self.cardarea, position)
+
+
     def on_card_clicked(self, card, position):
         if self.player:
-            d = self.player.callRemote('playCard', card)
-            d.addErrback(self.errback)
+            if self.table.game.inProgress() and self.table.game.play:
+                d = self.player.callRemote('playCard', card)
+                d.addErrback(self.errback)
 
 
     def on_seat_activated(self, widget, position):
@@ -531,8 +555,8 @@ class WindowBridgetable(GladeWrapper):
             self.player = player  # RemoteReference to BridgePlayer object.
             self.position = position
 
-            self.takeseat.set_property('sensitive', False)
-            self.leaveseat.set_property('sensitive', True)
+            self.takeseat.set_property('visible', False)
+            self.leaveseat.set_property('visible', True)
             # If game is running and bidding is active, open bidding box.
             if self.table.game.inProgress():
                 d = self.player.callRemote('getHand')
@@ -559,8 +583,8 @@ class WindowBridgetable(GladeWrapper):
         def success(r):
             self.player = None
             self.position = None
-            self.takeseat.set_property('sensitive', True)
-            self.leaveseat.set_property('sensitive', False)
+            self.takeseat.set_property('visible', True)
+            self.leaveseat.set_property('visible', False)
             if self.children.get(WindowBidbox):
                 self.children.close(self.children[WindowBidbox])
         
