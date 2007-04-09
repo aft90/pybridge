@@ -62,11 +62,13 @@ class CardArea(CairoCanvas):
     def __init__(self):
         super(CardArea, self).__init__()  # Initialise parent.
 
-        # To receive card clicked events, override this with external method.
-        self.on_card_clicked = lambda card, player: True
+        # To receive these events, override with external method.
+        self.on_card_clicked = lambda card, position: True
+        self.on_hand_clicked = lambda position: True
 
         self.hands = {}
         self.trick = None
+        self.players = {}
         self.set_player_mapping(Direction.South)
 
         self.connect('button_press_event', self.button_press)
@@ -106,15 +108,14 @@ class CardArea(CairoCanvas):
         @param omit: a list of elements of hand not to draw.
         """
 
-        # TODO: coords should be dict (card : (pos_x, pos_y)), but this breaks when hashing.
         def get_coords_for_hand():
-            coords = []
+            coords = {}
             if player in (self.TOP, self.BOTTOM):
                 pos_y = 0
                 if facedown is True:  # Draw cards in one continuous row.
                     for index, card in enumerate(hand):
                         pos_x = index * self.spacing_x
-                        coords.append((card, pos_x, pos_y))
+                        coords[card] = (pos_x, pos_y)
                 else:  # Insert a space between each suit.
                     spaces = len([1 for suitcards in suits.values() if len(suitcards) > 0]) - 1
                     for index, card in enumerate(hand):
@@ -122,21 +123,21 @@ class CardArea(CairoCanvas):
                         insert = len([1 for suit, suitcards in suits.items() if len(suitcards) > 0
                                      and RED_BLACK.index(card.suit) > RED_BLACK.index(suit)])
                         pos_x = (index + insert) * self.spacing_x
-                        coords.append((card, pos_x, pos_y))
+                        coords[card] = (pos_x, pos_y)
             else:  # LEFT or RIGHT.
                 if facedown is True:  # Wrap cards to a 4x4 grid.
                     for index, card in enumerate(hand):
                         adjust = player == self.RIGHT and index == 12 and 3
                         pos_x = ((index % 4) + adjust) * self.spacing_x
                         pos_y = (index / 4) * self.spacing_y
-                        coords.append((card, pos_x, pos_y))
+                        coords[card] = (pos_x, pos_y)
                 else:
                     longest = max([len(cards) for cards in suits.values()])
                     for index, card in enumerate(hand):
                         adjust = player == self.RIGHT and longest - len(suits[card.suit])
                         pos_x = (suits[card.suit].index(card) + adjust) * self.spacing_x
                         pos_y = RED_BLACK.index(card.suit) * self.spacing_y
-                        coords.append((card, pos_x, pos_y))
+                        coords[card] = (pos_x, pos_y)
             return coords
 
         if facedown is False:
@@ -160,14 +161,14 @@ class CardArea(CairoCanvas):
             coords = get_coords_for_hand()
 
         # Determine dimensions of hand.
-        width = max([x for card, x, y in coords]) + self.card_width
-        height = max([y for card, x, y in coords]) + self.card_height
+        width = max([x for x, y in coords.values()]) + self.card_width
+        height = max([y for x, y in coords.values()]) + self.card_height
         surface, context = self.new_surface(width, height)
 
         # Draw cards to surface.
         visible = [(i, card) for i, card in enumerate(hand) if card not in omit]
         for i, card in visible:
-            pos_x, pos_y = coords[i][1:]
+            pos_x, pos_y = coords[card]
             self.draw_card(context, pos_x, pos_y, card)
 
         # Save
@@ -189,14 +190,21 @@ class CardArea(CairoCanvas):
         @param position: the position of the player.
         @param name: the name of the player, or None.
         """
+        self.players[position] = None
+
+        # If no name specified, show hand at position as translucent.
+        opacity = (name is None) and 0.5 or 1
+        self.update_item('hand-%s' % position, opacity=opacity)
+
         id = 'player-%s' % position
-        if name is None or id in self.items:
-            self.remove_item(id)
-            return
 
         layout = pango.Layout(self.create_pango_context())
         layout.set_font_description(self.font_description)
-        layout.set_text('%s: %s' % (DIRECTION_SYMBOLS[position], name))
+        if name is None:
+            layout.set_text('%s' % DIRECTION_SYMBOLS[position])
+        else:
+            layout.set_text('%s: %s' % (DIRECTION_SYMBOLS[position], name))
+
         # Create an ImageSurface respective to dimensions of text.
         width, height = layout.get_pixel_size()
         width += 8; height += 4
@@ -270,47 +278,32 @@ class CardArea(CairoCanvas):
         self.trick = trick  # Save trick and return.
 
 
-    def set_turn(self, turn):
-        """Sets the turn indicator.
-        
-        The hand of the player on turn is drawn opaque;
-        the other hands are drawn translucent.
-
-        @param turn: the position of the turn indicator.
-        @type turn: Direction or None
-        """
-        if turn is None:
-            return
-
-        for position in Direction:
-            opacity = (position is turn) and 1 or 0.5
-            self.update_item('hand-%s' % position, opacity=opacity)
-
-
     def button_press(self, widget, event):
-        """Determines if a card was clicked: if so, calls card_selected."""
+        """Determines if a card was clicked: if so, calls on_card_selected."""
         if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
             found_hand = False
     
             # Determine the hand which was clicked.
-            for player in self.hands:
-                card_coords = self.hands[player]['coords']
-                surface = self.hands[player]['surface']
-                hand_x, hand_y = self.items['hand-%s' % player]['area'][0:2]
+            for position in self.hands:
+                card_coords = self.hands[position]['coords']
+                surface = self.hands[position]['surface']
+                hand_x, hand_y = self.items['hand-%s' % position]['area'][0:2]
                 if (hand_x <= event.x <= hand_x + surface.get_width()) and \
                    (hand_y <= event.y <= hand_y + surface.get_height()):
                     found_hand = True
                     break
 
             if found_hand:
+                self.on_hand_clicked(position)
+
                 # Determine the card in hand which was clicked.
                 pos_x, pos_y = event.x - hand_x, event.y - hand_y
                 # Iterate through visible cards backwards.
-                for i, card in self.hands[player]['visible'][::-1]:
-                    x, y = card_coords[i][1:]
+                for i, card in self.hands[position]['visible'][::-1]:
+                    x, y = card_coords[card]
                     if (x <= pos_x <= x + self.card_width) and \
                        (y <= pos_y <= y + self.card_height):
-                        self.on_card_clicked(card, player)
+                        self.on_card_clicked(card, position)
                         break
 
         return True  # Expected to return True.
