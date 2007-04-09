@@ -64,8 +64,12 @@ class Card(object, pb.Copyable, pb.RemoteCopy):
         return cmp(selfIndex, otherIndex)
 
 
-    def __str__(self):
-        return "%s of %ss" % (self.rank, self.suit)
+    def __hash__(self):
+        return hash((self.rank, self.suit))
+
+
+    def __repr__(self):
+        return "Card(%s, %s)" % (self.rank, self.suit)
 
 
     def getStateToCopy(self):
