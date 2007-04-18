@@ -136,6 +136,7 @@ class WindowBridgetable(GladeWrapper):
 
     def errback(self, failure):
         print "Error: %s" % failure.getErrorMessage()
+        #print failure.getBriefTraceback()
 
 
     def setTable(self, table):
@@ -306,17 +307,23 @@ class WindowBridgetable(GladeWrapper):
         @param position:
         @param all: If True, do not filter out cards played.
         """
-        if all is True or self.table.game.play is None:
-            played = []
-        else:
-            played = self.table.game.play.played[position]
-
         try:
             hand = self.table.game.getHand(position)
-            self.cardarea.set_hand(hand, position, omit=played)
-        except GameError:  # Unknown hand: draw cards face down.
-            cards, played = range(13), range(len(played))
-            self.cardarea.set_hand(cards, position, facedown=True, omit=played)
+            facedown = False
+        except GameError:  # Unknown hand.
+            hand = range(13)
+            facedown = True
+
+        if all is True or self.table.game.play is None:
+            available = hand
+        else:
+            played = self.table.game.play.played[position]
+            if facedown:  # Draw cards face down for unknown hand. 
+                available = range(13 - len(played))
+            else:
+                available = [card for card in hand if card not in played]
+
+        self.cardarea.set_hand(hand, position, facedown, visible=available)
 
 
     def redrawTrick(self):
@@ -557,11 +564,15 @@ class WindowBridgetable(GladeWrapper):
 
             self.takeseat.set_property('visible', False)
             self.leaveseat.set_property('visible', True)
-            # If game is running and bidding is active, open bidding box.
+
+            self.cardarea.set_player_mapping(self.position)
+
             if self.table.game.inProgress():
                 d = self.player.callRemote('getHand')
                 d.addCallbacks(self.table.game.revealHand, self.errback,
                                callbackKeywords={'position' : self.position})
+
+                # If game is running and bidding is active, open bidding box.
                 if not self.table.game.bidding.isComplete():
                     bidbox = self.children.open(WindowBidbox, parent=self)
                     bidbox.monitor(self.table.game, self.position, self.on_call_selected)

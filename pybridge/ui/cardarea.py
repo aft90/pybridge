@@ -41,7 +41,7 @@ DIRECTION_SYMBOLS = {Direction.North : _('North'), Direction.East : _('East'),
 
 
 class CardArea(CairoCanvas):
-    """This widget displays a graphical view of card hands and tricks.
+    """This widget is a graphical display of tricks and hands of cards.
     
     Requirements: Cairo (>=1.0), PyGTK (>= 2.8).
     """
@@ -66,10 +66,11 @@ class CardArea(CairoCanvas):
         self.on_card_clicked = lambda card, position: True
         self.on_hand_clicked = lambda position: True
 
+        self.focus = Direction.South
         self.hands = {}
         self.trick = None
         self.players = {}
-        self.set_player_mapping(Direction.South)
+        self.set_player_mapping(Direction.South, redraw=False)
 
         self.connect('button_press_event', self.button_press)
         self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
@@ -96,21 +97,21 @@ class CardArea(CairoCanvas):
         context.reset_clip()
 
 
-    def set_hand(self, hand, player, facedown=False, omit=[]):
-        """Sets the hand of player. Draws cards in hand to context.
+    def set_hand(self, hand, position, facedown=False, visible=[]):
+        """Sets the hand of player at position. Draws cards in hand to context.
         
         The hand is buffered into an ImageSurface, since hands change
         infrequently and multiple calls to draw_card() are expensive.
         
         @param hand: a list of Card objects.
-        @param player: a member of Direction.
+        @param position: a member of Direction.
         @param facedown: if True, cards are drawn face-down.
-        @param omit: a list of elements of hand not to draw.
+        @param visible: a list of elements of hand to draw.
         """
 
         def get_coords_for_hand():
             coords = {}
-            if player in (self.TOP, self.BOTTOM):
+            if position in (self.TOP, self.BOTTOM):
                 pos_y = 0
                 if facedown is True:  # Draw cards in one continuous row.
                     for index, card in enumerate(hand):
@@ -127,14 +128,14 @@ class CardArea(CairoCanvas):
             else:  # LEFT or RIGHT.
                 if facedown is True:  # Wrap cards to a 4x4 grid.
                     for index, card in enumerate(hand):
-                        adjust = player == self.RIGHT and index == 12 and 3
+                        adjust = position == self.RIGHT and index == 12 and 3
                         pos_x = ((index % 4) + adjust) * self.spacing_x
                         pos_y = (index / 4) * self.spacing_y
                         coords[card] = (pos_x, pos_y)
                 else:
                     longest = max([len(cards) for cards in suits.values()])
                     for index, card in enumerate(hand):
-                        adjust = player == self.RIGHT and longest - len(suits[card.suit])
+                        adjust = position == self.RIGHT and longest - len(suits[card.suit])
                         pos_x = (suits[card.suit].index(card) + adjust) * self.spacing_x
                         pos_y = RED_BLACK.index(card.suit) * self.spacing_y
                         coords[card] = (pos_x, pos_y)
@@ -153,7 +154,7 @@ class CardArea(CairoCanvas):
             for suit in RED_BLACK:
                 hand.extend(suits[suit])
 
-        saved = self.hands.get(player)
+        saved = self.hands.get(position)
         if saved and saved['hand'] == hand:
             # If hand has been set previously, do not recalculate coords.
             coords = saved['coords']
@@ -166,22 +167,24 @@ class CardArea(CairoCanvas):
         surface, context = self.new_surface(width, height)
 
         # Draw cards to surface.
-        visible = [(i, card) for i, card in enumerate(hand) if card not in omit]
-        for i, card in visible:
-            pos_x, pos_y = coords[card]
-            self.draw_card(context, pos_x, pos_y, card)
+        for i, card in enumerate(hand):
+            if card in visible:
+                pos_x, pos_y = coords[card]
+                self.draw_card(context, pos_x, pos_y, card)
 
-        # Save
-        self.hands[player] = {'hand' : hand, 'visible' : visible,
-                              'surface' : surface, 'coords' : coords, }
+        # Save.
+        self.hands[position] = {'hand' : hand, 'visible' : visible,
+                                'surface' : surface, 'coords' : coords,
+                                'facedown' : facedown}
 
-        id = 'hand-%s' % player  # Identifier for this item.
+        id = 'hand-%s' % position  # Identifier for this item.
         if id in self.items:
             self.update_item(id, source=surface)
         else:
             xy = {self.TOP : (0.5, 0.15), self.BOTTOM : (0.5, 0.85),
                   self.LEFT : (0.15, 0.5), self.RIGHT : (0.85, 0.5), }
-            self.add_item(id, surface, xy[player], 0)
+            opacity = (self.players.get(position) is None) and 0.5 or 1
+            self.add_item(id, surface, xy[position], 0, opacity=opacity)
 
 
     def set_player_name(self, position, name=None):
@@ -190,11 +193,12 @@ class CardArea(CairoCanvas):
         @param position: the position of the player.
         @param name: the name of the player, or None.
         """
-        self.players[position] = None
+        self.players[position] = name
 
         # If no name specified, show hand at position as translucent.
-        opacity = (name is None) and 0.5 or 1
-        self.update_item('hand-%s' % position, opacity=opacity)
+        if ('hand-%s' % position) in self.items:
+            opacity = (name is None) and 0.5 or 1
+            self.update_item('hand-%s' % position, opacity=opacity)
 
         id = 'player-%s' % position
 
@@ -230,17 +234,36 @@ class CardArea(CairoCanvas):
             self.add_item(id, surface, xy[position], 2)
 
 
-    def set_player_mapping(self, focus=Direction.South):
+    def set_player_mapping(self, focus=Direction.South, redraw=True):
         """Sets the mapping between players at table and positions of hands.
         
         @param focus: the position to be drawn "closest" to the observer.
+        @param redraw: if True, redraw the card area display immediately.
         """
         # Assumes Direction elements are ordered clockwise from North.
         order = Direction[focus.index:] + Direction[:focus.index]
         for player, attr in zip(order, ('BOTTOM', 'LEFT', 'TOP', 'RIGHT')):
             setattr(self, attr, player)
-        # TODO: set player labels.
 
+        # Only redraw if focus has changed.
+        if redraw and focus != self.focus:
+            self.focus = focus
+            self.clear()  # Wipe all saved ImageSurface objects - not subtle!
+
+            # Use a copy of self.hands, since it will be changed by set_hand().
+            hands = self.hands.copy()
+            self.hands.clear()
+            for position in Direction:
+                self.set_player_name(position, self.players.get(position))
+                self.set_hand(hands[position]['hand'], position,
+                              facedown=hands[position]['facedown'],
+                              visible=hands[position]['visible'])
+
+            trick = self.trick
+            self.trick = None
+            self.set_trick(trick)
+
+        
 
     def set_trick(self, trick):
         """Sets the current trick.
@@ -252,18 +275,19 @@ class CardArea(CairoCanvas):
               self.LEFT : (0.425, 0.5), self.RIGHT : (0.575, 0.5), }
 
         if trick:
+            leader, cards = trick
             # The order of play is the leader, then clockwise around Direction.
-            leader = trick[0]
             order = Direction[leader.index:] + Direction[:leader.index]
-            for i, player in enumerate(order):
-                id = 'trick-%s' % player
-                old_card = self.trick and self.trick[1].get(player) or None
-                new_card = trick[1].get(player)
+            for i, position in enumerate(order):
+                id = 'trick-%s' % position
+                old_card = self.trick and self.trick[1].get(position) or None
+                new_card = cards.get(position) or None
+
                 # If old card matches new card, take no action.
                 if old_card is None and new_card is not None:
                     surface, context = self.new_surface(self.card_width, self.card_height)
                     self.draw_card(context, 0, 0, new_card)
-                    self.add_item(id, surface, xy[player], z_index=i+1)
+                    self.add_item(id, surface, xy[position], z_index=i+1)
                 elif new_card is None and old_card is not None:
                     self.remove_item(id)
                 elif old_card != new_card:
@@ -275,7 +299,7 @@ class CardArea(CairoCanvas):
             for player in self.trick[1]:
                 self.remove_item('trick-%s' % player)
 
-        self.trick = trick  # Save trick and return.
+        self.trick = trick  # Save trick.
 
 
     def button_press(self, widget, event):
@@ -299,12 +323,13 @@ class CardArea(CairoCanvas):
                 # Determine the card in hand which was clicked.
                 pos_x, pos_y = event.x - hand_x, event.y - hand_y
                 # Iterate through visible cards backwards.
-                for i, card in self.hands[position]['visible'][::-1]:
-                    x, y = card_coords[card]
-                    if (x <= pos_x <= x + self.card_width) and \
-                       (y <= pos_y <= y + self.card_height):
-                        self.on_card_clicked(card, position)
-                        break
+                for card in reversed(self.hands[position]['hand']):
+                    if card in self.hands[position]['visible']:
+                        x, y = card_coords[card]
+                        if (x <= pos_x <= x + self.card_width) and \
+                           (y <= pos_y <= y + self.card_height):
+                            self.on_card_clicked(card, position)
+                            break
 
         return True  # Expected to return True.
 
