@@ -20,19 +20,53 @@ import os, re
 from datetime import datetime
 from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
+from twisted.python import log
 
 import pybridge.environment as env
+from pybridge.settings import Settings
 
 
-backend = "sqlite"
+# TODO: when fields are not empty, avoid writing default values to fields.
+
+configfile = env.find_config_server('server.cfg')
+settings = Settings(configfile, ['database'])
+
 
 # Initiate connection to the appropriate database backend.
-if backend == "sqlite":
-    db_filename = env.find_config_server("pybridge-server.db")
-    connection_string = "sqlite://" + db_filename # TODO: fix for Win32.
+# See http://sqlobject.org/SQLObject.html#declaring-the-class
 
-connection = connectionForURI(connection_string)
-sqlhub.processConnection = connection  # Set all classes to use connection.
+# This code has been tested with the SQLite database backend. If you experience
+# problems with databases supported by SQLObject, please file a bug report.
+
+backend = settings.database.get('backend', 'sqlite')  # Default to SQLite.
+settings.database['backend'] = backend
+
+if backend == 'sqlite':
+    dbfile = settings.database.get('dbfile')
+    if dbfile is None:
+        dbfile = env.find_config_server('pybridge-server.db')
+        settings.database['dbfile'] = dbfile
+    connection_string = "sqlite://" + dbfile
+else:
+    username = settings.database.get('username', '')
+    password = settings.database.get('password', '')
+    hostname = settings.database.get('hostname', 'localhost')
+    dbname = settings.database.get('dbname', 'pybridge')
+    connection_string = "%s://%s:%s/%s" % (username, password, hostname, dbname)
+
+settings.save()
+
+try:
+    connection = connectionForURI(connection_string)  # TODO: fix for Win32.
+    log.msg("Connection to %s database succeeded" % backend)
+except Exception, e:
+    log.err(e)
+    log.msg("Could not connect to %s database with URI: %s"
+            % (backend, connection_string))
+    log.msg("Please check configuration file %s" % configfile)
+    raise SystemExit  # Database connection is required for server operation.
+
+sqlhub.processConnection = connection  # Set all SQLObjects to use connection.
 
 
 class UserAccount(SQLObject):
