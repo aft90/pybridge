@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -55,11 +55,12 @@ class NetworkClient(pb.Referenceable):
 
 
     def connectionLost(self, connector, reason):
-        # Reset invalidated remote references.
-        self.avatar = None
-        self.tables.clear()
-        self.tableRoster.clear()
-        self.userRoster.clear()
+        if self.avatar:
+            # Reset invalidated remote references.
+            self.avatar = None
+            self.tables.clear()
+            self.tableRoster.clear()
+            self.userRoster.clear()
 
         print "Lost connection: %s" % reason.getErrorMessage()
         self.notify('connectionLost', reason=reason.getErrorMessage())
@@ -133,8 +134,7 @@ class NetworkClient(pb.Referenceable):
         hash = sha.new(password).hexdigest()
         creds = credentials.UsernamePassword(username, hash)
         d = self.factory.login(creds, client=self)
-        d.addCallbacks(connectedAsUser, self.errback)
-        # for rostername...
+        d.addCallback(connectedAsUser)
 
         return d
 
