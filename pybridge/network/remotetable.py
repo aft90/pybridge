@@ -65,6 +65,8 @@ class RemoteTable(pb.RemoteCache):
 
         self.observers = state['observers']
         self.players = state['players']
+        for position in self.players:
+            self.game.addPlayer(position)
 
 
 # Implementation of ITable.
@@ -115,11 +117,13 @@ class RemoteTable(pb.RemoteCache):
 
 
     def observe_joinGame(self, player, position):
+        self.game.addPlayer(position)
         self.players[position] = player
         self.notify('joinGame', player, position)
 
 
     def observe_leaveGame(self, player, position):
+        self.game.removePlayer(position)
         del self.players[position]
         self.notify('leaveGame', player, position)
 

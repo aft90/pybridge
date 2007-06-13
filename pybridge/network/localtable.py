@@ -145,11 +145,6 @@ class LocalTable(pb.Cacheable):
         self.players[position] = user
         self.notify('joinGame', player=user.name, position=position)
 
-        # If no game is active and all players are ready, start game.
-        if not self.game.inProgress():
-            if len(self.players) == len(self.game.positions):
-                self.game.start()
-
         return player
 
 

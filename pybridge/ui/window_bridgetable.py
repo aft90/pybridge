@@ -297,6 +297,10 @@ class WindowBridgetable(GladeWrapper):
         dialog.run()
         dialog.destroy()
 
+        if self.player and self.table.game.isNextGameReady():
+            d = self.player.callRemote('startNextGame')
+            d.addErrback(self.errback)
+
 
     def redrawHand(self, position, all=False):
         """Redraws cards making up the hand at position.
@@ -431,13 +435,14 @@ class WindowBridgetable(GladeWrapper):
         # Disable menu item corresponding to position.
         widget = self.takeseat_items[position]
         widget.set_property('sensitive', False)
-        # Set player label.
-        label = getattr(self, 'label_%s' % position.key.lower())
-        label.set_markup('<b>%s</b>' % player)
 
         # If all positions occupied, disable Take Seat.
         if len(self.table.players.values()) == len(Direction):
             self.takeseat.set_property('sensitive', False)
+
+        if self.player and self.table.game.isNextGameReady():
+            d = self.player.callRemote('startNextGame')
+            d.addErrback(self.errback)
 
 
     def event_leaveGame(self, player, position):
@@ -445,9 +450,6 @@ class WindowBridgetable(GladeWrapper):
         # Enable menu item corresponding to position.
         widget = self.takeseat_items[position]
         widget.set_property('sensitive', True)
-        # Reset player label.
-        label = getattr(self, 'label_%s' % position.key.lower())
-        label.set_markup('<i>%s</i>' % _('Position vacant'))
 
         # If we are not seated, ensure Take Seat is enabled.
         if self.position is None:
@@ -504,7 +506,7 @@ class WindowBridgetable(GladeWrapper):
         self.redrawHand(position)
 
 
-    def event_messageReceived(self, message, sender, recipients):
+    def event_sendMessage(self, message, sender, recipients):
         buffer = self.chat_messagehistory.get_buffer()
         iter = buffer.get_end_iter()
         buffer.insert(iter, '%s: %s\n' % (sender, message))
@@ -562,8 +564,8 @@ class WindowBridgetable(GladeWrapper):
             self.player = player  # RemoteReference to BridgePlayer object.
             self.position = position
 
-            self.takeseat.set_property('visible', False)
-            self.leaveseat.set_property('visible', True)
+            self.takeseat.set_property('sensitive', False)
+            self.leaveseat.set_property('sensitive', True)
 
             self.cardarea.set_player_mapping(self.position)
 
@@ -576,7 +578,7 @@ class WindowBridgetable(GladeWrapper):
                 if not self.table.game.bidding.isComplete():
                     bidbox = self.children.open(WindowBidbox, parent=self)
                     bidbox.monitor(self.table.game, self.position, self.on_call_selected)
-        
+
         d = self.table.joinGame(position)
         d.addCallbacks(success, self.errback)
 
@@ -594,8 +596,8 @@ class WindowBridgetable(GladeWrapper):
         def success(r):
             self.player = None
             self.position = None
-            self.takeseat.set_property('visible', True)
-            self.leaveseat.set_property('visible', False)
+            self.takeseat.set_property('sensitive', True)
+            self.leaveseat.set_property('sensitive', False)
             if self.children.get(WindowBidbox):
                 self.children.close(self.children[WindowBidbox])
         
