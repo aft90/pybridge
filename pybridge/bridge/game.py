@@ -26,6 +26,7 @@ from pybridge.network.error import GameError
 from bidding import Bidding
 from board import Board
 from playing import Playing
+from scoring import scoreDuplicate
 
 from call import Bid, Pass, Double, Redouble
 from card import Card
@@ -72,8 +73,8 @@ class BridgeGame(object):
 
 
     def start(self, board=None):
-        if self.inProgress():
-            raise GameError, "Game in progress"
+        if not self.isNextGameReady():
+            raise GameError, "Not ready to start game"
 
         if board:  # Use specified board.
             self.board = board
@@ -101,6 +102,10 @@ class BridgeGame(object):
             return not self.bidding.isPassedOut()
         else:
             return False
+
+
+    def isNextGameReady(self):
+        return (not self.inProgress()) and len(self.players) == 4
 
 
     def getState(self):
@@ -374,7 +379,7 @@ class BridgeGame(object):
         result = {'contract'   : contract,
                   'tricksMade' : tricksMade,
                   'vulnerable' : vulnerable, }
-        return self.scoring(result)
+        return scoreDuplicate(result)
 
 
 
@@ -384,7 +389,7 @@ class BridgePlayer(pb.Referenceable):
 
 
     def __init__(self, game):
-        self.__game = game  # Provide access to game only through this object.
+        self.__game = game  # Access to game is private to this object.
 
 
     def getHand(self):
@@ -393,16 +398,21 @@ class BridgePlayer(pb.Referenceable):
 
 
     def makeCall(self, call):
-        return self.__game.makeCall(call, player=self)
+        try:
+            return self.__game.makeCall(call, player=self)
+        except TypeError, e:
+            raise GameError, e
 
 
     def playCard(self, card):
-        # TODO: need try/except block on each.
-        return self.__game.playCard(card, player=self)
+        try:
+            return self.__game.playCard(card, player=self)
+        except TypeError, e:
+            raise GameError, e
 
 
-    def nextGame(self):
-        pass
+    def startNextGame(self):
+        self.__game.start()  # Raises GameError if not ready to start next game.
 
 
 # Aliases for remote-callable methods.
@@ -410,4 +420,5 @@ class BridgePlayer(pb.Referenceable):
     remote_getHand = getHand
     remote_makeCall = makeCall
     remote_playCard = playCard
+    remote_startNextGame = startNextGame
 

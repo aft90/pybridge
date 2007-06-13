@@ -84,6 +84,13 @@ class IGame(Interface):
         """
 
 
+    def isNextGameReady(self):
+        """Indicates whether the next game is ready to start.
+        
+        @return: True if next game is ready to start, False otherwise.
+        """
+
+
 class ICardGame(IGame):
     """ICardGame defines methods specific to card games.
     
