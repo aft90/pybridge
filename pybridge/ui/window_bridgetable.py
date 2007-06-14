@@ -394,13 +394,29 @@ class WindowBridgetable(GladeWrapper):
         """Sets the statusbar text to indicate which player is on turn."""
         context = self.statusbar.get_context_id('turn')
         self.statusbar.pop(context)
+
         try:
             turn = self.table.game.getTurn()
-            text = _("It is %s's turn") % str(turn)
-            self.statusbar.push(context, text)
-        except GameError:  # Game not in progress
-            pass
 
+            if self.table.game.play:
+                declarer, dummy = self.table.game.play.declarer, self.table.game.play.dummy
+                if self.position and self.position == turn != dummy:
+                    text = _("Play a card from your hand.")
+                elif self.position and self.position == declarer and turn == dummy:
+                    text = _("Play a card from dummy's hand.")
+                else:
+                    text = _("It is %s's turn to play a card.") % DIRECTION_SYMBOLS[turn]
+
+            else:  # Bidding.
+                if self.position and self.position == turn:
+                    text = _("Make a call from the bidding box.")
+                else:
+                    text = _("It is %s's turn to make a call.") % DIRECTION_SYMBOLS[turn]
+
+        except GameError:  # Game not in progress.
+            text = _("Waiting for next game to start.")
+
+        self.statusbar.push(context, text)
 
     def setVulnerability(self):
         """Sets the vulnerability indicators."""
