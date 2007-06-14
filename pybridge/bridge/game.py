@@ -73,8 +73,8 @@ class BridgeGame(object):
 
 
     def start(self, board=None):
-        if not self.isNextGameReady():
-            raise GameError, "Not ready to start game"
+        if self.inProgress():
+            raise GameError, "Game in progress"
 
         if board:  # Use specified board.
             self.board = board
@@ -242,8 +242,12 @@ class BridgeGame(object):
 
         self.notify('makeCall', call=call, position=position)
 
-        if self.bidding.isPassedOut():
-            self.notify('gameOver')  # TODO: reveal all hands
+        # If bidding is passed out, reveal all hands.
+        if not self.inProgress() and self.board['deal']:
+            for position in Direction:
+                hand = self.board['deal'].get(position)
+                if hand and position not in self.visibleHands:
+                    self.revealHand(hand, position)
 
 
     def signalAlert(self, alert, position):
@@ -302,7 +306,13 @@ class BridgeGame(object):
             dummyhand = self.board['deal'].get(self.play.dummy)
             if dummyhand:  # Reveal hand only if known.
                 self.revealHand(dummyhand, self.play.dummy)
-       # TODO: if game over, reveal all hands
+
+        # If play is complete, reveal all hands.
+        if not self.inProgress() and self.board['deal']:
+            for position in Direction:
+                hand = self.board['deal'].get(position)
+                if hand and position not in self.visibleHands:
+                    self.revealHand(hand, position)
  
 
     def revealHand(self, hand, position):
@@ -412,7 +422,9 @@ class BridgePlayer(pb.Referenceable):
 
 
     def startNextGame(self):
-        self.__game.start()  # Raises GameError if not ready to start next game.
+        if not self.__game.isNextGameReady():
+            raise GameError, "Not ready to start game"
+        self.__game.start()  # Raises GameError if game in progress.
 
 
 # Aliases for remote-callable methods.
