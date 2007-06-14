@@ -261,8 +261,10 @@ class WindowBridgetable(GladeWrapper):
 
 
     def gameComplete(self):
-        for position in Direction:
+        # Display all previously revealed hands - the server will reveal the others.
+        for position in self.table.game.visibleHands:
             self.redrawHand(position, all=True)
+
         self.setTurnIndicator()
 
         dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
@@ -294,12 +296,14 @@ class WindowBridgetable(GladeWrapper):
             dialog.set_markup(_('Bidding passed out.'))
             dialog.format_secondary_text(_('No score.'))
 
-        dialog.run()
-        dialog.destroy()
+        def dialog_response_cb(dialog, response_id):
+            dialog.destroy()
+            if self.player and self.table.game.isNextGameReady():
+                d = self.player.callRemote('startNextGame')
+                d.addErrback(self.errback)
 
-        if self.player and self.table.game.isNextGameReady():
-            d = self.player.callRemote('startNextGame')
-            d.addErrback(self.errback)
+        dialog.connect('response', dialog_response_cb)
+        dialog.show()
 
 
     def redrawHand(self, position, all=False):
@@ -486,6 +490,8 @@ class WindowBridgetable(GladeWrapper):
 
         if self.player:
             d = self.player.callRemote('getHand')
+            # When player's hand is returned by server, reveal it to client-side Game.
+            # TODO: is there a better way of synchronising hands?
             d.addCallbacks(self.table.game.revealHand, self.errback,
                            callbackKeywords={'position' : self.position})
             bidbox = self.children.open(WindowBidbox, parent=self)
@@ -519,7 +525,8 @@ class WindowBridgetable(GladeWrapper):
 
 
     def event_revealHand(self, hand, position):
-        self.redrawHand(position)
+        all = not self.table.game.inProgress()  # Show all cards if game has finished.
+        self.redrawHand(position, all)
 
 
     def event_sendMessage(self, message, sender, recipients):
