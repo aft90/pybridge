@@ -22,6 +22,19 @@ from wrapper import GladeWrapper
 
 import pybridge.environment as env
 from manager import wm
+from pybridge.ui import settings
+
+from pybridge.bridge.symbols import Suit
+
+SUIT_NAMES = {Suit.Club: _("Club"), Suit.Diamond: _("Diamond"),
+              Suit.Heart: _("Heart"), Suit.Spade: _("Spade") }
+
+SUIT_SYMBOLS = {Suit.Club: u'\N{BLACK CLUB SUIT}',
+                Suit.Diamond: u'\N{BLACK DIAMOND SUIT}',
+                Suit.Heart: u'\N{BLACK HEART SUIT}',
+                Suit.Spade: u'\N{BLACK SPADE SUIT}' }
+
+SUIT_LABEL_TEMPLATE = "<span color=\'%s\' size=\'xx-large\'>%s</span>"
 
 
 class DialogPreferences(GladeWrapper):
@@ -29,34 +42,75 @@ class DialogPreferences(GladeWrapper):
     glade_name = 'dialog_preferences'
 
 
-    def new(self):
+    def setUp(self):
+        # Allow user to select only image files for background.
+        filter_pixbufs = gtk.FileFilter()
+        filter_pixbufs.add_pixbuf_formats()
+        filter_pixbufs.set_name(_("Image files"))
+        self.background.add_filter(filter_pixbufs)
+
+        # Build a list of card decks from which the user may choose.
+        # (The user is prevented from selecting an arbitary image.)
         model = gtk.ListStore(str)
-        self.carddeck.set_model(model)
+        self.cardstyle.set_model(model)
         cell = gtk.CellRendererText()
-        self.carddeck.pack_start(cell, True)
-        self.carddeck.add_attribute(cell, 'text', 0)
+        self.cardstyle.pack_start(cell, True)
+        self.cardstyle.add_attribute(cell, 'text', 0)
+
+        activedeck = settings.appearance.get('deck', 'bonded.png')
         # Populate list of card decks.
         path = env.find_pixmap('')
         for filename in os.listdir(path):
             if filename.endswith('.png'):
                 iter = model.append((filename,))
-                if filename == 'bonded.png':
-                    self.carddeck.set_active_iter(iter)
+                if filename == activedeck:
+                    self.cardstyle.set_active_iter(iter)
 
 
 # Signal handlers.
 
 
-    def on_carddeck_changed(self, widget, *args):
-        print "changed"
+    def on_cardstyle_changed(self, widget, *args):
+        print "cardstyle changed"
+
+
+    def on_background_changed(self, widget, *args):
+        print "background changed"
+
+
+    def on_suitcolour_clicked(self, widget, *args):
+        # Get symbol in Suit corresponding to button clicked.
+        suit_buttons = {self.button_clubcolour: Suit.Club,
+                        self.button_diamondcolour: Suit.Diamond,
+                        self.button_heartcolour: Suit.Heart,
+                        self.button_spadecolour: Suit.Spade }
+        suit = suit_buttons[widget]
+
+        title = _("Select colour for %s symbol" % SUIT_NAMES[suit])
+        dialog = gtk.ColorSelectionDialog(title)
+        dialog.colorsel.set_current_color(gtk.gdk.color_parse('#888888'))
+
+        def dialog_response_cb(dialog, response_id):
+            if response_id == gtk.RESPONSE_OK:
+                colour = dialog.colorsel.get_current_color()
+
+                # Set button label to colour selected by user.
+                label = widget.get_children()[0]
+                hexrep = gtk.color_selection_palette_to_string([colour])
+                label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
+
+            dialog.destroy()
+
+        dialog.connect('response', dialog_response_cb)
+        #dialog.show()
+        dialog.run()
 
 
     def on_cancelbutton_clicked(self, widget, *args):
-        print "cancel"
         wm.close(self)
 
 
     def on_okbutton_clicked(self, widget, *args):
-        print "ok"
+        print "SAVE SETTINGS"
         wm.close(self)
 
