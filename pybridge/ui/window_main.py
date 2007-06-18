@@ -28,7 +28,6 @@ from pybridge.network.client import client
 
 from eventhandler import SimpleEventHandler
 from manager import WindowManager, wm
-from pybridge.ui import settings
 
 from dialog_connection import DialogConnection
 from dialog_newtable import DialogNewtable
@@ -81,8 +80,6 @@ class WindowMain(GladeWrapper):
         for window in wm.values():
             wm.close(window)
         client.disconnect()
-
-        settings.save()  # Save configuration.
 
 
     def quit(self):
@@ -244,16 +241,15 @@ class WindowMain(GladeWrapper):
     def on_disconnect_activate(self, widget, *args):
         do_disconnect = True
 
-        #if len([True for table in self.tables if table.player]) > 0:
-        if self.tables:
+        if len([True for table in self.tables.values() if table.player]) > 0:
             dialog = gtk.MessageDialog(parent=self.window,
                                        flags=gtk.DIALOG_MODAL,
                                        type=gtk.MESSAGE_QUESTION)
-            dialog.set_title(_('Disconnect from Server'))
+            dialog.set_title(_('Disconnect from server'))
             dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
             dialog.add_button(gtk.STOCK_DISCONNECT, gtk.RESPONSE_OK)
             dialog.set_markup(_('Are you sure you wish to disconnect?'))
-            dialog.format_secondary_text(_('You are playing a game. Disconnecting may forfeit the game, or incur penalties.'))
+            dialog.format_secondary_text(_('You are playing at a table. Disconnecting may forfeit the game, or incur penalties.'))
 
             do_disconnect = (dialog.run() == gtk.RESPONSE_OK)
             dialog.destroy()
@@ -292,7 +288,10 @@ class WindowMain(GladeWrapper):
         logo_path = env.find_pixmap('pybridge.png')
         logo = gtk.gdk.pixbuf_new_from_file(logo_path)
         about.set_logo(logo)
-        
-        about.run()
-        about.destroy()
+
+        def dialog_response_cb(dialog, response_id):
+            dialog.destroy()
+
+        about.connect('response', dialog_response_cb)
+        about.show()
 
