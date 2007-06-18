@@ -21,6 +21,7 @@ from wrapper import GladeWrapper
 
 from cardarea import CardArea
 from pybridge.network.client import client
+from config import config
 from eventhandler import SimpleEventHandler
 from manager import WindowManager
 
@@ -220,7 +221,7 @@ class WindowBridgetable(GladeWrapper):
             iter = self.call_store.get_iter_first()
             while self.call_store.iter_next(iter) != None:
                 iter = self.call_store.iter_next(iter)
-        
+
         if isinstance(call, Bid):
             format = '%s%s' % (LEVEL_SYMBOLS[call.level],
                                STRAIN_SYMBOLS[call.strain])
@@ -234,7 +235,7 @@ class WindowBridgetable(GladeWrapper):
         position = self.table.game.play.whoPlayed(card)
         column = position.index
         row = self.table.game.play.played[position].index(card)
-        
+
         if self.trick_store.get_iter_first() == None:
             self.trick_store.append()
         iter = self.trick_store.get_iter_first()
@@ -242,10 +243,9 @@ class WindowBridgetable(GladeWrapper):
             iter = self.trick_store.iter_next(iter)
             if iter is None:
                 iter = self.trick_store.append()
-        
+
         strain_equivalent = getattr(Strain, card.suit.key)  # TODO: clean up.
-        format = '%s%s' % (STRAIN_SYMBOLS[strain_equivalent],
-                           RANK_SYMBOLS[card.rank])
+        format = '%s%s' % (RANK_SYMBOLS[card.rank], STRAIN_SYMBOLS[strain_equivalent])
         self.trick_store.set(iter, column, format)
 
 
@@ -268,7 +268,7 @@ class WindowBridgetable(GladeWrapper):
         self.setTurnIndicator()
 
         dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK)
+                                   type=gtk.MESSAGE_INFO)
         dialog.set_title(_('Game result'))
 
         # Determine and display score in dialog box.
@@ -292,15 +292,23 @@ class WindowBridgetable(GladeWrapper):
             scorer = (score >= 0 and _('declarer')) or _('defence')
             dialog.format_secondary_text(_('Score %s points for %s.' % (abs(score), scorer)))
 
+            if self.player:
+                dialog.add_button(_('Leave Seat'), gtk.RESPONSE_CANCEL)
+            dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
+
+
         else:
             dialog.set_markup(_('Bidding passed out.'))
             dialog.format_secondary_text(_('No score.'))
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
-            if self.player and self.table.game.isNextGameReady():
-                d = self.player.callRemote('startNextGame')
-                d.addErrback(self.errback)
+            if self.player:
+                if response_id == gtk.RESPONSE_OK and self.table.game.isNextGameReady():
+                    d = self.player.callRemote('startNextGame')
+                    d.addErrback(self.errback)
+                elif response_id == gtk.RESPONSE_CANCEL:
+                    self.on_leaveseat_clicked(dialog)
 
         dialog.connect('response', dialog_response_cb)
         dialog.show()
