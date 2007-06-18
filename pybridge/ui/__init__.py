@@ -32,8 +32,8 @@ gettext.bindtextdomain('pybridge', env.get_localedir())
 gettext.textdomain('pybridge')
 gettext.install('pybridge')
 
-filename = env.find_config_client('client.cfg')
-settings = Settings(filename, ['Connection', 'General'])
+import config
+config.load()
 
 
 def run():
@@ -46,4 +46,6 @@ def run():
     # Start the event loop.
     reactor.run()
     gtk.main()
+
+    config.save()  # Save config at exit.
 

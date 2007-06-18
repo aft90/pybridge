@@ -20,8 +20,8 @@ import gtk
 from wrapper import GladeWrapper
 
 from pybridge.network.client import client
+from config import config
 from manager import wm
-from pybridge.ui import settings
 
 TCP_PORT = 5040
 
@@ -34,13 +34,14 @@ class DialogConnection(GladeWrapper):
     def setUp(self):
         # Read connection parameters from client settings.
 
-        connection = settings.connection
+        connection = config['Connection']
         if connection:
-            self.entry_hostname.set_text(connection['hostname'])
-            self.entry_portnum.set_text(connection['portnum'])
-            self.entry_username.set_text(connection['username'])
-            self.entry_password.set_text(connection['password'])
-            self.check_savepassword.set_active(connection['password'] != '')
+            self.entry_hostname.set_text(connection.get('HostAddress', 'localhost'))
+            self.entry_portnum.set_text(str(connection.get('Port', TCP_PORT)))
+            self.entry_username.set_text(connection.get('Username', ''))
+            password = connection.get('Password', '').decode('rot13')
+            self.entry_password.set_text(password)
+            self.check_savepassword.set_active(password != '')
         else:
             self.entry_portnum.set_text(str(TCP_PORT))
 
@@ -49,14 +50,17 @@ class DialogConnection(GladeWrapper):
         """Actions to perform when connecting succeeds."""
 
         # Save connection information.
-        settings.connection = {}
-        settings.connection['hostname'] = self.entry_hostname.get_text()
-        settings.connection['portnum'] = self.entry_portnum.get_text()
-        settings.connection['username'] = self.entry_username.get_text()
+        connection = config['Connection']
+        connection['HostAddress'] = self.entry_hostname.get_text()
+        connection['PortNumber'] = int(self.entry_portnum.get_text())
+        connection['Username'] = self.entry_username.get_text()
         if self.check_savepassword.get_active():
-            settings.connection['password'] = self.entry_password.get_text()
-        else:  # Flush password.
-            settings.connection['password'] = ''
+            # Encode password, to confuse password sniffer software.
+            # ROT13 encoding does *not* provide security!
+            password = self.entry_password.get_text().encode('rot13')
+        else:
+            password = ''  # Flush password.
+        connection['Password'] = password
 
         wm.close(self)
 
