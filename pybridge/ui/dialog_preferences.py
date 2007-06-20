@@ -26,8 +26,8 @@ from manager import wm
 
 from pybridge.bridge.symbols import Suit
 
-SUIT_NAMES = {Suit.Club: _("Club"), Suit.Diamond: _("Diamond"),
-              Suit.Heart: _("Heart"), Suit.Spade: _("Spade") }
+SUIT_NAMES = {Suit.Club: _('Club'), Suit.Diamond: _('Diamond'),
+              Suit.Heart: _('Heart'), Suit.Spade: _('Spade') }
 
 SUIT_SYMBOLS = {Suit.Club: u'\N{BLACK CLUB SUIT}',
                 Suit.Diamond: u'\N{BLACK DIAMOND SUIT}',
@@ -46,18 +46,17 @@ class DialogPreferences(GladeWrapper):
         # Allow user to select only image files for background.
         filter_pixbufs = gtk.FileFilter()
         filter_pixbufs.add_pixbuf_formats()
-        filter_pixbufs.set_name(_("Image files"))
+        filter_pixbufs.set_name(_('Images'))
         self.background.add_filter(filter_pixbufs)
 
         # Build a list of card decks from which the user may choose.
         # (The user is prevented from selecting an arbitary image.)
+        activedeck = config['Appearance'].get('CardStyle', 'bonded.png')
         model = gtk.ListStore(str)
         self.cardstyle.set_model(model)
         cell = gtk.CellRendererText()
         self.cardstyle.pack_start(cell, True)
         self.cardstyle.add_attribute(cell, 'text', 0)
-
-        activedeck = config['Appearance'].get('CardStyle', 'bonded.png')
         # Populate list of card decks.
         path = env.find_pixmap('')
         for filename in os.listdir(path):
@@ -66,6 +65,13 @@ class DialogPreferences(GladeWrapper):
                 if filename == activedeck:
                     self.cardstyle.set_active_iter(iter)
 
+        # Retrieve selected background.
+        background_file = config['Appearance'].get('Background')
+        if background_file is None or not os.path.exists(background_file):
+            background_file = env.find_pixmap('baize.png')
+        self.background.set_filename(background_file)
+
+        # Retrieve suit colours.
         self.suit_colours = {}
         for suit in Suit:
             rgb = config['Appearance']['Colours'].get(suit.key, (0, 0, 0))
@@ -81,11 +87,11 @@ class DialogPreferences(GladeWrapper):
 
 
     def on_cardstyle_changed(self, widget, *args):
-        print "cardstyle changed"
+        pass
 
 
     def on_background_changed(self, widget, *args):
-        print "background changed"
+        pass
 
 
     def on_suitcolour_clicked(self, widget, *args):
@@ -117,9 +123,16 @@ class DialogPreferences(GladeWrapper):
 
     def on_okbutton_clicked(self, widget, *args):
         # Save preferences to config file.
+
         for suit, colour in self.suit_colours.items():
             rgb = (colour.red, colour.green, colour.blue)
             config['Appearance']['Colours'][suit.key] = rgb
-        print "TODO: background and card style"
+
+        config['Appearance']['Background'] = self.background.get_filename()
+
+        model = self.cardstyle.get_model()
+        iter = self.cardstyle.get_active_iter()
+        config['Appearance']['CardStyle'] = model.get_value(iter, 0)
+
         wm.close(self)
 
