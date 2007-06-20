@@ -267,8 +267,7 @@ class WindowBridgetable(GladeWrapper):
 
         self.setTurnIndicator()
 
-        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                   type=gtk.MESSAGE_INFO)
+        dialog = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO)
         dialog.set_title(_('Game result'))
 
         # Determine and display score in dialog box.
@@ -281,25 +280,23 @@ class WindowBridgetable(GladeWrapper):
 
             contractText = self.formatContract(self.table.game.contract)
             if offset > 0:
-                dialog.set_markup(_('Contract %s made by %s tricks.') \
-                                  % (contractText, offset))
+                resultText = _('Contract %s made by %s tricks.') % (contractText, offset)
             elif offset < 0:
-                dialog.set_markup(_('Contract %s failed by %s tricks.') \
-                                  % (contractText, abs(offset)))
+                resultText = _('Contract %s failed by %s tricks.') % (contractText, abs(offset))
             else:
-                dialog.set_markup(_('Contract %s made exactly.') % contractText)
-
+                resultText = _('Contract %s made exactly.') % contractText
             scorer = (score >= 0 and _('declarer')) or _('defence')
-            dialog.format_secondary_text(_('Score %s points for %s.' % (abs(score), scorer)))
-
-            if self.player:
-                dialog.add_button(_('Leave Seat'), gtk.RESPONSE_CANCEL)
-            dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
-
+            scoreText = _('Score %s points for %s.' % (abs(score), scorer))
+            dialog.set_markup(resultText + '\n' + scoreText)
 
         else:
             dialog.set_markup(_('Bidding passed out.'))
             dialog.format_secondary_text(_('No score.'))
+
+        if self.player:
+            dialog.add_button(_('Leave Seat'), gtk.RESPONSE_CANCEL)
+            dialog.format_secondary_text(_('Click OK to start next game.'))
+        dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
