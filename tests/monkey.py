@@ -140,6 +140,9 @@ class Monkey:
         self.player = player
         self.position = position
 
+        d = self.player.callRemote('startNextGame')
+        d.addErrback(self.errback)
+
 
 # Selection of calls and cards.
 
@@ -263,7 +266,7 @@ if __name__ == '__main__':
     client.factory.clientConnectionLost = lostConnection
     client.eventHandler = Monkey(client)
 
-    client.connect(hostname="localhost", port=5040)
+    client.connect("localhost", 5040)
     d = client.login(username, password)
     d.addCallbacks(client.eventHandler.connected, loginFailed)
 
