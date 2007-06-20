@@ -96,7 +96,7 @@ class WindowMain(GladeWrapper):
 # Event handlers.
 
 
-    def event_connectedAsUser(self, username):
+    def event_loggedIn(self, username):
         self.notebook.set_property('sensitive', True)
         self.menu_connect.set_property('visible', False)
         self.menu_disconnect.set_property('visible', True)
@@ -104,7 +104,7 @@ class WindowMain(GladeWrapper):
         self.newtable.set_property('sensitive', True)
 
 
-    def event_connectionLost(self, reason):
+    def event_loggedOut(self):
         for table in self.tables.values():
             self.tables.close(table)
 
@@ -116,6 +116,23 @@ class WindowMain(GladeWrapper):
 
         self.tableview_model.clear()
         self.peopleview_model.clear()
+
+
+    def event_connectionLost(self, host, port):
+        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
+                                   type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
+        dialog.set_title(_('Connection to server lost'))
+        dialog.set_markup(_('The connection to %s was lost unexpectedly.' % host))
+        dialog.format_secondary_text(_('Please check your computer\'s network connection status. If you cannot reconnect, the server may be offline.'))
+        # If this problem persists...
+
+        #dialog.add_button()
+
+        def dialog_response_cb(dialog, response_id):
+            dialog.destroy()
+
+        dialog.connect('response', dialog_response_cb)
+        dialog.show()
 
 
     def event_gotRoster(self, name, roster):
