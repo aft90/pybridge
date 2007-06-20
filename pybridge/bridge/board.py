@@ -65,6 +65,11 @@ class Board(dict):
             self['dealer'] = random.choice(Direction)
 
         if result:
-            self['vuln'] = Vulnerable.All  # TODO
+            # TODO: proper GameResult object.
+            # TODO: consider vulnerability rules for duplicate, rubber bridge.
+            #if result.bidding.isPassedOut():
+            #    self['vuln'] = result.board['vuln']
+            #elif result.getScore() >= 0 
+            self['vuln'] = Vulnerable[(result.board['vuln'].index + 1) % 4]
         else:
             self['vuln'] = Vulnerable.None  # The default value.

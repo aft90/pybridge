@@ -79,7 +79,7 @@ class BridgeGame(object):
         if board:  # Use specified board.
             self.board = board
         elif self.board:  # Advance to next deal.
-            self.board.nextDeal(result=999)
+            self.board.nextDeal(result=self)  # TODO: proper GameResult object.
         else:  # Create a board.
             self.board = Board()
             self.board.nextDeal()
