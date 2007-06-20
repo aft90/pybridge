@@ -48,6 +48,8 @@ class NetworkClient(pb.Referenceable):
         self.factory = pb.PBClientFactory()
         self.factory.clientConnectionLost = self.connectionLost
 
+        self.expectLoseConnection = False  # Indicates when disconnecting.
+
         self.username = None
         self.tables = {}  # Tables observed.
         self.tableRoster = None
@@ -61,9 +63,15 @@ class NetworkClient(pb.Referenceable):
             self.tables.clear()
             self.tableRoster.clear()
             self.userRoster.clear()
+        self.username = None
 
-        print "Lost connection: %s" % reason.getErrorMessage()
-        self.notify('connectionLost', reason=reason.getErrorMessage())
+        self.notify('loggedOut')
+
+        if not self.expectLoseConnection:
+            # Connection lost unexpectedly, so notify user.
+            print "Lost connection: %s" % reason.getErrorMessage()
+            self.notify('connectionLost', host=connector.host,
+                                          port=connector.port)
 
 
     def errback(self, failure):
@@ -89,17 +97,21 @@ class NetworkClient(pb.Referenceable):
 # Methods
 
 
-    def connect(self, hostname, port):
+    def connect(self, host, port):
         """Connect to server.
 
-        @param hostname:
-        @param port:
+        @param host: the host name or IP address of the server.
+        @type host: string
+        @param port: the port number on which the server is listening.
+        @type port: int
         """
-        connector = reactor.connectTCP(hostname, port, self.factory)
+        connector = reactor.connectTCP(host, port, self.factory)
+        self.expectLoseConnection = False
 
 
     def disconnect(self):
         """Drops connection to server."""
+        self.expectLoseConnection = True
         self.factory.disconnect()
 
 
@@ -124,7 +136,7 @@ class NetworkClient(pb.Referenceable):
             """Actions to perform when connection succeeds."""
             self.avatar = avatar
             self.username = username
-            self.notify('connectedAsUser', username=username)
+            self.notify('loggedIn', username=username)
 
             # Request services from server.
             for rostername in ['tables', 'users']:
