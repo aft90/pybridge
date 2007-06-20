@@ -120,16 +120,19 @@ class WindowMain(GladeWrapper):
 
     def event_connectionLost(self, host, port):
         dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                   type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
+                                   type=gtk.MESSAGE_ERROR)
         dialog.set_title(_('Connection to server lost'))
         dialog.set_markup(_('The connection to %s was lost unexpectedly.' % host))
-        dialog.format_secondary_text(_('Please check your computer\'s network connection status. If you cannot reconnect, the server may be offline.'))
+        dialog.format_secondary_text(_('Please check your computer\'s network connection status before reconnecting. If you cannot reconnect, the server may be offline.'))
         # If this problem persists...
-
-        #dialog.add_button()
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
+            if response_id == gtk.RESPONSE_OK:
+                wm.open(DialogConnection, parent=self)
+
+        dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+        dialog.add_button(gtk.STOCK_CONNECT, gtk.RESPONSE_OK)
 
         dialog.connect('response', dialog_response_cb)
         dialog.show()
