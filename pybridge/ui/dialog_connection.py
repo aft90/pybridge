@@ -67,13 +67,20 @@ class DialogConnection(GladeWrapper):
 
     def connectFailure(self, failure):
         """Actions to perform when connecting fails."""
-        error = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                 type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
-        error.set_markup(_('Could not connect to server.'))
-        error.format_secondary_text(_('Reason: %s') % failure.getErrorMessage())
-        error.run()
-        error.destroy()
-        self.button_connect.set_property('sensitive', True)
+        client.disconnect()
+
+        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
+                               type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
+        dialog.set_title(_('Connection failed'))
+        dialog.set_markup(_('Could not connect to server.'))
+        dialog.format_secondary_text(_('Reason: %s') % failure.getErrorMessage())
+
+        def dialog_response_cb(dialog, response_id):
+            dialog.destroy()
+            self.button_connect.set_property('sensitive', True)
+
+        dialog.connect('response', dialog_response_cb)
+        dialog.show()
 
 
 # Signal handlers.
