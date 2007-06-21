@@ -279,14 +279,25 @@ class WindowBridgetable(GladeWrapper):
             self.addScore(self.table.game.contract, declarerWon, score)
 
             contractText = self.formatContract(self.table.game.contract)
+            fields = {'contract':  self.formatContract(self.table.game.contract),
+                      'offset': abs(offset) }
+
             if offset > 0:
-                resultText = _('Contract %s made by %s tricks.') % (contractText, offset)
+                if offset == 1:
+                    resultText = _('Contract %(contract)s made by 1 trick.') % fields
+                else:
+                    resultText = _('Contract %(contract)s made by %(offset)s tricks.') % fields
             elif offset < 0:
-                resultText = _('Contract %s failed by %s tricks.') % (contractText, abs(offset))
+                if offset == -1:
+                    resultText = _('Contract %(contract)s failed by 1 trick.') % fields
+                else:
+                    resultText = _('Contract %(contract)s failed by %(offset)s tricks.') % fields
             else:
-                resultText = _('Contract %s made exactly.') % contractText
-            scorer = (score >= 0 and _('declarer')) or _('defence')
-            scoreText = _('Score %s points for %s.' % (abs(score), scorer))
+                resultText = _('Contract %(contract)s made exactly.') % fields
+
+            pair = (score >= 0 and _('declarer')) or _('defence')
+            scoreText = _('Score %(points)s points for %(pair)s.') % {'points': abs(score), 'pair': pair}
+
             dialog.set_markup(resultText + '\n' + scoreText)
 
         else:
@@ -297,6 +308,7 @@ class WindowBridgetable(GladeWrapper):
             dialog.add_button(_('Leave Seat'), gtk.RESPONSE_CANCEL)
             dialog.format_secondary_text(_('Click OK to start next game.'))
         dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
+        dialog.set_default_response(gtk.RESPONSE_OK)
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
@@ -537,7 +549,7 @@ class WindowBridgetable(GladeWrapper):
     def event_sendMessage(self, message, sender, recipients):
         buffer = self.chat_messagehistory.get_buffer()
         iter = buffer.get_end_iter()
-        buffer.insert(iter, '%s: %s\n' % (sender, message))
+        buffer.insert(iter, '\n' + _('%(sender)s: %(message)s' % {'sender': sender, 'message': message}))
         self.chat_messagehistory.scroll_to_iter(iter, 0)
 
 
@@ -552,16 +564,14 @@ class WindowBridgetable(GladeWrapper):
         @return: a format string representing the contract.
         @rtype: str
         """
-        bidlevel = LEVEL_SYMBOLS[contract['bid'].level]
-        bidstrain = STRAIN_SYMBOLS[contract['bid'].strain]
-        doubled = ''
-        if contract['redoubleBy']:
-            doubled = ' (%s)' % CALLTYPE_SYMBOLS[Redouble]
-        elif contract['doubleBy']:
-            doubled = ' (%s)' % CALLTYPE_SYMBOLS[Double]
-        declarer = contract['declarer']
+        doubled = contract['redoubleBy'] and ' (%s)' % CALLTYPE_SYMBOLS[Redouble] \
+                  or contract['doubleBy'] and ' (%s)' % CALLTYPE_SYMBOLS[Double] or ''
 
-        return _('%s%s%s by %s') % (bidlevel, bidstrain, doubled, declarer)
+        return _('%(bidlevel)s%(bidstrain)s%(doubled)s by %(declarer)s') \
+                    % {'bidlevel' : LEVEL_SYMBOLS[contract['bid'].level],
+                       'bidstrain' : STRAIN_SYMBOLS[contract['bid'].strain],
+                       'doubled' : doubled,
+                       'declarer' : DIRECTION_SYMBOLS[contract['declarer']] }
 
 
 # Signal handlers.
