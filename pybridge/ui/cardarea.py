@@ -23,6 +23,8 @@ import pangocairo
 
 import pybridge.environment as env
 from canvas import CairoCanvas
+from config import config
+from vocabulary import *
 
 from pybridge.bridge.card import Card
 from pybridge.bridge.symbols import Direction, Rank, Suit
@@ -36,9 +38,6 @@ CARD_MASK_SUITS = [Suit.Club, Suit.Diamond, Suit.Heart, Suit.Spade]
 # The red-black-red-black ordering convention.
 RED_BLACK = [Suit.Diamond, Suit.Club, Suit.Heart, Suit.Spade]
 
-DIRECTION_SYMBOLS = {Direction.North : _('North'), Direction.East : _('East'),
-                     Direction.South : _('South'), Direction.West : _('West') }
-
 
 class CardArea(CairoCanvas):
     """This widget is a graphical display of tricks and hands of cards.
@@ -47,7 +46,8 @@ class CardArea(CairoCanvas):
     """
 
     # Load card mask.
-    card_mask_path = env.find_pixmap('bonded.png')
+    card_mask_file = config['Appearance'].get('CardStyle', 'bonded.png')
+    card_mask_path =  env.find_pixmap(card_mask_file)
     card_mask = cairo.ImageSurface.create_from_png(card_mask_path)
 
     font_description = pango.FontDescription('Sans Bold 10')
@@ -205,9 +205,9 @@ class CardArea(CairoCanvas):
         layout = pango.Layout(self.create_pango_context())
         layout.set_font_description(self.font_description)
         if name is None:
-            layout.set_text('%s' % DIRECTION_SYMBOLS[position])
+            layout.set_text('%s' % DIRECTION_NAMES[position])
         else:
-            layout.set_text('%s: %s' % (DIRECTION_SYMBOLS[position], name))
+            layout.set_text('%s: %s' % (DIRECTION_NAMES[position], name))
 
         # Create an ImageSurface respective to dimensions of text.
         width, height = layout.get_pixel_size()
@@ -264,7 +264,6 @@ class CardArea(CairoCanvas):
             self.set_trick(trick)
 
         
-
     def set_trick(self, trick):
         """Sets the current trick.
         Draws representation of current trick to context.

@@ -20,15 +20,16 @@ import gtk
 import cairo
 
 import pybridge.environment as env
+from config import config
 
 
 class CairoCanvas(gtk.DrawingArea):
-    """Provides a simple canvas layer for .
-    
-    Overlapping items.
-    """
+    """Provides a simple canvas layer for the display of graphics."""
 
-    background_path = env.find_pixmap('baize.png')
+    # TODO: enhance documentation.
+
+    background_path = config['Appearance'].get('Background',
+                                               env.find_pixmap('baize.png'))
     background = cairo.ImageSurface.create_from_png(background_path)
     pattern = cairo.SurfacePattern(background)
     pattern.set_extend(cairo.EXTEND_REPEAT)
@@ -89,7 +90,8 @@ class CairoCanvas(gtk.DrawingArea):
         """
         @param id: unique identifier for source.
         @param source: if specified, ImageSurface.
-        @param xy: if specified, tuple providing (x, y) coords for source in backing.
+        @param xy: if specified, tuple providing (x, y) coords for source
+                   in backing.
         @param z_index: if specified, integer.
         @param opacity: if specified, integer in range 0 to 1. 
         """
