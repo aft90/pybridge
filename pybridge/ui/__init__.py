@@ -22,12 +22,10 @@ import gtk
 
 from twisted.internet import reactor
 
-import pybridge.environment as env
-from pybridge.settings import Settings
-
 import locale
 import gettext
 locale.setlocale(locale.LC_ALL, '')
+import pybridge.environment as env
 gettext.bindtextdomain('pybridge', env.get_localedir())
 gettext.textdomain('pybridge')
 gettext.install('pybridge')
