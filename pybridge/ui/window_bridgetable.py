@@ -19,44 +19,16 @@
 import gtk
 from wrapper import GladeWrapper
 
-from cardarea import CardArea
 from pybridge.network.client import client
+from pybridge.network.error import GameError
+
+from cardarea import CardArea
 from config import config
 from eventhandler import SimpleEventHandler
 from manager import WindowManager
+from vocabulary import *
 
 from window_bidbox import WindowBidbox
-
-from pybridge.network.error import GameError
-from pybridge.bridge.call import Bid, Pass, Double, Redouble
-from pybridge.bridge.symbols import Direction, Level, Strain, Rank, Vulnerable
-
-
-# Translatable symbols for elements of bridge.
-
-CALLTYPE_SYMBOLS = {Pass : _('pass'), Double : _('dbl'), Redouble : _('rdbl') }
-
-DIRECTION_SYMBOLS = {Direction.North : _('North'), Direction.East : _('East'),
-                     Direction.South : _('South'), Direction.West : _('West') }
-
-LEVEL_SYMBOLS = {Level.One : _('1'), Level.Two : _('2'), Level.Three : _('3'),
-                 Level.Four : _('4'), Level.Five : _('5'), Level.Six : _('6'),
-                 Level.Seven : _('7') }
-
-RANK_SYMBOLS = {Rank.Two : _('2'),   Rank.Three : _('3'), Rank.Four : _('4'),
-                Rank.Five : _('5'),  Rank.Six : _('6'),   Rank.Seven : _('7'),
-                Rank.Eight : _('8'), Rank.Nine : _('9'),  Rank.Ten : _('10'),
-                Rank.Jack : _('J'),  Rank.Queen : _('Q'), Rank.King : _('K'),
-                Rank.Ace : _('A') }
-
-STRAIN_SYMBOLS = {Strain.Club    : u'\N{BLACK CLUB SUIT}',
-                  Strain.Diamond : u'\N{BLACK DIAMOND SUIT}',
-                  Strain.Heart   : u'\N{BLACK HEART SUIT}',
-                  Strain.Spade   : u'\N{BLACK SPADE SUIT}',
-                  Strain.NoTrump : u'NT' }
-
-VULN_SYMBOLS = {Vulnerable.All : _('All'), Vulnerable.NorthSouth : _('N/S'),
-                Vulnerable.EastWest : _('E/W'), Vulnerable.None : _('None') }
 
 
 class WindowBridgetable(GladeWrapper):
@@ -75,7 +47,7 @@ class WindowBridgetable(GladeWrapper):
         self.takeseat_items = {}
         menu = gtk.Menu()
         for position in Direction:
-            item = gtk.MenuItem(DIRECTION_SYMBOLS[position], True)
+            item = gtk.MenuItem(DIRECTION_NAMES[position], True)
             item.connect('activate', self.on_seat_activated, position)
             item.show()
             menu.append(item)
@@ -91,13 +63,15 @@ class WindowBridgetable(GladeWrapper):
         self.cardarea.show()
 
         renderer = gtk.CellRendererText()
+        renderer.set_property('size-points', 12)
+        renderer.set_property('xalign', 0.5)
 
         # Set up bidding history and column display.
         self.call_store = gtk.ListStore(str, str, str, str)
         self.biddingview.set_model(self.call_store)
         for index, position in enumerate(Direction):
-            title = DIRECTION_SYMBOLS[position]
-            column = gtk.TreeViewColumn(str(title), renderer, text=index)
+            title = DIRECTION_NAMES[position]
+            column = gtk.TreeViewColumn(title, renderer, markup=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
             self.biddingview.append_column(column)
@@ -106,8 +80,8 @@ class WindowBridgetable(GladeWrapper):
         self.trick_store = gtk.ListStore(str, str, str, str)
         self.trickview.set_model(self.trick_store)
         for index, position in enumerate(Direction):
-            title = DIRECTION_SYMBOLS[position]
-            column = gtk.TreeViewColumn(str(title), renderer, text=index)
+            title = DIRECTION_NAMES[position]
+            column = gtk.TreeViewColumn(str(title), renderer, markup=index)
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             column.set_fixed_width(50)
             self.trickview.append_column(column)
@@ -222,11 +196,7 @@ class WindowBridgetable(GladeWrapper):
             while self.call_store.iter_next(iter) != None:
                 iter = self.call_store.iter_next(iter)
 
-        if isinstance(call, Bid):
-            format = '%s%s' % (LEVEL_SYMBOLS[call.level],
-                               STRAIN_SYMBOLS[call.strain])
-        else:
-            format = CALLTYPE_SYMBOLS[call.__class__]
+        format = render_call(call)
         self.call_store.set(iter, column, format)
 
 
@@ -244,13 +214,12 @@ class WindowBridgetable(GladeWrapper):
             if iter is None:
                 iter = self.trick_store.append()
 
-        strain_equivalent = getattr(Strain, card.suit.key)  # TODO: clean up.
-        format = '%s%s' % (RANK_SYMBOLS[card.rank], STRAIN_SYMBOLS[strain_equivalent])
+        format = render_card(card)
         self.trick_store.set(iter, column, format)
 
 
     def addScore(self, contract, made, score):
-        textContract = self.formatContract(contract)
+        textContract = render_contract(contract)
         textMade = '%s' % made
         if contract['declarer'] in (Direction.North, Direction.South) and score > 0 \
         or contract['declarer'] in (Direction.East, Direction.West) and score < 0:
@@ -278,10 +247,8 @@ class WindowBridgetable(GladeWrapper):
             score = self.table.game.getScore()
             self.addScore(self.table.game.contract, declarerWon, score)
 
-            contractText = self.formatContract(self.table.game.contract)
-            fields = {'contract':  self.formatContract(self.table.game.contract),
+            fields = {'contract': render_contract(self.table.game.contract),
                       'offset': abs(offset) }
-
             if offset > 0:
                 if offset == 1:
                     resultText = _('Contract %(contract)s made by 1 trick.') % fields
@@ -309,6 +276,9 @@ class WindowBridgetable(GladeWrapper):
             dialog.format_secondary_text(_('Click OK to start next game.'))
         dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
         dialog.set_default_response(gtk.RESPONSE_OK)
+        # If user leaves table (ie. closes window), close dialog as well.
+        dialog.set_transient_for(self.window)
+        dialog.set_destroy_with_parent(True)
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
@@ -371,7 +341,7 @@ class WindowBridgetable(GladeWrapper):
         format = "<span size=\"x-large\">%s</span>"
 
         if self.table.game.contract:
-            text = self.formatContract(self.table.game.contract)
+            text = render_contract(self.table.game.contract)
             self.label_contract.set_markup(format % text)
             self.label_contract.set_property('sensitive', True)
         else:
@@ -384,7 +354,7 @@ class WindowBridgetable(GladeWrapper):
 
         dealer = ''
         if self.table.game.inProgress():
-            dealer = DIRECTION_SYMBOLS[self.table.game.board['dealer']]
+            dealer = DIRECTION_NAMES[self.table.game.board['dealer']]
 
         self.label_dealer.set_markup(format % dealer)
 
@@ -426,13 +396,13 @@ class WindowBridgetable(GladeWrapper):
                 elif self.position and self.position == declarer and turn == dummy:
                     text = _("Play a card from dummy's hand.")
                 else:
-                    text = _("It is %s's turn to play a card.") % DIRECTION_SYMBOLS[turn]
+                    text = _("It is %s's turn to play a card.") % DIRECTION_NAMES[turn]
 
             else:  # Bidding.
                 if self.position and self.position == turn:
                     text = _("Make a call from the bidding box.")
                 else:
-                    text = _("It is %s's turn to make a call.") % DIRECTION_SYMBOLS[turn]
+                    text = _("It is %s's turn to make a call.") % DIRECTION_NAMES[turn]
 
         except GameError:  # Game not in progress.
             text = _("Waiting for next game to start.")
@@ -553,27 +523,6 @@ class WindowBridgetable(GladeWrapper):
         self.chat_messagehistory.scroll_to_iter(iter, 0)
 
 
-# Utility methods.
-
-
-    def formatContract(self, contract):
-        """Produce a format string representing the contract.
-        
-        @param contract: a contract object.
-        @type contract: dict
-        @return: a format string representing the contract.
-        @rtype: str
-        """
-        doubled = contract['redoubleBy'] and ' (%s)' % CALLTYPE_SYMBOLS[Redouble] \
-                  or contract['doubleBy'] and ' (%s)' % CALLTYPE_SYMBOLS[Double] or ''
-
-        return _('%(bidlevel)s%(bidstrain)s%(doubled)s by %(declarer)s') \
-                    % {'bidlevel' : LEVEL_SYMBOLS[contract['bid'].level],
-                       'bidstrain' : STRAIN_SYMBOLS[contract['bid'].strain],
-                       'doubled' : doubled,
-                       'declarer' : DIRECTION_SYMBOLS[contract['declarer']] }
-
-
 # Signal handlers.
 
 
@@ -630,7 +579,7 @@ class WindowBridgetable(GladeWrapper):
 
 
     def on_leaveseat_clicked(self, widget, *args):
-        
+
         def success(r):
             self.player = None
             self.position = None
@@ -638,7 +587,7 @@ class WindowBridgetable(GladeWrapper):
             self.leaveseat.set_property('sensitive', False)
             if self.children.get(WindowBidbox):
                 self.children.close(self.children[WindowBidbox])
-        
+
         d = self.table.leaveGame(self.position)
         d.addCallbacks(success, self.errback)
 
