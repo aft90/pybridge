@@ -20,27 +20,12 @@
 
 import os
 import sys
-import getopt
-
-
-def usage():
-    print "Usage: pybridge-server [options]"
-    print "-h      : Print this help message and exit."
-    print "-p PORT : Listen for connections on specified port."
-    print "-v      : Print version number and exit."
+from optparse import OptionParser
 
 
 def main():
     PORT = 5040
-    
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hp:v',
-                                   ['help', 'port=', 'version'])
-    except getopt.GetoptError, error:
-        usage()
-        print "\nError: %s" % error
-        sys.exit(2)
-    
+
     try:  # If PyBridge is installed system-wide, this finds it automatically.
         import pybridge
     except ImportError:  # Locate the PyBridge package.
@@ -51,31 +36,27 @@ def main():
             pythonpath = os.path.join(basedir, 'lib', 'python')
         else:
             pythonpath = basedir
+
         sys.path.insert(0, pythonpath)  # Place PyBridge package in PYTHONPATH.
-        import pybridge
-    
-    for opt, arg in opts:
-        if opt in ('-h', '--help'):
-            usage()
-            sys.exit(0)
-        elif opt in ('-p', '--port'):
-            try:
-                PORT = int(arg)
-            except ValueError:
-                usage()
-                print "\nError: invalid value %s specified for %s" % (arg, opt)
-                sys.exit(2)
-        elif opt in ('-v', '--version'):
-            print "PyBridge Server version %s" % pybridge.__version__
-            sys.exit(0)
-    
+        try:
+            import pybridge
+        except ImportError:
+            raise SystemExit, "Fatal error: could not locate PyBridge installation."
+
+    parser = OptionParser(version="PyBridge Server %s" % pybridge.__version__)
+
+    parser.add_option('-p', '--port', type=int, dest='port', default=PORT,
+                      help="listen for connections on specified port")
+
+    options, args = parser.parse_args()
+
     from twisted.internet import reactor
     from twisted.python import log
     log.startLogging(sys.stdout)  # Log to stdout.
-    
+
     # TODO: replace with a service.
     from pybridge.server import factory
-    reactor.listenTCP(PORT, factory)
+    reactor.listenTCP(options.port, factory)
     reactor.run()
 
 
