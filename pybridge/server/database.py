@@ -22,14 +22,8 @@ from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 from twisted.python import log
 
-import pybridge.environment as env
-from pybridge.settings import Settings
-
-
-# TODO: when fields are not empty, avoid writing default values to fields.
-
-configfile = env.find_config_server('server.cfg')
-settings = Settings(configfile, ['database'])
+from config import config
+from pybridge import environment as env
 
 
 # Initiate connection to the appropriate database backend.
@@ -38,32 +32,41 @@ settings = Settings(configfile, ['database'])
 # This code has been tested with the SQLite database backend. If you experience
 # problems with databases supported by SQLObject, please file a bug report.
 
-backend = settings.database.get('backend', 'sqlite')  # Default to SQLite.
-settings.database['backend'] = backend
+engine = config['Database'].get('Engine', 'sqlite')  # Default to SQLite.
 
-if backend == 'sqlite':
-    dbfile = settings.database.get('dbfile')
-    if dbfile is None:
-        dbfile = env.find_config_server('pybridge-server.db')
-        settings.database['dbfile'] = dbfile
+if engine == 'sqlite':
+    dbfile = config['Database'].get('DatabaseName',
+                                env.find_config_server('pybridge-server.db'))
     connection_string = "sqlite://" + dbfile
-else:
-    username = settings.database.get('username', '')
-    password = settings.database.get('password', '')
-    hostname = settings.database.get('hostname', 'localhost')
-    dbname = settings.database.get('dbname', 'pybridge')
-    connection_string = "%s://%s:%s/%s" % (username, password, hostname, dbname)
 
-settings.save()
+else:
+    username = config['Database'].get('Username', '')
+    password = config['Database'].get('Password', '')
+    host = config['Database'].get('Host', 'localhost')
+    port = config['Database'].get('Port', '')
+    dbname = config['Database'].get('DatabaseName', 'pybridge')
+
+    # Standard URI syntax (from http://sqlobject.org/SQLObject.html):
+    # scheme://[user[:password]@]host[:port]/database[?parameters]
+    connection_string = engine + '://'
+    if username:
+        connection_string += username
+        if password:
+            connection_string += ':' + password
+        connection_string += '@'
+    connection_string += host
+    if port:
+        connection_string += ':' + str(port)
+    connection_string += '/' + dbname
 
 try:
     connection = connectionForURI(connection_string)  # TODO: fix for Win32.
-    log.msg("Connection to %s database succeeded" % backend)
+    log.msg("Connection to %s database succeeded" % engine)
 except Exception, e:
     log.err(e)
     log.msg("Could not connect to %s database with URI: %s"
-            % (backend, connection_string))
-    log.msg("Please check configuration file %s" % configfile)
+            % (engine, connection_string))
+    log.msg("Please check configuration file.")
     raise SystemExit  # Database connection is required for server operation.
 
 sqlhub.processConnection = connection  # Set all SQLObjects to use connection.

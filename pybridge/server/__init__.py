@@ -19,10 +19,12 @@
 from twisted.cred import checkers, credentials, portal
 from twisted.spread import pb
 
+import config
+config.load()
+
 from pybridge.server.checker import Checker
 from pybridge.server.realm import Realm
 from pybridge.server.server import Server
-
 
 server = Server()
 realm = Realm()
