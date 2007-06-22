@@ -37,7 +37,7 @@ class DialogConnection(GladeWrapper):
         connection = config['Connection']
         if connection:
             self.entry_hostname.set_text(connection.get('HostAddress', 'localhost'))
-            self.entry_portnum.set_text(str(connection.get('Port', TCP_PORT)))
+            self.entry_portnum.set_text(str(connection.get('PortNumber', TCP_PORT)))
             self.entry_username.set_text(connection.get('Username', ''))
             password = connection.get('Password', '').decode('rot13')
             self.entry_password.set_text(password)
