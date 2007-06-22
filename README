@@ -1,13 +1,16 @@
-PyBridge 0.2.1 - a free online bridge game
+PyBridge 0.3.0 - a free online bridge game
 http://pybridge.sourceforge.net/
 http://sourceforge.net/projects/pybridge/
 
+
+About PyBridge
+==============
 
 PyBridge allows you to play the card game of (contract) bridge, with human
 players, over the Internet or a local network.
 
 There are many Web resources for learning to play bridge. A good starting point
-is the Wikipedia: see http://en.wikipedia.org/wiki/Contract_bridge .
+is the Wikipedia: see http://en.wikipedia.org/wiki/Contract_bridge.
 
 
 Release Notes
@@ -15,10 +18,10 @@ Release Notes
 
 To use PyBridge, you need to connect to a game server. You have two options:
 
-- Connect to a public server. A list of known public servers can be found on
-  the project website.
+  - Connect to a public server. A list of known public servers can be found on
+    the project website.
 
-- Run a game server yourself, with the pybridge-server script.
+  - Run a game server yourself, using the pybridge-server script.
 
 When connecting to a server for the first time, you need to ensure that the
 "Register as New User" checkbox is ticked.
