@@ -23,16 +23,9 @@ from wrapper import GladeWrapper
 import pybridge.environment as env
 from config import config
 from manager import wm
+from vocabulary import *
 
 from pybridge.bridge.symbols import Suit
-
-SUIT_NAMES = {Suit.Club: _('Club'), Suit.Diamond: _('Diamond'),
-              Suit.Heart: _('Heart'), Suit.Spade: _('Spade') }
-
-SUIT_SYMBOLS = {Suit.Club: u'\N{BLACK CLUB SUIT}',
-                Suit.Diamond: u'\N{BLACK DIAMOND SUIT}',
-                Suit.Heart: u'\N{BLACK HEART SUIT}',
-                Suit.Spade: u'\N{BLACK SPADE SUIT}' }
 
 SUIT_LABEL_TEMPLATE = "<span color=\'%s\' size=\'xx-large\'>%s</span>"
 
@@ -43,10 +36,11 @@ class DialogPreferences(GladeWrapper):
 
 
     def setUp(self):
-        # Allow user to select only image files for background.
+        # Allow user to select only PNG images for background.
         filter_pixbufs = gtk.FileFilter()
-        filter_pixbufs.add_pixbuf_formats()
-        filter_pixbufs.set_name(_('Images'))
+        #filter_pixbufs.add_pixbuf_formats()
+        filter_pixbufs.add_pattern('*.png')
+        filter_pixbufs.set_name(_('PNG images'))
         self.background.add_filter(filter_pixbufs)
 
         # Build a list of card decks from which the user may choose.
