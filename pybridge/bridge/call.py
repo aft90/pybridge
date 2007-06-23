@@ -24,6 +24,13 @@ from symbols import Level, Strain
 class Call(pb.Copyable, pb.RemoteCopy):
     """Abstract class, inherited by Bid, Pass, Double and Redouble."""
 
+    def __hash__(self):
+        return hash(self.__class__.__name__)
+
+
+    def __repr__(self):
+        return "%s()" % self.__class__.__name__
+
 
 class Bid(Call):
     """A Bid represents a statement of a level and a strain.
@@ -60,8 +67,12 @@ class Bid(Call):
             return 1
 
 
-    def __str__(self):
-        return "%s %s" % (self.level, self.strain)
+    def __hash__(self):
+        return hash((self.level, self.strain))
+
+
+    def __repr__(self):
+        return "Bid(%s, %s)" % (self.level, self.strain)
 
 
     def getStateToCopy(self):
@@ -78,9 +89,6 @@ pb.setUnjellyableForClass(Bid, Bid)
 class Pass(Call):
     """A Pass represents an abstention from the bidding."""
 
-    def __str__(self):
-        return "Pass"
-
 
 pb.setUnjellyableForClass(Pass, Pass)
 
@@ -88,18 +96,12 @@ pb.setUnjellyableForClass(Pass, Pass)
 class Double(Call):
     """A Double over an opponent's current bid."""
 
-    def __str__(self):
-        return "Double"
-
 
 pb.setUnjellyableForClass(Double, Double)
 
 
 class Redouble(Call):
     """A Redouble over an opponent's double of partnership's current bid."""
-
-    def __str__(self):
-        return "Redouble"
 
 
 pb.setUnjellyableForClass(Redouble, Redouble)
