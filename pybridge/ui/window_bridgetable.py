@@ -86,11 +86,13 @@ class WindowBridgetable(GladeWrapper):
             column.set_fixed_width(50)
             self.trickview.append_column(column)
 
+        renderer = gtk.CellRendererText()
+
         # Set up score sheet and column display.
         self.score_store = gtk.ListStore(str, str, str, str)
         self.scoresheet.set_model(self.score_store)
         for index, title in enumerate([_('Contract'), _('Made'), _('N/S'), _('E/W')]):
-            column = gtk.TreeViewColumn(title, renderer, text=index)
+            column = gtk.TreeViewColumn(title, renderer, markup=index)
             self.scoresheet.append_column(column)
 
         # Set up observer listing.
@@ -157,7 +159,8 @@ class WindowBridgetable(GladeWrapper):
             # If user is a player and bidding in progress, open bidding box.
             if self.player and not self.table.game.bidding.isComplete():
                 bidbox = self.children.open(WindowBidbox, parent=self)
-                bidbox.monitor(self.table.game, self.position, self.on_call_selected)
+                bidbox.setCallSelectHandler(self.on_call_selected)
+                bidbox.setTable(self.table, self.position)
 
 
         # Initialise seat menu and player labels.
@@ -482,7 +485,8 @@ class WindowBridgetable(GladeWrapper):
             d.addCallbacks(self.table.game.revealHand, self.errback,
                            callbackKeywords={'position' : self.position})
             bidbox = self.children.open(WindowBidbox, parent=self)
-            bidbox.monitor(self.table.game, self.position, self.on_call_selected)
+            bidbox.setCallSelectHandler(self.on_call_selected)
+            bidbox.setTable(self.table, self.position)
 
 
     def event_makeCall(self, call, position):
@@ -564,7 +568,8 @@ class WindowBridgetable(GladeWrapper):
                 # If game is running and bidding is active, open bidding box.
                 if not self.table.game.bidding.isComplete():
                     bidbox = self.children.open(WindowBidbox, parent=self)
-                    bidbox.monitor(self.table.game, self.position, self.on_call_selected)
+                    bidbox.setCallSelectHandler(self.on_call_selected)
+                    bidbox.setTable(self.table, self.position)
 
         d = self.table.joinGame(position)
         d.addCallbacks(success, self.errback)

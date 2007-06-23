@@ -19,26 +19,14 @@
 import gtk
 from wrapper import GladeWrapper
 
+import pybridge.bridge.call as Call
+
+from config import config
 from eventhandler import SimpleEventHandler
-
-from pybridge.bridge.call import Bid, Pass, Double, Redouble
-from pybridge.bridge.call import Level, Strain
-
-CALL_NAMES = {'bid': Bid, 'pass': Pass, 'double': Double, 'redouble': Redouble}
-
-LEVEL_NAMES = {'1': Level.One, '2': Level.Two,'3': Level.Three,
-               '4': Level.Four, '5': Level.Five, '6': Level.Six,
-               '7': Level.Seven, }
-
-STRAIN_NAMES = {'club': Strain.Club, 'diamond': Strain.Diamond,
-                'heart': Strain.Heart, 'spade': Strain.Spade,
-                'nt' : Strain.NoTrump, }
-
-ALL_CALLS = [Pass(), Double(), Redouble()] + \
-            [Bid(l, s) for l in Level for s in Strain]
+from vocabulary import *
 
 
-class WindowBidbox(GladeWrapper):
+class WindowBidbox(object):
     """The bidding box is presented to a player, during bidding.
     
     Each call (bid, pass, double or redouble) is displayed as a button.
@@ -46,33 +34,87 @@ class WindowBidbox(GladeWrapper):
     corresponding button. Unavailable calls are shown greyed-out.
     """
 
-    glade_name = 'window_bidbox'
 
+    def __init__(self, parent=None):
+        self.window = gtk.Window()
+        if parent:
+            self.window.set_transient_for(parent.window)
+        self.window.set_title(_('Bidding Box'))
+        self.window.connect('delete_event', self.on_delete_event)
+        self.window.set_resizable(False)
 
-    def setUp(self):
-        self.game = None
+        self.callButtons = {}
+        self.callSelectHandler = None  # A method to invoke when a call is clicked.
         self.eventHandler = SimpleEventHandler(self)
+        self.table = None
+        self.position = None
+
+        def buildButtonFromCall(call, markup):
+            button = gtk.Button()
+            button.set_relief(gtk.RELIEF_NONE)
+            button.connect('clicked', self.on_call_clicked, call)
+            # A separate label is required for marked-up text.
+            label = gtk.Label()
+            label.set_markup(markup)
+            label.set_use_markup(True)
+            button.add(label)
+            self.callButtons[call] = button
+            return button
+
+        vbox = gtk.VBox()
+
+        bidtable = gtk.Table(rows=7, columns=5, homogeneous=True)
+        vbox.pack_start(bidtable)
+        # Build buttons for all bids.
+        for y, level in enumerate(Call.Level):
+            for x, strain in enumerate(Call.Strain):
+                bid = Call.Bid(level, strain)
+                markup = render_call(bid)
+                xy = (x, x+1, y, y+1)
+                bidtable.attach(buildButtonFromCall(bid, markup), *xy)
+
+        vbox.pack_start(gtk.HSeparator())
+
+        otherbox = gtk.HBox()
+        vbox.pack_start(otherbox)
+        # Build buttons for other calls.
+        othercalls = [(Call.Pass(), render_call_name, True),
+                      (Call.Double(), render_call, False),
+                      (Call.Redouble(), render_call, False)]
+        for call, renderer, expand in othercalls:
+            markup = renderer(call)
+            otherbox.pack_start(buildButtonFromCall(call, markup), expand)
+
+        self.window.add(vbox)
+        self.window.show_all()
 
 
     def tearDown(self):
-        if self.game:
-            self.game.detach(self.eventHandler)
+        if self.table:
+            self.table.game.detach(self.eventHandler)
 
 
-    def monitor(self, game, position, callSelected):
-        """Monitor the state of bidding in game.
+    def setCallSelectHandler(self, handler):
+        """Provide a method to invoke when user selects a call.
         
-        @param game: the BridgeGame for which to observe bidding session.
-        @param position: if user is playing, their position in the game.
-        @param callSelected: a handler to invoke when user selects a call.
+        @param handler: a method accepting a call argument.
+        @type handler: function
         """
-        if self.game:
-            self.game.detach(self.eventHandler)
+        self.callSelectHandler = handler
 
-        self.game = game
+
+    def setTable(self, table, position):
+        """Monitor the state of bidding in game at specified table.
+        
+        @param table: the BridgeGame for which to observe bidding session.
+        @param: 
+        """
+        if self.table:
+            self.table.game.detach(self.eventHandler)
+
+        self.table = table
+        self.table.game.attach(self.eventHandler)
         self.position = position
-        self.callSelected = callSelected
-        self.game.attach(self.eventHandler)
 
         self.enableCalls()
 
@@ -89,46 +131,23 @@ class WindowBidbox(GladeWrapper):
 
     def enableCalls(self):
         """Enables buttons representing the calls available to player."""
-        if self.position == self.game.getTurn():
+        if self.position == self.table.game.getTurn():
             self.window.set_property('sensitive', True)
-            for call in ALL_CALLS:
-                button = self.getButtonFromCall(call)
-                isvalid = self.game.bidding.isValidCall(call)
+            for call, button in self.callButtons.items():
+                isvalid = self.table.game.bidding.isValidCall(call)
                 button.set_property('sensitive', isvalid)
         else:
             self.window.set_property('sensitive', False)
 
 
-    def getButtonFromCall(self, call):
-        """Returns a pointer to GtkButton object representing given call."""
-        callname = [k for k,v in CALL_NAMES.items() if isinstance(call, v)][0]
-        if isinstance(call, Bid):
-            level = [k for k,v in LEVEL_NAMES.items() if v==call.level][0]
-            strain = [k for k,v in STRAIN_NAMES.items() if v==call.strain][0]
-            return getattr(self, 'button_%s_%s_%s' % (callname, level, strain))
-        else:
-            return getattr(self, 'button_%s' % callname)
-
-
-    def getCallFromButton(self, widget):
-        """Returns an instance of the call represented by given GtkButton."""
-        text = widget.get_name().split('_')  # "button", calltype, level, strain
-        calltype = CALL_NAMES[text[1]]
-        if calltype is Bid:
-            level = LEVEL_NAMES[text[2]]
-            strain = STRAIN_NAMES[text[3]]
-            return Bid(level, strain)
-        return calltype()
-
-
 # Signal handlers.
 
 
-    def on_call_clicked(self, widget, *args):
-        call = self.getCallFromButton(widget)
-        self.callSelected(call)  # Invoke external handler.
+    def on_call_clicked(self, widget, call):
+        if self.callSelectHandler:
+            self.callSelectHandler(call)  # Invoke external handler.
 
 
-    def on_window_bidbox_delete_event(self, widget, *args):
+    def on_delete_event(self, widget, *args):
         return True  # Stops window deletion taking place.
 
