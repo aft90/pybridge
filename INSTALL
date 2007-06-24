@@ -6,13 +6,20 @@ source tarball, then type (as root):
 
 python setup.py install
 
-We recommend that, if your distribution provides PyBridge packages, you should
-install from packages. Packages are available for Debian GNU/Linux and its
-derivatives (including Ubuntu) thanks to David Watson <dwatson@debian.org>.
-
 Alternatively, you can run PyBridge from the extracted tarball archive. Change
-to the PyBridge "bin/" directory, then type "./pybridge" to run the graphical
-client, or "./pybridge-server" to run the standalone server.
+to the PyBridge 'bin/' directory, then type './pybridge' to run the graphical
+client, or './pybridge-server' to run the standalone server.
+
+PyBridge packages are available for Debian GNU/Linux and Ubuntu systems, thanks
+to David Watson <dwatson@debian.org>. Please visit:
+
+  - For Debian: http://packages.debian.org/pybridge/
+  - For Ubuntu: http://packages.ubuntu.com/pybridge/
+
+Users of Microsoft Windows may wish to use the 'py2exe' PyBridge distribution,
+which provides native executable (.exe) versions of the 'pybridge' and
+'pybridge-server' scripts, and bundles all the library software (see below)
+required to run PyBridge.
 
 
 Requirements
@@ -46,7 +53,7 @@ Configuring the Server
 By default, the standalone server creates and uses a SQLite database in the
 ~/.pybridge/ directory. This is suitable for hosting LAN games, but if you wish
 to operate a high-load PyBridge server on the Internet, it may be necessary
-to switch to an external RDBMS, such as MySQL or PostgreSQL.
+to switch to an external database server, such as MySQL or PostgreSQL.
 
 To change the database settings, edit the ~/.pybridge/server.cfg file. The
 fields to change are documented in the pybridge/server/config.py module.
