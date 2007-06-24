@@ -92,6 +92,7 @@ class WindowBidbox(object):
     def tearDown(self):
         if self.table:
             self.table.game.detach(self.eventHandler)
+        self.table = None  # Dereference table.
 
 
     def setCallSelectHandler(self, handler):
