@@ -1,43 +1,97 @@
+=====================
+0.3.0 (25 June 2007)
+=====================
+
+New features
+------------
+
+  - Architecture:
+
+    - Separation of bridge game logic from 'table' code in [Local|Remote]Table
+      and Game classes. This enables other games to be implemented as separate
+      packages and to be supported by the existing network code.
+
+
+  - Bridge facilities:
+
+    - Implementation of Thomas Andrews' "impossible bridge book" algorithm,
+      which provides a one-to-one correspondence between all possible hand deals
+      and numerical index values.
+      See http://bridge.thomasoandrews.com/impossible/ for details.
+
+
+  - Miscellaneous:
+ 
+    - Use ConfigObj to provide settings management for the graphical client.
+      This introduces a dependency on ConfigObj.
+
+    - Manual pages included in source distribution.
+
+
+  - Server:
+  
+    - Use SQLObject (an object relational mapper, see http://www.sqlobject.org/)
+      to provide user account database; replaces the flat-file username/password
+      structure used previously. This introduces a dependency on SQLObject and
+      a compatible database backend - see the INSTALL file for more information.
+
+
+  - User interface:
+  
+    - Card area display reimplemented in Cairo, with enhancements:
+
+      - Rotation of table view when user selects a position to play.
+
+      - Separation of display canvas from card and hand logic, for reusability.
+        The canvas module may be useful for other projects.
+
+    - Introduction of a preferences dialog, allowing user to customise the
+      appearance of the bridge game display.
+
+    - Error notification to user when connection is dropped unexpectedly;
+      require confirmation when user requests disconnection whilst playing game.
+
+
 ======================
 0.2.1 (16 August 2006)
 ======================
 
 Bug fixes
-=========
+---------
 
-- Fixed setup.py script to install source package and supporting files in the
-  standard /usr/ directories.
+  - Fixed setup.py script to install source package and supporting files in the
+    standard /usr/ directories.
 
-- Updated pybridge.environment and bin/* scripts to work with both the source
-  and installation directory layouts.
+  - Updated pybridge.environment and bin/* scripts to work with both the source
+    and installation directory layouts.
 
 
 ======================
 0.2.0 (14 August 2006)
 ======================
 
-New Features
-============
+New features
+------------
 
-- Substantial rewrite of network code. Focus on splitting discrete services
-  into separate components and making full use of Twisted's pb.Cacheable.
-  (Support for other games can be added simply by writing new table modules
-  for server and client subclassing LocalTable and RemoteTable respectively.)
+  - Substantial rewrite of network code. Focus on splitting discrete services
+    into separate components and making full use of Twisted's pb.Cacheable.
+    (Support for other games can be added simply by writing new table modules
+    for server and client subclassing LocalTable and RemoteTable respectively.)
 
-- Introduction of an event handler and callback mechanism, which provides an
-  indirect interface between network code and user interface components.
+  - Introduction of an event handler and callback mechanism, which provides an
+    indirect interface between network code and user interface components.
 
-- Facelift for user interface: tables now display as separate windows,
-  enhancements to CardArea display widget, new icons and logo artwork.
+  - Facelift for user interface: tables now display as separate windows,
+    enhancements to CardArea display widget, new icons and logo artwork.
 
-- Basic table chat support.
+  - Basic table chat support.
 
-- Initial support for internationalization and localization via gettext.
+  - Initial support for internationalization and localization via gettext.
 
 
 ====================
 0.1.0 (19 July 2006)
 ====================
 
-- Initial release.
+  - Initial release.
 
