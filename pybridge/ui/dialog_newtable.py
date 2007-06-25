@@ -28,7 +28,7 @@ class DialogNewtable(GladeWrapper):
     glade_name = 'dialog_newtable'
 
 
-    def new(self):
+    def setUp(self):
         pass
 
 
