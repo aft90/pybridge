@@ -1,6 +1,6 @@
 include MANIFEST.in
-include AUTHORS COPYING INSTALL NEWS README
-include glade/*.glade
-recursive-include locale *.mo
+include AUTHORS COPYING INSTALL NEWS README bin/pybridge.desktop
+include glade/*.glade man/*
+recursive-include locale */LC_MESSAGES/pybridge.mo
 recursive-include pixmaps *.ico *.png *.svg
-
+prune locale/src
