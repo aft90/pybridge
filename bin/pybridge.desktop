@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=PyBridge
+Comment[en]=An online contract bridge game
+Exec=pybridge
+Icon=/usr/share/pybridge/pixmaps/pybridge.png
+Terminal=false
+Type=Application
+Categories=Application;Game;CardGame
