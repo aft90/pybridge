@@ -35,9 +35,16 @@ from pybridge import environment as env
 engine = config['Database'].get('Engine', 'sqlite')  # Default to SQLite.
 
 if engine == 'sqlite':
-    dbfile = config['Database'].get('DatabaseName',
+    dbpath = config['Database'].get('DatabaseName',
                                 env.find_config_server('pybridge-server.db'))
-    connection_string = "sqlite://" + dbfile
+    # SQLObject uses a special syntax to specify path on Windows systems.
+    # This code block is from http://simpleweb.essienitaessien.com/example
+    if(dbpath[1] == ':'): 
+        s = re.sub('\\\\', '/', dbpath)  # Change '\' to '/'
+	s = re.sub(':', '|', s, 1)  # Special for sqlite
+	dbpath = '/' + s
+
+    connection_string = "sqlite://" + dbpath
 
 else:
     username = config['Database'].get('Username', '')
@@ -60,7 +67,7 @@ else:
     connection_string += '/' + dbname
 
 try:
-    connection = connectionForURI(connection_string)  # TODO: fix for Win32.
+    connection = connectionForURI(connection_string)
     log.msg("Connection to %s database succeeded" % engine)
 except Exception, e:
     log.err(e)
