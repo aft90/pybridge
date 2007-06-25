@@ -615,8 +615,28 @@ class WindowBridgetable(GladeWrapper):
 
 
     def on_leavetable_clicked(self, widget, *args):
-        d = client.leaveTable(self.table.id)
-        d.addErrback(self.errback)
+        # If user is currently playing a game, request confirmation.
+        if self.player and self.table.game.inProgress():
+            dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
+                                       type=gtk.MESSAGE_QUESTION)
+            dialog.set_title(_('Leave table?'))
+            dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+            dialog.add_button(_('Leave Table'), gtk.RESPONSE_OK)
+            dialog.set_markup(_('Are you sure you wish to leave this table?'))
+            dialog.format_secondary_text(_('You are currently playing a game. Leaving may forfeit the game, or incur penalties.'))
+
+            def dialog_response_cb(dialog, response_id):
+                dialog.destroy()
+                if response_id == gtk.RESPONSE_OK:
+                    d = client.leaveTable(self.table.id)
+                    d.addErrback(self.errback)
+
+            dialog.connect('response', dialog_response_cb)
+            dialog.show()
+
+        else:
+            d = client.leaveTable(self.table.id)
+            d.addErrback(self.errback)
 
 
     def on_chat_message_changed(self, widget, *args):
