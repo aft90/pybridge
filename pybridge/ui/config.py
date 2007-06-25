@@ -38,6 +38,7 @@ spec = StringIO("""# PyBridge configuration file
 [Appearance]
     CardStyle = string
     BackgroundImage = string
+    SuitSymbols = boolean(default=True)
 
     [[Colours]]
         Club = int_list(3, 3)

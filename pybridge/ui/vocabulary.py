@@ -103,12 +103,20 @@ SUIT_NAMES = {
     Suit.Spade: _('Spades'),
 }
 
-SUIT_SYMBOLS = {
-    Suit.Club: u'\N{BLACK CLUB SUIT}',
-    Suit.Diamond: u'\N{BLACK DIAMOND SUIT}',
-    Suit.Heart: u'\N{BLACK HEART SUIT}',
-    Suit.Spade: u'\N{BLACK SPADE SUIT}',
-}
+if config['Appearance'].get('SuitSymbols'):
+    SUIT_SYMBOLS = {
+        Suit.Club: u'\N{BLACK CLUB SUIT}',
+        Suit.Diamond: u'\N{BLACK DIAMOND SUIT}',
+        Suit.Heart: u'\N{BLACK HEART SUIT}',
+        Suit.Spade: u'\N{BLACK SPADE SUIT}',
+    }
+else:
+    SUIT_SYMBOLS = {
+        Suit.Club: 'C',
+        Suit.Diamond: 'D',
+        Suit.Heart: 'H',
+        Suit.Spade: 'S',
+    }
 
 STRAIN_NAMES = {
     Strain.Club: _('Club'),
@@ -118,19 +126,28 @@ STRAIN_NAMES = {
     Strain.NoTrump: _('No Trump'),
 }
 
-STRAIN_SYMBOLS = {
-    Strain.Club: u'\N{BLACK CLUB SUIT}',
-    Strain.Diamond: u'\N{BLACK DIAMOND SUIT}',
-    Strain.Heart: u'\N{BLACK HEART SUIT}',
-    Strain.Spade: u'\N{BLACK SPADE SUIT}',
-    Strain.NoTrump: u'NT',
-}
+if config['Appearance'].get('SuitSymbols'):
+    STRAIN_SYMBOLS = {
+        Strain.Club: u'\N{BLACK CLUB SUIT}',
+        Strain.Diamond: u'\N{BLACK DIAMOND SUIT}',
+        Strain.Heart: u'\N{BLACK HEART SUIT}',
+        Strain.Spade: u'\N{BLACK SPADE SUIT}',
+        Strain.NoTrump: 'NT',
+    }
+else:
+    STRAIN_SYMBOLS = {
+        Strain.Club: 'C',
+        Strain.Diamond: 'D',
+        Strain.Heart: 'H',
+        Strain.Spade: 'S',
+        Strain.NoTrump: 'NT',
+    }
 
 VULN_SYMBOLS = {
     Vulnerable.All: _('All'),
-    Vulnerable.NorthSouth : _('N/S'),
-    Vulnerable.EastWest : _('E/W'),
-    Vulnerable.None : _('None'),
+    Vulnerable.NorthSouth: _('N/S'),
+    Vulnerable.EastWest: _('E/W'),
+    Vulnerable.None: _('None'),
 }
 
 

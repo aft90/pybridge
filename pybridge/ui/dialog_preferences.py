@@ -27,7 +27,7 @@ from vocabulary import *
 
 from pybridge.bridge.symbols import Suit
 
-SUIT_LABEL_TEMPLATE = "<span color=\'%s\' size=\'xx-large\'>%s</span>"
+SUIT_LABEL_TEMPLATE = "<span color=\'%s\' size=\'x-large\'>%s</span>"
 
 
 class DialogPreferences(GladeWrapper):
@@ -75,6 +75,9 @@ class DialogPreferences(GladeWrapper):
             hexrep = gtk.color_selection_palette_to_string([colour])
             label = getattr(self, 'label_%scolour' % suit.key.lower())
             label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
+
+        use_suitsymbols = config['Appearance'].get('SuitSymbols')
+        self.check_suitsymbols.set_active(use_suitsymbols)
 
 
 # Signal handlers.
@@ -127,6 +130,8 @@ class DialogPreferences(GladeWrapper):
         model = self.cardstyle.get_model()
         iter = self.cardstyle.get_active_iter()
         config['Appearance']['CardStyle'] = model.get_value(iter, 0)
+
+        config['Appearance']['SuitSymbols'] = self.check_suitsymbols.get_active()
 
         wm.close(self)
 
