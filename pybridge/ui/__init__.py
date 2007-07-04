@@ -37,6 +37,11 @@ config.load()
 def run():
     """Starts the PyBridge client UI."""
 
+    # Set exception hook to display error dialog.
+    import sys
+    from excepthook import excepthook
+    sys.excepthook = excepthook
+
     from manager import wm
     from window_main import WindowMain
     wm.open(WindowMain)
