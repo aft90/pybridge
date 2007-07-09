@@ -43,11 +43,13 @@ class RemoteTable(pb.RemoteCache):
     info = property(lambda self: {'game': self.gametype.__name__})
 
 
+    # TODO: is there any need for this initialisation?
     def __init__(self):
         self.master = None  # Server-side ITable object.
         self.listeners = []
 
         self.id = None
+        self.chat = None
         self.game = None
         self.gametype = None
         self.observers = []  # Observers of master table.
@@ -63,6 +65,7 @@ class RemoteTable(pb.RemoteCache):
         else:
             raise NameError, "Unknown game type %s" % state['gametype']
 
+        self.chat = state['chat']
         self.observers = state['observers']
         self.players = state['players']
         for position in self.players:
@@ -79,11 +82,6 @@ class RemoteTable(pb.RemoteCache):
 
     def leaveGame(self, position, user=None):
         d = self.master.callRemote('leaveGame', position)
-        return d
-
-
-    def sendMessage(self, message, sender=None, recipients=[]):
-        d = self.master.callRemote('sendMessage', message, recipients)
         return d
 
 

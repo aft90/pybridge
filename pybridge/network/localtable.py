@@ -25,6 +25,8 @@ from pybridge.interfaces.observer import ISubject, IListener
 from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
 
+from chat import LocalChat
+
 
 class LocalTable(pb.Cacheable):
     """An implementation of ITable suitable for server-side table instances.
@@ -45,6 +47,7 @@ class LocalTable(pb.Cacheable):
         self.gametype = gametype
         self.game = gametype()  # Initialise game.
         self.game.attach(self)  # Listen for game events.
+        self.chat = LocalChat()
 
         self.observers = {}  # For each user perspective, a remote ITableEvents.
         self.players = {}  # Positions mapped to perspectives of game players.
@@ -66,6 +69,7 @@ class LocalTable(pb.Cacheable):
         # Build a dict of public information about the table.
         state = {}
         state['id'] = self.id
+        state['chat'] = self.chat
         state['gametype'] = self.gametype.__name__
         state['gamestate'] = self.game.getState()
         state['observers'] = [p.name for p in self.observers.keys()]
@@ -160,21 +164,6 @@ class LocalTable(pb.Cacheable):
         self.notify('leaveGame', player=user.name, position=position)
 
 
-    def sendMessage(self, message, sender, recipients):
-        names = [perspective.name for perspective in self.observers.keys()]
-        if recipients:  # Translate user names to their observer objects.
-            # Remove user names without a perspective object observing table.
-            recipients = [name for name in recipients if name in names]
-            sendTo = [o for p, o in self.observers.items() if p.name in recipients]
-        else:  # Broadcast message to all observers.
-            recipients = names
-            sendTo = self.observers.values()
-
-        for observer in sendTo:
-            self.notifyObserver(observer, 'sendMessage', message=message,
-                                sender=sender.name, recipients=recipients)
-
-
 
 
 class LocalTableViewable(pb.Viewable):
@@ -190,19 +179,14 @@ class LocalTableViewable(pb.Viewable):
         
         @param table: a instantiated LocalTable.
         """
-        self.table = table
+        self.__table = table
 
 
     def view_joinGame(self, user, position):
         # TODO: return a deferred?
-        return self.table.joinGame(user, position)
+        return self.__table.joinGame(user, position)
 
 
     def view_leaveGame(self, user, position):
-        return self.table.leaveGame(user, position)
-
-
-    def view_sendMessage(self, user, message, sender=None, recipients=[]):
-        return self.table.sendMessage(message, sender=user,
-                                      recipients=recipients)
+        return self.__table.leaveGame(user, position)
 

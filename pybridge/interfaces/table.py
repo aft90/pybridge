@@ -60,12 +60,12 @@ class ITable(Interface):
         """
 
 
-    def sendMessage(self, message, sender, recipients):
-        """Issues message from sender to all named recipients,
-        or to all observers.
-        
-        @param message: message text string.
-        @param sender: user identifier of sender.
-        @param recipients: user identifiers of recipient observers.
-        """
+#    def sendMessage(self, message, sender, recipients):
+#        """Issues message from sender to all named recipients,
+#        or to all observers.
+#        
+#        @param message: message text string.
+#        @param sender: user identifier of sender.
+#        @param recipients: user identifiers of recipient observers.
+#        """
 
