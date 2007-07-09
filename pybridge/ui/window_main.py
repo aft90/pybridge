@@ -32,7 +32,9 @@ from manager import WindowManager, wm
 from dialog_connection import DialogConnection
 from dialog_newtable import DialogNewtable
 from dialog_preferences import DialogPreferences
-from window_bridgetable import WindowBridgetable
+
+# TODO: import all Window*Table classes automatically.
+from pybridge.bridge.ui.window_bridgetable import WindowBridgeTable
 
 TABLE_ICON = env.find_pixmap("table.png")
 USER_ICON = env.find_pixmap("user.png")
@@ -49,14 +51,14 @@ class WindowMain(GladeWrapper):
     def setUp(self):
         # Use a private WindowManager for table window instances.
         self.tables = WindowManager()
-        
+
         # Set up table model and icon view.
         self.tableview.set_text_column(0)
         self.tableview.set_pixbuf_column(1)
         self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
         self.tableview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
         self.tableview.set_model(self.tableview_model)
-        
+
         # Set up people model and icon view.
         # TODO: allow users to provide their own "avatar" icons.
         self.peopleview.set_text_column(0)
@@ -64,7 +66,7 @@ class WindowMain(GladeWrapper):
         self.peopleview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
         self.peopleview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
         self.peopleview.set_model(self.peopleview_model)
-        
+
         # Attach event handler to listen for events.
         self.eventHandler = SimpleEventHandler(self)
         client.attach(self.eventHandler)
@@ -152,7 +154,7 @@ class WindowMain(GladeWrapper):
 
 
     def event_joinTable(self, tableid, table):
-        window = self.tables.open(WindowBridgetable, id=tableid)
+        window = self.tables.open(WindowBridgeTable, id=tableid)
         window.setTable(table)
 
 

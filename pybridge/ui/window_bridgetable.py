@@ -17,41 +17,194 @@
 
 
 import gtk
-from wrapper import GladeWrapper
 
 from pybridge.network.client import client
 from pybridge.network.error import GameError
 
-from cardarea import CardArea
-from config import config
-from eventhandler import SimpleEventHandler
-from manager import WindowManager
-from vocabulary import *
+from pybridge.ui.cardarea import CardArea
+from pybridge.ui.config import config
+from pybridge.ui.eventhandler import SimpleEventHandler
+from pybridge.ui.manager import WindowManager
+from pybridge.ui.vocabulary import *
 
+from pybridge.ui.window_gametable import WindowGameTable
 from window_bidbox import WindowBidbox
 
 
-class WindowBridgetable(GladeWrapper):
+class BiddingView(gtk.TreeView):
+    """A view of all calls made in an auction."""
 
-    glade_name = 'window_bridgetable'
+
+    def __init__(self):
+        gtk.TreeView.__init__(self)
+        self.set_rules_hint(True)
+
+        self.store = gtk.ListStore(str, str, str, str)
+        self.set_model(self.store)
+        self.clear = self.store.clear
+        renderer = gtk.CellRendererText()
+        renderer.set_property('size-points', 12)
+        renderer.set_property('xalign', 0.5)
+
+        # Set up columns, each corresponding to a position.
+        for index, position in enumerate(Direction):
+            title = DIRECTION_NAMES[position]
+            column = gtk.TreeViewColumn(title, renderer, markup=index)
+            self.append_column(column)
+
+
+    def add_call(self, call, position):
+        """Adds call from specified position."""
+        column = position.index
+        if column == 0 or self.store.get_iter_first() == None:
+            iter = self.store.append()
+        else:  # Get bottom row. There must be a better way than this...
+            iter = self.store.get_iter_first()
+            while self.store.iter_next(iter) != None:
+                iter = self.store.iter_next(iter)
+
+        format = render_call(call)
+        self.store.set(iter, column, format)
+
+
+
+
+class ScoreView(gtk.TreeView):
+    """A display of contracts bid, their results and their scores."""
+
+
+    def __init__(self):
+        gtk.TreeView.__init__(self)
+        self.set_rules_hint(True)
+
+        self.store = gtk.ListStore(str, str, str, str)
+        self.set_model(self.store)
+        self.clear = self.store.clear
+        renderer = gtk.CellRendererText()
+
+        for index, title in enumerate([_('Contract'), _('Made'), _('N/S'), _('E/W')]):
+            column = gtk.TreeViewColumn(title, renderer, markup=index)
+            self.append_column(column)
+
+
+    def add_score(self, game):
+        declarerWon, defenceWon = game.play.getTrickCount()
+        score = game.getScore()
+
+        textContract = render_contract(game.contract)
+        textMade = str(declarerWon)
+        if game.contract['declarer'] in (Direction.North, Direction.South) and score > 0 \
+        or game.contract['declarer'] in (Direction.East, Direction.West) and score < 0:
+            textNS, textEW = str(abs(score)), ''
+        else:
+            textNS, textEW = '', str(abs(score))
+
+        self.store.prepend([textContract, textMade, textNS, textEW]) 
+
+
+
+
+class BridgeDashboard(gtk.VBox): 
+    """An at-a-glance display of the state of a bridge game."""
+
+
+    def __init__(self):
+        gtk.VBox.__init__(self)
+        self.set_spacing(4)
+
+        self.contract = gtk.Label()
+        self.pack_start(self.contract)
+
+        hbox = gtk.HBox()
+        hbox.set_homogeneous(True)
+        hbox.set_spacing(6)
+        self.declarer_tricks = gtk.Label()
+        frame = gtk.Frame()
+        frame.set_label(_('Declarer'))
+        frame.set_label_align(0.5, 0.5)
+        frame.add(self.declarer_tricks)
+        hbox.pack_start(frame)
+        self.defence_tricks = gtk.Label()
+        frame = gtk.Frame()
+        frame.set_label(_('Defence'))
+        frame.set_label_align(0.5, 0.5)
+        frame.add(self.defence_tricks)
+        hbox.pack_start(frame)
+        self.pack_start(hbox)
+
+        hbox = gtk.HBox()
+        hbox.set_homogeneous(True)
+        hbox.set_spacing(6)
+        # TODO: display board number?
+        self.dealer = gtk.Label()
+        self.dealer.set_alignment(0, 0.5)
+        hbox.pack_start(self.dealer)
+        self.vulnerability = gtk.Label()
+        self.vulnerability.set_alignment(0, 0.5)
+        hbox.pack_start(self.vulnerability)
+        self.pack_start(hbox)
+
+
+    def set_contract(self, game):
+        if game.contract:
+            text = render_contract(game.contract)
+        else:
+            text = _('No contract')
+        self.contract.set_markup("<span size='x-large'>%s</span>" % text)
+
+
+    def set_trickcount(self, game):
+        if game.play:
+            declarer, defence = game.play.getTrickCount()
+            required = game.contract['bid'].level.index + 7
+            declarerNeeds = max(0, required - declarer)
+            defenceNeeds = max(0, 13 + 1 - required - defence)
+        else:
+            declarer, defence, declarerNeeds, defenceNeeds = 0, 0, 0, 0
+        format = "<span size='x-large'><b>%s</b> (%s)</span>"
+        self.declarer_tricks.set_markup(format % (declarer, declarerNeeds))
+        self.defence_tricks.set_markup(format % (defence, defenceNeeds))
+
+
+    def set_dealer(self, game):
+        if game.inProgress():
+            dealertext = "<b>%s</b>" % DIRECTION_NAMES[game.board['dealer']]
+        else:
+            dealertext = ''
+        self.dealer.set_markup(_('Dealer') + ': ' + dealertext)
+
+
+    def set_vulnerability(self, game):
+        if game.inProgress():
+            vulntext = "<b>%s</b>" % VULN_SYMBOLS[game.board['vuln']]
+        else:
+            vulntext = ''
+        self.vulnerability.set_markup(_('Vuln') + ': ' + vulntext)
+
+
+
+
+class WindowBridgeTable(WindowGameTable):
+
+    gametype = _('Contract Bridge')
+
+    stockdirections = [gtk.STOCK_GO_UP, gtk.STOCK_GO_FORWARD,
+                       gtk.STOCK_GO_DOWN, gtk.STOCK_GO_BACK]
 
 
     def setUp(self):
-        self.children = WindowManager()
-        self.eventHandler = SimpleEventHandler(self)
+        super(WindowBridgeTable, self).setUp()
 
-        self.table = None  # Table currently displayed in window.
-        self.player, self.position = None, None
-
-        # Set up "Take Seat" menu.
-        self.takeseat_items = {}
+        # Set up menu attached to 'Take Seat' toolbar button.
+        self.takeseat_menuitems = {}
         menu = gtk.Menu()
-        for position in Direction:
-            item = gtk.MenuItem(DIRECTION_NAMES[position], True)
-            item.connect('activate', self.on_seat_activated, position)
+        for position, stock in zip(Direction, self.stockdirections):
+            item = gtk.ImageMenuItem(DIRECTION_NAMES[position], True)
+            item.set_image(gtk.image_new_from_stock(stock, gtk.ICON_SIZE_MENU))
+            item.connect('activate', self.on_takeseat_clicked, position)
             item.show()
             menu.append(item)
-            self.takeseat_items[position] = item
+            self.takeseat_menuitems[position] = item
         self.takeseat.set_menu(menu)
 
         # Set up CardArea widget.
@@ -59,56 +212,41 @@ class WindowBridgetable(GladeWrapper):
         self.cardarea.on_card_clicked = self.on_card_clicked
         self.cardarea.on_hand_clicked = self.on_hand_clicked
         self.cardarea.set_size_request(640, 480)
-        self.scrolled_cardarea.add_with_viewport(self.cardarea)
-        self.cardarea.show()
+        self.gamearea.add(self.cardarea)
 
-        renderer = gtk.CellRendererText()
-        renderer.set_property('size-points', 12)
-        renderer.set_property('xalign', 0.5)
+        # Set up sidebar.
+        self.dashboard = BridgeDashboard()
+        self.sidebar.pack_start(self.dashboard, expand=False)
 
-        # Set up bidding history and column display.
-        self.call_store = gtk.ListStore(str, str, str, str)
-        self.biddingview.set_model(self.call_store)
-        for index, position in enumerate(Direction):
-            title = DIRECTION_NAMES[position]
-            column = gtk.TreeViewColumn(title, renderer, markup=index)
-            column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-            column.set_fixed_width(50)
-            self.biddingview.append_column(column)
+        self.biddingview = BiddingView()
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+        sw.add(self.biddingview)
+        frame = gtk.Frame()
+        frame.add(sw)
+        exp = gtk.Expander(_('Bidding'))
+        exp.set_expanded(True)
+        exp.add(frame)
+        self.sidebar.pack_start(exp)
 
-        # Set up trick history and column display.
-        self.trick_store = gtk.ListStore(str, str, str, str)
-        self.trickview.set_model(self.trick_store)
-        for index, position in enumerate(Direction):
-            title = DIRECTION_NAMES[position]
-            column = gtk.TreeViewColumn(str(title), renderer, markup=index)
-            column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-            column.set_fixed_width(50)
-            self.trickview.append_column(column)
+#        self.lasttrick = CardArea()
+#        frame = gtk.Frame()
+#        frame.add(self.lasttrick)
+#        exp = gtk.Expander(_('Last Trick'))
+#        exp.set_expanded(True)
+#        exp.add(frame)
+#        self.sidebar.pack_start(exp)
 
-        renderer = gtk.CellRendererText()
-
-        # Set up score sheet and column display.
-        self.score_store = gtk.ListStore(str, str, str, str)
-        self.scoresheet.set_model(self.score_store)
-        for index, title in enumerate([_('Contract'), _('Made'), _('N/S'), _('E/W')]):
-            column = gtk.TreeViewColumn(title, renderer, markup=index)
-            self.scoresheet.append_column(column)
-
-        # Set up observer listing.
-        self.observer_store = gtk.ListStore(str)
-        self.treeview_observers.set_model(self.observer_store)
-        column = gtk.TreeViewColumn(None, renderer, text=0)
-        self.observer_store.set_sort_column_id(0, gtk.SORT_ASCENDING)
-        self.treeview_observers.append_column(column)
-
-
-    def tearDown(self):
-        # Close all child windows.
-        for window in self.children.values():
-            self.children.close(window)
-
-        self.table = None  # Dereference table.
+        self.scoreview = ScoreView()
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.add(self.scoreview)
+        frame = gtk.Frame()
+        frame.add(sw)
+        exp = gtk.Expander(_('Score Sheet'))
+        exp.set_expanded(False)
+        exp.add(frame)
+        self.sidebar.pack_start(exp)
 
 
     def errback(self, failure):
@@ -121,12 +259,9 @@ class WindowBridgetable(GladeWrapper):
         
         @param table: the (now) focal table.
         """
-        self.table = table
-        self.table.attach(self.eventHandler)
-        self.table.game.attach(self.eventHandler)
-        self.player, self.position = None, None
+        super(WindowBridgeTable, self).setTable(table)
 
-        self.window.set_title(_('Table %s (Bridge)') % self.table.id)
+        self.table.game.attach(self.eventHandler)
         self.resetGame()
 
         for position in Direction:
@@ -140,21 +275,13 @@ class WindowBridgetable(GladeWrapper):
 
             for call in self.table.game.bidding.calls:
                 position = self.table.game.bidding.whoCalled(call)
-                self.addCall(call, position)
-
-            self.setDealer()
-            self.setVulnerability()
-
-            # If contract, set contract.
-            if self.table.game.bidding.isComplete():
-                self.setContract()
+                self.biddingview.add_call(call, position)
 
             # If playing, set trick counts.
             if self.table.game.play:
                 for position, cards in self.table.game.play.played.items():
                     for card in cards:
                         self.addCard(card, position)
-                self.setTrickCount()
 
             # If user is a player and bidding in progress, open bidding box.
             if self.player and not self.table.game.bidding.isComplete():
@@ -167,69 +294,39 @@ class WindowBridgetable(GladeWrapper):
         for position in Direction:
             player = self.table.players.get(position)  # Player name or None.
 
-            available = player is None or position == self.position
-            self.takeseat_items[position].set_property('sensitive', available)
-            if player:
-                self.event_joinGame(player, position)
-            else:  # Position vacant.
-                self.event_leaveGame(None, position)
-
-        # Initialise observer listing.
-        self.observer_store.clear()
-        for observer in self.table.observers:
-            self.event_addObserver(observer)
+            avail = player is None or position == self.position
+            self.takeseat_menuitems[position].set_property('sensitive', avail)
+            # If player == None, this unsets player name.
+            self.cardarea.set_player_name(position, player)
 
 
     def resetGame(self):
-        """Clears bidding history, contract, trick counts."""
-#        self.cardarea.clear()
-        self.call_store.clear()   # Reset bidding history.
-        self.trick_store.clear()  # Reset trick history.
-        self.setContract()    # Reset contract.
-        self.setTrickCount()  # Reset trick counts.
+        """Clear bidding history, contract, trick counts."""
+        self.cardarea.clear()
+        self.biddingview.clear()   # Reset bidding history.
 
-
-    def addCall(self, call, position):
-        """Adds call from specified player, to bidding tab."""
-        column = position.index
-        if column == 0 or self.call_store.get_iter_first() == None:
-            iter = self.call_store.append()
-        else:  # Get bottom row. There must be a better way than this...
-            iter = self.call_store.get_iter_first()
-            while self.call_store.iter_next(iter) != None:
-                iter = self.call_store.iter_next(iter)
-
-        format = render_call(call)
-        self.call_store.set(iter, column, format)
+        self.dashboard.set_contract(self.table.game)
+        self.dashboard.set_trickcount(self.table.game)
+        self.dashboard.set_dealer(self.table.game)
+        self.dashboard.set_vulnerability(self.table.game)
 
 
     def addCard(self, card, position):
         """"""
-        position = self.table.game.play.whoPlayed(card)
-        column = position.index
-        row = self.table.game.play.played[position].index(card)
-
-        if self.trick_store.get_iter_first() == None:
-            self.trick_store.append()
-        iter = self.trick_store.get_iter_first()
-        for i in range(row):
-            iter = self.trick_store.iter_next(iter)
-            if iter is None:
-                iter = self.trick_store.append()
-
-        format = render_card(card)
-        self.trick_store.set(iter, column, format)
-
-
-    def addScore(self, contract, made, score):
-        textContract = render_contract(contract)
-        textMade = '%s' % made
-        if contract['declarer'] in (Direction.North, Direction.South) and score > 0 \
-        or contract['declarer'] in (Direction.East, Direction.West) and score < 0:
-            textNS, textEW = '%s' % abs(score), ''
-        else:
-            textNS, textEW = '', '%s' % abs(score)
-        self.score_store.prepend([textContract, textMade, textNS, textEW])
+#        position = self.table.game.play.whoPlayed(card)
+#        column = position.index
+#        row = self.table.game.play.played[position].index(card)
+#
+#        if self.trick_store.get_iter_first() == None:
+#            self.trick_store.append()
+#        iter = self.trick_store.get_iter_first()
+#        for i in range(row):
+#            iter = self.trick_store.iter_next(iter)
+#            if iter is None:
+#                iter = self.trick_store.append()
+#
+#        format = render_card(card)
+#        self.trick_store.set(iter, column, format)
 
 
     def gameComplete(self):
@@ -242,13 +339,14 @@ class WindowBridgetable(GladeWrapper):
         dialog = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO)
         dialog.set_title(_('Game result'))
 
-        # Determine and display score in dialog box.
+        # Determine and display score in dialog box and score sheet.
         if self.table.game.contract:
+            self.scoreview.add_score(self.table.game)
+
             declarerWon, defenceWon = self.table.game.play.getTrickCount()
             required = self.table.game.contract['bid'].level.index + 7
             offset = declarerWon - required
             score = self.table.game.getScore()
-            self.addScore(self.table.game.contract, declarerWon, score)
 
             fields = {'contract': render_contract(self.table.game.contract),
                       'offset': abs(offset) }
@@ -336,54 +434,6 @@ class WindowBridgetable(GladeWrapper):
         self.cardarea.set_trick(trick)
 
 
-# Methods to set information displayed on side panel.
-
-
-    def setContract(self):
-        """Sets the contract label from contract."""
-        format = "<span size=\"x-large\">%s</span>"
-
-        if self.table.game.contract:
-            text = render_contract(self.table.game.contract)
-            self.label_contract.set_markup(format % text)
-            self.label_contract.set_property('sensitive', True)
-        else:
-            self.label_contract.set_markup(format % _('No contract'))
-            self.label_contract.set_property('sensitive', False)
-
-
-    def setDealer(self):
-        format = "<b>%s</b>"
-
-        dealer = ''
-        if self.table.game.inProgress():
-            dealer = DIRECTION_NAMES[self.table.game.board['dealer']]
-
-        self.label_dealer.set_markup(format % dealer)
-
-
-    def setTrickCount(self):
-        """Sets the trick counter labels for declarer and defence."""
-        format = "<span size=\"x-large\"><b>%s</b> (%s)</span>"
-
-        if self.table.game.play:
-            declarer, defence = self.table.game.play.getTrickCount()
-            required = self.table.game.contract['bid'].level.index + 7
-            declarerNeeds = max(0, required - declarer)
-            defenceNeeds = max(0, 13 + 1 - required - defence)
-
-            self.label_declarer.set_markup(format % (declarer, declarerNeeds))
-            self.label_defence.set_markup(format % (defence, defenceNeeds))
-            self.frame_declarer.set_property('sensitive', True)
-            self.frame_defence.set_property('sensitive', True)
-
-        else:  # Reset trick counters.
-            self.label_declarer.set_markup(format % (0, 0))
-            self.label_defence.set_markup(format % (0, 0))
-            self.frame_declarer.set_property('sensitive', False)
-            self.frame_defence.set_property('sensitive', False)
-
-
     def setTurnIndicator(self):
         """Sets the statusbar text to indicate which player is on turn."""
         context = self.statusbar.get_context_id('turn')
@@ -412,38 +462,14 @@ class WindowBridgetable(GladeWrapper):
 
         self.statusbar.push(context, text)
 
-    def setVulnerability(self):
-        """Sets the vulnerability indicators."""
-        format = "<b>%s</b>"
-
-        vulnerable = ''
-        if self.table.game.inProgress():
-            vulnerable = VULN_SYMBOLS[self.table.game.board['vuln']]
-
-        self.label_vuln.set_markup(format % vulnerable)
-
 
 # Registered event handlers.
-
-
-    def event_addObserver(self, observer):
-        self.observer_store.append([observer])
-
-
-    def event_removeObserver(self, observer):
-
-        def func(model, path, iter, user_data):
-            if model.get_value(iter, 0) in user_data:
-                model.remove(iter)
-                return True
-
-        self.observer_store.foreach(func, observer)
 
 
     def event_joinGame(self, player, position):
         self.cardarea.set_player_name(position, player)
         # Disable menu item corresponding to position.
-        widget = self.takeseat_items[position]
+        widget = self.takeseat_menuitems[position]
         widget.set_property('sensitive', False)
 
         # If all positions occupied, disable Take Seat.
@@ -458,7 +484,7 @@ class WindowBridgetable(GladeWrapper):
     def event_leaveGame(self, player, position):
         self.cardarea.set_player_name(position, None)
         # Enable menu item corresponding to position.
-        widget = self.takeseat_items[position]
+        widget = self.takeseat_menuitems[position]
         widget.set_property('sensitive', True)
 
         # If we are not seated, ensure Take Seat is enabled.
@@ -467,34 +493,38 @@ class WindowBridgetable(GladeWrapper):
 
 
     def event_start(self, board):
-        #self.children.close('dialog_gameresult')
         self.resetGame()
+
+        # Re-initialise player labels.
+        # TODO: shouldn't need to do this.
+        for position in Direction:
+            player = self.table.players.get(position)  # Player name or None.
+            self.cardarea.set_player_name(position, player)
 
         self.redrawTrick()  # Clear trick.
         for position in Direction:
             self.redrawHand(position)
 
         self.setTurnIndicator()
-        self.setDealer()
-        self.setVulnerability()
+        self.dashboard.set_dealer(self.table.game)
+        self.dashboard.set_vulnerability(self.table.game)
 
         if self.player:
             d = self.player.callRemote('getHand')
-            # When player's hand is returned by server, reveal it to client-side Game.
-            # TODO: is there a better way of synchronising hands?
+            # When user's hand is returned, reveal it to client-side Game.
             d.addCallbacks(self.table.game.revealHand, self.errback,
-                           callbackKeywords={'position' : self.position})
+                           callbackKeywords={'position': self.position})
             bidbox = self.children.open(WindowBidbox, parent=self)
             bidbox.setCallSelectHandler(self.on_call_selected)
             bidbox.setTable(self.table, self.position)
 
 
     def event_makeCall(self, call, position):
-        self.addCall(call, position)
+        self.biddingview.add_call(call, position)
         self.setTurnIndicator()
 
         if self.table.game.bidding.isComplete():
-            self.setContract()
+            self.dashboard.set_contract(self.table.game)
             if self.children.get(WindowBidbox):  # If a player.
                 self.children.close(self.children[WindowBidbox])
 
@@ -507,7 +537,7 @@ class WindowBridgetable(GladeWrapper):
         playfrom = self.table.game.play.whoPlayed(card)
         self.addCard(card, playfrom)
         self.setTurnIndicator()
-        self.setTrickCount()
+        self.dashboard.set_trickcount(self.table.game)
         self.redrawTrick()
         self.redrawHand(playfrom)
         
@@ -516,15 +546,8 @@ class WindowBridgetable(GladeWrapper):
 
 
     def event_revealHand(self, hand, position):
-        all = not self.table.game.inProgress()  # Show all cards if game has finished.
-        self.redrawHand(position, all)
-
-
-    def event_sendMessage(self, message, sender, recipients):
-        buffer = self.chat_messagehistory.get_buffer()
-        iter = buffer.get_end_iter()
-        buffer.insert(iter, '\n' + _('%(sender)s: %(message)s' % {'sender': sender, 'message': message}))
-        self.chat_messagehistory.scroll_to_iter(iter, 0)
+        all = not self.table.game.inProgress()
+        self.redrawHand(position, all)  # Show all cards if game has finished.
 
 
 # Signal handlers.
@@ -539,7 +562,7 @@ class WindowBridgetable(GladeWrapper):
     def on_hand_clicked(self, position):
         if not self.player and not self.table.players.get(position):
             # Join game at position.
-            self.on_seat_activated(self.cardarea, position)
+            self.on_takeseat_clicked(self.cardarea, position)
 
 
     def on_card_clicked(self, card, position):
@@ -549,110 +572,34 @@ class WindowBridgetable(GladeWrapper):
                 d.addErrback(self.errback)
 
 
-    def on_seat_activated(self, widget, position):
-        
-        def success(player):
-            self.player = player  # RemoteReference to BridgePlayer object.
-            self.position = position
+    def on_takeseat_clicked(self, widget, position=None):
 
-            self.takeseat.set_property('sensitive', False)
-            self.leaveseat.set_property('sensitive', True)
-
+        def success(r):
             self.cardarea.set_player_mapping(self.position)
-
             if self.table.game.inProgress():
                 d = self.player.callRemote('getHand')
                 d.addCallbacks(self.table.game.revealHand, self.errback,
                                callbackKeywords={'position' : self.position})
-
                 # If game is running and bidding is active, open bidding box.
                 if not self.table.game.bidding.isComplete():
                     bidbox = self.children.open(WindowBidbox, parent=self)
                     bidbox.setCallSelectHandler(self.on_call_selected)
                     bidbox.setTable(self.table, self.position)
 
-        d = self.table.joinGame(position)
-        d.addCallbacks(success, self.errback)
-
-
-    def on_takeseat_clicked(self, widget, *args):
         # TODO: match user up with preferred partner.
-        for position in Direction:
-            if position not in self.table.players:  # Position is vacant.
-                self.on_seat_activated(widget, position)  # Take position.
-                break
+        if position is None:
+            # No position specified by user: choose an arbitary position.
+            position = [p for p in Direction if p not in self.table.players][0]
+        d = super(WindowBridgeTable, self).on_takeseat_clicked(widget, position)
+        d.addCallback(success)
 
 
     def on_leaveseat_clicked(self, widget, *args):
 
         def success(r):
-            self.player = None
-            self.position = None
-            self.takeseat.set_property('sensitive', True)
-            self.leaveseat.set_property('sensitive', False)
             if self.children.get(WindowBidbox):
                 self.children.close(self.children[WindowBidbox])
 
-        d = self.table.leaveGame(self.position)
-        d.addCallbacks(success, self.errback)
-
-
-    def on_toggle_gameinfo_clicked(self, widget, *args):
-        visible = self.toggle_gameinfo.get_active()
-        self.gameinfo.set_property('visible', visible)
-
-
-    def on_toggle_chat_clicked(self, widget, *args):
-        visible = self.toggle_chat.get_active()
-        self.chatbox.set_property('visible', visible)
-
-
-    def on_toggle_fullscreen_clicked(self, widget, *args):
-        if self.toggle_fullscreen.get_active():
-            self.window.fullscreen()
-        else:
-            self.window.unfullscreen()
-
-
-    def on_leavetable_clicked(self, widget, *args):
-        # If user is currently playing a game, request confirmation.
-        if self.player and self.table.game.inProgress():
-            dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                       type=gtk.MESSAGE_QUESTION)
-            dialog.set_title(_('Leave table?'))
-            dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-            dialog.add_button(_('Leave Table'), gtk.RESPONSE_OK)
-            dialog.set_markup(_('Are you sure you wish to leave this table?'))
-            dialog.format_secondary_text(_('You are currently playing a game. Leaving may forfeit the game, or incur penalties.'))
-
-            def dialog_response_cb(dialog, response_id):
-                dialog.destroy()
-                if response_id == gtk.RESPONSE_OK:
-                    d = client.leaveTable(self.table.id)
-                    d.addErrback(self.errback)
-
-            dialog.connect('response', dialog_response_cb)
-            dialog.show()
-
-        else:
-            d = client.leaveTable(self.table.id)
-            d.addErrback(self.errback)
-
-
-    def on_chat_message_changed(self, widget, *args):
-        sensitive = self.chat_message.get_text() != ''
-        self.chat_send.set_property('sensitive', sensitive)
-
-
-    def on_chat_send_clicked(self, widget, *args):
-        message = self.chat_message.get_text()
-        if message:  # Don't send a null message.
-            self.chat_send.set_property('sensitive', False)
-            self.chat_message.set_text('')  # Clear message.
-            self.table.sendMessage(message)
-
-
-    def on_window_delete_event(self, widget, *args):
-        self.on_leavetable_clicked(widget, *args)
-        return True  # Stops window deletion taking place.
+        d = super(WindowBridgeTable, self).on_leaveseat_clicked(widget, *args)
+        d.addCallback(success)
 
