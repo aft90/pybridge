@@ -17,7 +17,6 @@
 
 
 from datetime import datetime
-import re
 from twisted.python import log
 from twisted.spread import pb
 
@@ -29,7 +28,7 @@ import server
 
 class RegisteredUser(pb.Avatar):
 
-    info = property(lambda self: {})
+    info = property(lambda self: {})  # TODO: Send profile data?
 
 
     def __init__(self, name):
@@ -72,19 +71,32 @@ class RegisteredUser(pb.Avatar):
             raise DeniedRequest, "Unknown roster name \'%s\'" % name
 
 
-    def perspective_hostTable(self, tableid, tabletype):
+    def perspective_getUserProfile(self, username):
+        """Provides profile information for user with specified username."""
+        pass
+
+
+    def perspective_changePassword(self, password):
+        """Sets avatar's user account password to that specified."""
+        if not isinstance(password, str):
+            raise IllegalRequest, "Invalid parameter for password"
+
+        try:
+            server.changeUserPassword(self.name, password)
+        except ValueError, err:  # Password validation failed.
+            raise DeniedRequest, err
+
+
+    def perspective_hostTable(self, tableid, gametype):
         """Creates a new table."""
         if not isinstance(tableid, str):
             raise IllegalRequest, "Invalid parameter for table identifier"
-        elif not(0 < len(tableid) < 21) or re.search("[^A-Za-z0-9_ ]", tableid):
-            raise IllegalRequest, "Invalid table identifier format"
-        elif tableid in server.availableTables:
-            raise DeniedRequest, "Table name exists"
-#        elif tabletype not in server.supported:
-#            raise DeniedRequest, "Table type not suppported by this server"
+        if not isinstance(gametype, str):
+            raise IllegalRequest, "Invalid parameter for game type"
         
-        server.createTable(tableid, tabletype)
-        return self.perspective_joinTable(tableid)  # Force join to table.
+        table = server.createTable(tableid, gametype)
+        # Force client to join table.
+        return self.perspective_joinTable(tableid)
 
 
     def perspective_joinTable(self, tableid):
@@ -119,5 +131,7 @@ class AnonymousUser(pb.Avatar):
     def perspective_register(self, username, password):
         """Create a user account with specified username and password."""
         # TODO: consider defer.succeed, defer.fail, failure.Failure
-        server.registerUser(username, password)
-
+        try:
+            server.registerUser(username, password)
+        except ValueError, err:  # Username/password validation failed.
+            raise DeniedRequest, err

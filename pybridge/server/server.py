@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from datetime import datetime
+import re
 from twisted.python import log
 
 import database as db
@@ -35,11 +35,9 @@ onlineUsers = LocalUserManager()
 
 
 def getServerInfo():
-    return {'supported': (version, version),  # minimum, maximum
+    return {'compatibleVersions': (version, version),  # minimum, maximum
+            'supportedGames': 'bridge',  # TODO
             'version': version}
-
-
-# Methods invoked by user perspectives.
 
 
 def registerUser(username, password):
@@ -51,21 +49,23 @@ def registerUser(username, password):
     # Check that username has not already been registered.
     if db.UserAccount.selectBy(username=username).count() > 0:
         raise DeniedRequest, "Username already registered"
-    try:
-        # Create user account.
-        db.UserAccount(username=username, password=password, allowLogin=True)
-        log.msg("New user %s registered" % username)
-    except ValueError, err:
-        raise IllegalRequest, err
+
+    # Create user account - may raise ValueError.
+    db.UserAccount(username=username, password=password, allowLogin=True)
+    log.msg("New user %s registered" % username)
 
 
-def changePasswordOfUser(username, password):
-    """Sets the password of user to specified password.
+def changeUserPassword(username, password):
+    """Sets the password of user's account.
     
     @param username: the user identifier.
     @param password: the new password for user.
     """
-    pass  # TODO implement
+    try:
+        user = db.UserAccount.selectBy(username=username)[0]
+        user.set(password=password)  # May raise ValueError.
+    except IndexError:
+        raise DeniedRequest, "User account does not exist"
 
 
 def createTable(tableid, gametype):
@@ -75,9 +75,17 @@ def createTable(tableid, gametype):
     @param gametype: a game identifier.
     """
     # TODO: convert gametype string to corresponding class.
-    if tableid not in availableTables:
-        table = LocalTable(tableid, BridgeGame)  # Ignore gametype for now.
-        # Provide table instance with a means of closing itself.
-        table.close = lambda: availableTables.closeTable(table)
-        availableTables.openTable(table)
+
+    if not 0 < len(tableid) <= 20 or re.search("[^A-Za-z0-9_ ]", tableid):
+        raise IllegalRequest, "Invalid table identifier format"
+    if tableid in availableTables:
+        raise DeniedRequest, "Table name exists"
+#    if tabletype not in supported:
+#        raise DeniedRequest, "Table type not suppported by this server"
+
+    table = LocalTable(tableid, BridgeGame)  # Ignore gametype for now.
+    # Provide table instance with a means of closing itself.
+    table.close = lambda: availableTables.closeTable(table)
+    availableTables.openTable(table)
+    return table
 

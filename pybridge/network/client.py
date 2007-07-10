@@ -171,6 +171,12 @@ class NetworkClient(pb.Referenceable):
 # Client request methods.
 
 
+    def changePassword(self, password):
+        hash = sha.new(password).hexdigest()
+        d = self.avatar.callRemote('changePassword', hash)
+        return d
+
+
     def joinTable(self, tableid, host=False):
 
         def success(table):
@@ -179,10 +185,9 @@ class NetworkClient(pb.Referenceable):
             return table
 
         if host:
-            d = self.avatar.callRemote('hostTable', tableid=tableid,
-                                       tabletype='bridge')
+            d = self.avatar.callRemote('hostTable', tableid, 'bridge')
         else:
-            d = self.avatar.callRemote('joinTable', tableid=tableid)
+            d = self.avatar.callRemote('joinTable', tableid)
         d.addCallback(success)
         return d
 
@@ -193,7 +198,7 @@ class NetworkClient(pb.Referenceable):
             del self.tables[tableid]
             self.notify('leaveTable', tableid=tableid)
 
-        d = self.avatar.callRemote('leaveTable', tableid=tableid)
+        d = self.avatar.callRemote('leaveTable', tableid)
         d.addCallback(success)
         return d
 
