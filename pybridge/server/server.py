@@ -20,7 +20,7 @@ from datetime import datetime
 from twisted.python import log
 
 import database as db
-from pybridge import __version__
+from pybridge import __version__ as version
 
 from pybridge.network.error import DeniedRequest, IllegalRequest
 from pybridge.network.localtable import LocalTable
@@ -30,62 +30,54 @@ from pybridge.network.usermanager import LocalUserManager
 from pybridge.bridge.game import BridgeGame
 
 
-class Server(object):
+availableTables = LocalTableManager()
+onlineUsers = LocalUserManager()
 
 
-    def __init__(self):
-        # Set up rosters.
-        self.tables = LocalTableManager()
-        self.users = LocalUserManager()
-
-        self.version = __version__
-        self.supported = ['bridge']
-
-
-    def userConnects(self, user):
-        """"""
-        log.msg("User %s connected" % user.name)
-        self.users.userLogin(user)
-        db.UserAccount.byUsername(user.name).set(lastLogin=datetime.now())
-
-
-    def userDisconnects(self, user):
-        """"""
-        log.msg("User %s disconnected" % user.name)
-        self.users.userLogout(user)
+def getServerInfo():
+    return {'supported': (version, version),  # minimum, maximum
+            'version': version}
 
 
 # Methods invoked by user perspectives.
 
 
-    def registerUser(self, username, password):
-        """Registers a new user account in the database.
-        
-        @param username: the unique username requested by user.
-        @param password: the password to be associated with the account.
-        """
-        # Check that username has not already been registered.
-        if db.UserAccount.selectBy(username=username).count() > 0:
-            raise DeniedRequest, "Username already registered"
-        try:
-            # Create user account.
-            db.UserAccount(username=username, password=password, allowLogin=True)
-            log.msg("New user %s registered" % username)
-        except ValueError, err:
-            raise IllegalRequest, err
+def registerUser(username, password):
+    """Registers a new user account in the database.
+    
+    @param username: the unique username requested by user.
+    @param password: the password to be associated with the account.
+    """
+    # Check that username has not already been registered.
+    if db.UserAccount.selectBy(username=username).count() > 0:
+        raise DeniedRequest, "Username already registered"
+    try:
+        # Create user account.
+        db.UserAccount(username=username, password=password, allowLogin=True)
+        log.msg("New user %s registered" % username)
+    except ValueError, err:
+        raise IllegalRequest, err
 
 
-    def userChangePassword(self, user, password):
-        """"""
-        pass
+def changePasswordOfUser(username, password):
+    """Sets the password of user to specified password.
+    
+    @param username: the user identifier.
+    @param password: the new password for user.
+    """
+    pass  # TODO implement
 
 
-    def createTable(self, tableid, tabletype):
-        # Ignore specified tabletype, for now.
-        if tableid not in self.tables:
-            table = LocalTable(tableid, BridgeGame)
-            table.id = tableid
-            table.server = self
-            self.tables.openTable(table)
-            #self.tables[tableid] = table
+def createTable(tableid, gametype):
+    """Create a new table for the specified game type.
+    
+    @param tableid: a unique identifier for the table.
+    @param gametype: a game identifier.
+    """
+    # TODO: convert gametype string to corresponding class.
+    if tableid not in availableTables:
+        table = LocalTable(tableid, BridgeGame)  # Ignore gametype for now.
+        # Provide table instance with a means of closing itself.
+        table.close = lambda: availableTables.closeTable(table)
+        availableTables.openTable(table)
 

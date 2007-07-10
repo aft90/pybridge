@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2006 PyBridge Project.
+# Copyright (C) 2004-2007 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -18,13 +18,14 @@
 
 from twisted.cred import checkers, portal
 from twisted.spread import pb
+from zope.interface import implements
 
-from user import User, AnonymousUser
+from user import AnonymousUser, RegisteredUser
 
 
-class Realm:
+class Realm(object):
 
-    __implements__ = portal.IRealm
+    implements(portal.IRealm)
 
 
     def requestAvatar(self, avatarId, mind, *interfaces):
@@ -33,11 +34,9 @@ class Realm:
         
         if avatarId == checkers.ANONYMOUS:
             avatar = AnonymousUser()
-            avatar.server = self.server  # Provide reference to server.
             return pb.IPerspective, avatar, lambda:None
         else:
-            avatar = User(avatarId)
-            avatar.server = self.server  # Provide reference to server.
+            avatar = RegisteredUser(avatarId)
             avatar.attached(mind)
             return pb.IPerspective, avatar, lambda a=avatar:a.detached(mind)
 

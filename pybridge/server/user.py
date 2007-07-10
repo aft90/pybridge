@@ -16,41 +16,42 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from datetime import datetime
 import re
-#from twisted.internet import defer
-#from twisted.python import failure
+from twisted.python import log
 from twisted.spread import pb
 
 from pybridge.network.error import DeniedRequest, IllegalRequest
 
+import database as db
+import server
 
-class User(pb.Avatar):
+
+class RegisteredUser(pb.Avatar):
 
     info = property(lambda self: {})
 
 
     def __init__(self, name):
         self.name = name  # User name.
-        self.server = None  # Set by Realm.
-        self.tables = {}  # For each joined table name, its instance.
+
+        self.accountRecord = db.UserAccount.byUsername(self.name)
+        self.joinedTables = {}  # All tables which client is observing.
 
 
     def attached(self, mind):
         """Called when connection to client is established."""
         self.remote = mind
-        self.server.userConnects(self)
+        self.accountRecord.set(lastLogin=datetime.now())
+        server.onlineUsers.userLogin(self)  # Inform system of client's arrival.
+        log.msg("User %s connected" % self.name)
 
 
     def detached(self, mind):
         """Called when connection to client is lost."""
         self.remote = None
-        self.server.userDisconnects(self)  # Inform server.
-
-
-    def callEvent(self, eventName, **kwargs):
-        """Calls remote event listener with arguments."""
-        if self.remote:
-            self.remote.callRemote(eventName, **kwargs)
+        server.onlineUsers.userLogout(self)
+        log.msg("User %s disconnected" % self.name)
 
 
 # Perspective methods, accessible by client.
@@ -58,18 +59,15 @@ class User(pb.Avatar):
 
     def perspective_getServerInfo(self):
         """Provides a dict of information about the server."""
-        info = {}
-        info['supported'] = self.server.supported
-        info['version'] = self.server.version
-        return info
+        return server.getServerInfo()
 
 
     def perspective_getRoster(self, name):
         """Provides roster requested by client."""
         if name == 'tables':
-            return self.server.tables
+            return server.availableTables
         elif name == 'users':
-            return self.server.users
+            return server.onlineUsers
         else:
             raise DeniedRequest, "Unknown roster name \'%s\'" % name
 
@@ -80,37 +78,37 @@ class User(pb.Avatar):
             raise IllegalRequest, "Invalid parameter for table identifier"
         elif not(0 < len(tableid) < 21) or re.search("[^A-Za-z0-9_ ]", tableid):
             raise IllegalRequest, "Invalid table identifier format"
-        elif tableid in self.server.tables:
+        elif tableid in server.availableTables:
             raise DeniedRequest, "Table name exists"
-        elif tabletype not in self.server.supported:
-            raise DeniedRequest, "Table type not suppported by this server"
+#        elif tabletype not in server.supported:
+#            raise DeniedRequest, "Table type not suppported by this server"
         
-        self.server.createTable(tableid, tabletype)
+        server.createTable(tableid, tabletype)
         return self.perspective_joinTable(tableid)  # Force join to table.
 
 
     def perspective_joinTable(self, tableid):
         """Joins an existing table."""
         if not isinstance(tableid, str):
-            raise IllegalRequest, "Invalid parameter for table name"
-        elif tableid not in self.server.tables:
+            raise IllegalRequest, "Invalid parameter for table identifier"
+        elif tableid not in server.availableTables:
             raise DeniedRequest, "No such table"
-        elif tableid in self.tables:
+        elif tableid in self.joinedTables:
             raise DeniedRequest, "Already joined table"
         
-        table = self.server.tables[tableid]
-        self.tables[tableid] = table
+        table = server.availableTables[tableid]
+        self.joinedTables[tableid] = table
         return table
 
 
     def perspective_leaveTable(self, tableid):
         """Leaves a table."""
         if not isinstance(tableid, str):
-            raise IllegalRequest, "Invalid parameter for table name"
-        elif tableid not in self.tables:
+            raise IllegalRequest, "Invalid parameter for table identifier"
+        elif tableid not in self.joinedTables:
             raise DeniedRequest, "Not joined to table"
         
-        del self.tables[tableid]  # Implicitly removes user from table.
+        del self.joinedTables[tableid]  # Implicitly removes user from table.
 
 
 
@@ -121,5 +119,5 @@ class AnonymousUser(pb.Avatar):
     def perspective_register(self, username, password):
         """Create a user account with specified username and password."""
         # TODO: consider defer.succeed, defer.fail, failure.Failure
-        self.server.registerUser(username, password)
+        server.registerUser(username, password)
 

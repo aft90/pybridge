@@ -22,19 +22,16 @@ from twisted.python import failure, log
 from zope.interface import implements
 
 import database as db
+import server
 
 
-class Checker:
+class Checker(object):
     """A database-driven implementation of ICredentialsChecker."""
 
     implements(checkers.ICredentialsChecker)
 
     credentialInterfaces = (credentials.IUsernamePassword,
                             credentials.IUsernameHashedPassword)
-
-
-    def __init__(self):
-        self.users = {}  # Users online, from Server object.
 
 
     def requestAvatarId(self, credentials):
@@ -52,16 +49,16 @@ class Checker:
         if credentials.username == '':
             return checkers.ANONYMOUS  # TODO: if allowAnonymousRegistration.
 
-        users = db.UserAccount.selectBy(username=credentials.username)
-        if users.count() is 0:
-            return unauthorized("User not known on server")
-        elif users[0].allowLogin is False:
+        userQuery = db.UserAccount.selectBy(username=credentials.username)
+        if userQuery.count() == 0:
+            return unauthorized("User account does not exist on server")
+        elif userQuery[0].allowLogin is False:  # TODO: list index breaks on MySQL.
             return unauthorized("User account is disabled")
-        elif credentials.username in self.users:
+        elif credentials.username in server.onlineUsers:
             # TODO: delete old session and use this one instead?
             return unauthorized("User is already logged in")
 
-        d = defer.maybeDeferred(credentials.checkPassword, users[0].password)
+        d = defer.maybeDeferred(credentials.checkPassword, userQuery[0].password)
         d.addCallback(passwordMatch)
         return d
-
+ 
