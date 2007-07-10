@@ -82,6 +82,11 @@ class LocalTable(pb.Cacheable):
         self.config.update(config)
 
 
+    def close(self):
+        """Close this table."""
+        pass  # Table creator should override this method.
+
+
     def getStateToCacheAndObserveFor(self, perspective, observer):
         # Inform existing observers that a new user has joined.
         self.notify('addObserver', observer=perspective.name)
@@ -112,7 +117,7 @@ class LocalTable(pb.Cacheable):
 
         # If there are no remaining observers, close table.
         if self.config.get('CloseWhenEmpty') and not self.observers:
-            self.server.tables.closeTable(self)
+            self.close()
 
 
 # Implementation of ISubject.
