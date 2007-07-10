@@ -173,8 +173,7 @@ class NetworkClient(pb.Referenceable):
 
     def joinTable(self, tableid, host=False):
 
-        def success((table, remote)):
-            table.master = remote  # Set RemoteReference for RemoteBridgeTable.
+        def success(table):
             self.tables[tableid] = table
             self.notify('joinTable', tableid=tableid, table=table)
             return table

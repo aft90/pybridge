@@ -100,8 +100,7 @@ class User(pb.Avatar):
         
         table = self.server.tables[tableid]
         self.tables[tableid] = table
-        # Returning table reference creates a RemoteTable object on client.
-        return table, table.view
+        return table
 
 
     def perspective_leaveTable(self, tableid):

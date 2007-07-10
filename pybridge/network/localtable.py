@@ -40,6 +40,27 @@ class LocalTable(pb.Cacheable):
     info = property(lambda self: {'game': self.gametype.__name__})
 
 
+    class TableClient(pb.Viewable):
+        """Provides a public front-end to an instantiated LocalTable.
+        
+        Serialization flavors are mutually exclusive and cannot be mixed,
+        so this class is a subclass of pb.Viewable.
+        """
+
+
+        def __init__(self, table):
+            self.__table = table
+
+
+        def view_joinGame(self, user, position):
+            # TODO: return a deferred?
+            return self.__table.joinGame(user, position)
+
+
+        def view_leaveGame(self, user, position):
+            return self.__table.leaveGame(user, position)
+
+
     def __init__(self, id, gametype, config={}):
         self.listeners = []
 
@@ -51,7 +72,7 @@ class LocalTable(pb.Cacheable):
 
         self.observers = {}  # For each user perspective, a remote ITableEvents.
         self.players = {}  # Positions mapped to perspectives of game players.
-        self.view = LocalTableViewable(self)  # For remote clients.
+        self.view = self.TableClient(self)  # For remote clients.
 
         # Configuration variables.
         self.config = {}
@@ -75,6 +96,7 @@ class LocalTable(pb.Cacheable):
         state['observers'] = [p.name for p in self.observers.keys()]
         state['players'] = dict([(pos, p.name)
                                  for pos, p in self.players.items()])
+        state['view'] = self.view
 
         return state  # To observer.
 
@@ -162,31 +184,4 @@ class LocalTable(pb.Cacheable):
         self.game.removePlayer(position)  # May raise GameError.
         del self.players[position]
         self.notify('leaveGame', player=user.name, position=position)
-
-
-
-
-class LocalTableViewable(pb.Viewable):
-    """Provides a public front-end to an instantiated LocalTable.
-    
-    Serialization flavors are mutually exclusive and cannot be mixed,
-    so this class is a subclass of pb.Viewable.
-    """
-
-
-    def __init__(self, table):
-        """
-        
-        @param table: a instantiated LocalTable.
-        """
-        self.__table = table
-
-
-    def view_joinGame(self, user, position):
-        # TODO: return a deferred?
-        return self.__table.joinGame(user, position)
-
-
-    def view_leaveGame(self, user, position):
-        return self.__table.leaveGame(user, position)
 

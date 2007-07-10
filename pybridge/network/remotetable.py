@@ -43,17 +43,8 @@ class RemoteTable(pb.RemoteCache):
     info = property(lambda self: {'game': self.gametype.__name__})
 
 
-    # TODO: is there any need for this initialisation?
     def __init__(self):
-        self.master = None  # Server-side ITable object.
         self.listeners = []
-
-        self.id = None
-        self.chat = None
-        self.game = None
-        self.gametype = None
-        self.observers = []  # Observers of master table.
-        self.players = {}  # Positions mapped to player identifiers.
 
 
     def setCopyableState(self, state):
@@ -70,18 +61,19 @@ class RemoteTable(pb.RemoteCache):
         self.players = state['players']
         for position in self.players:
             self.game.addPlayer(position)
+        self.__view = state['view']
 
 
 # Implementation of ITable.
 
 
     def joinGame(self, position, user=None):
-        d = self.master.callRemote('joinGame', position)
+        d = self.__view.callRemote('joinGame', position)
         return d
 
 
     def leaveGame(self, position, user=None):
-        d = self.master.callRemote('leaveGame', position)
+        d = self.__view.callRemote('leaveGame', position)
         return d
 
 
