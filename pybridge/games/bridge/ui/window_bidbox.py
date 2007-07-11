@@ -22,7 +22,7 @@ from pybridge.ui.config import config
 from pybridge.ui.eventhandler import SimpleEventHandler
 from pybridge.ui.vocabulary import *
 
-import pybridge.bridge.call as Call
+import pybridge.games.bridge.call as Call
 
 
 class WindowBidbox(object):

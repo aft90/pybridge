@@ -23,6 +23,7 @@ from twisted.internet import reactor
 import webbrowser
 
 from pybridge import __version__ as PYBRIDGE_VERSION
+from pybridge.games import SUPPORTED_GAMES
 import pybridge.environment as env
 from pybridge.network.client import client
 
@@ -34,7 +35,7 @@ from dialog_newtable import DialogNewtable
 from dialog_preferences import DialogPreferences
 
 # TODO: import all Window*Table classes automatically.
-from pybridge.bridge.ui.window_bridgetable import WindowBridgeTable
+from pybridge.games.bridge.ui.window_bridgetable import WindowBridgeTable
 
 TABLE_ICON = env.find_pixmap("table.png")
 USER_ICON = env.find_pixmap("user.png")
@@ -164,7 +165,9 @@ class WindowMain(GladeWrapper):
 
     def event_openTable(self, tableid, info):
         """Adds a table to the table listing."""
-        self.tableview_model.append([tableid, self.tableview_icon])
+        # Only display table if it supported by client.
+        if info['gamename'] in SUPPORTED_GAMES:
+            self.tableview_model.append([tableid, self.tableview_icon])
 
 
     def event_closeTable(self, tableid):
@@ -221,7 +224,7 @@ class WindowMain(GladeWrapper):
             # Display information about table.
             self.frame_tableinfo.set_property('sensitive', True)
             self.label_tableid.set_text(tableid)
-            self.label_tabletype.set_text(client.tableRoster[tableid]['game'])
+            self.label_tabletype.set_text(client.tableRoster[tableid]['gamename'])
         else:
             self.frame_tableinfo.set_property('sensitive', False)
             self.label_tableid.set_text('')

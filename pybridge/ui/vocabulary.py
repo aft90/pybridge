@@ -22,8 +22,8 @@ A repository for translatable symbols and names.
 
 import gtk
 
-from pybridge.bridge.symbols import *
-import pybridge.bridge.call as Call
+from pybridge.games.bridge.symbols import *
+import pybridge.games.bridge.call as Call
 
 from config import config
 

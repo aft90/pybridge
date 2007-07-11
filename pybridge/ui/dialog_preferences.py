@@ -25,7 +25,7 @@ from config import config
 from manager import wm
 from vocabulary import *
 
-from pybridge.bridge.symbols import Suit
+from pybridge.games.bridge.symbols import Suit
 
 SUIT_LABEL_TEMPLATE = "<span color=\'%s\' size=\'x-large\'>%s</span>"
 

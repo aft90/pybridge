@@ -20,6 +20,7 @@ import gtk
 from wrapper import GladeWrapper
 
 from pybridge.network.client import client
+from pybridge.games import SUPPORTED_GAMES
 from manager import wm
 
 
@@ -29,6 +30,7 @@ class DialogNewtable(GladeWrapper):
 
 
     def setUp(self):
+        # TODO: display intersection of games supported by client and server.
         pass
 
 
@@ -57,7 +59,8 @@ class DialogNewtable(GladeWrapper):
 
     def on_okbutton_clicked(self, widget, *args):
         tableid = self.entry_tablename.get_text()
-        d = client.joinTable(tableid, host=True)
+        d = client.joinTable(tableid, gameclass=SUPPORTED_GAMES['Bridge'],
+                             host=True)
         d.addCallbacks(self.createSuccess, self.createFailure)
 
 
@@ -65,4 +68,8 @@ class DialogNewtable(GladeWrapper):
         # Disable the OK button if the table name field is empty.
         sensitive = self.entry_tablename.get_text() != ""
         self.okbutton.set_property('sensitive', sensitive)
+
+
+    def on_window_delete_event(self, widget, *args):
+        wm.close(self)
 
