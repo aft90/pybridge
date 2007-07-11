@@ -45,9 +45,10 @@ from pybridge.interfaces.observer import IListener
 from pybridge.network.client import NetworkClient
 from pybridge.network.error import GameError
 
-from pybridge.bridge.call import Bid, Double, Redouble, Pass
-from pybridge.bridge.card import Card
-from pybridge.bridge.symbols import Level, Strain, Rank, Suit
+from pybridge.games import SUPPORTED_GAMES
+from pybridge.games.bridge.call import Bid, Double, Redouble, Pass
+from pybridge.games.bridge.card import Card
+from pybridge.games.bridge.symbols import Level, Strain, Rank, Suit
 
 
 # Give the bot some "personality".
@@ -115,7 +116,8 @@ class Monkey:
         if self.client.tableRoster.get('Monkey'):
             d = self.client.joinTable('Monkey')
         else:
-            d = self.client.joinTable('Monkey', host=True)
+            d = self.client.joinTable('Monkey',
+                    gameclass=SUPPORTED_GAMES['Bridge'], host=True)
         d.addCallbacks(self.joinedTable, self.errback)
 
 
@@ -123,9 +125,10 @@ class Monkey:
         self.table = table  # Set table reference.
         self.table.attach(SimpleEventHandler(self))
         self.table.game.attach(SimpleEventHandler(self))
+        self.table.chat.attach(SimpleEventHandler(self))
 
         print "I joined table %s" % table.id
-        table.sendMessage(random.choice(QUOTES))
+        table.chat.send(random.choice(QUOTES))
 
         # Find a vacant place at the table, if any.
         for position in table.game.positions:
@@ -147,16 +150,14 @@ class Monkey:
 # Selection of calls and cards.
 
 
-    calls = [Bid(random.choice(Level), random.choice(Strain)),
-             Pass(), Double(), Redouble()]
+    calls = [lambda : Bid(random.choice(Level), random.choice(Strain)),
+             Pass, Double, Redouble]
 
     def chooseCall(self):
-        call = random.choice(self.calls)
+        call = random.choice(self.calls)()
         d = self.player.callRemote('makeCall', call)  # TODO
         d.addCallbacks(self.success, self.errback)
 
-
-    #cards = [Card(r, s) for r in Rank for s in Suit]
 
     def chooseCard(self):
         turn = self.table.game.getTurn()
@@ -202,11 +203,11 @@ class Monkey:
         print "Player %s leaves seat %s" % (player, position)
 
 
-    def event_sendMessage(self, message, sender, recipients):
-        if sender == self.client.username:
-            print "I say: %s" % message
+    def event_gotMessage(self, message):
+        if message.sender == self.client.username:
+            print "I say: %s" % message.text
         else:
-            print "%s says: %s" % (sender, message)
+            print "%s says: %s" % (message.sender, message.text)
 
 
 # Game events.
