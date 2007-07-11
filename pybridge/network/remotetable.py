@@ -23,10 +23,7 @@ from pybridge.interfaces.observer import ISubject
 from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
 
-
-# TODO: move to somewhere more appropriate.
-from pybridge.bridge.game import BridgeGame
-GAMETYPES = {'BridgeGame' : BridgeGame}
+from pybridge.games import SUPPORTED_GAMES
 
 
 class RemoteTable(pb.RemoteCache):
@@ -40,7 +37,7 @@ class RemoteTable(pb.RemoteCache):
 
     implements(ITable, ISubject)
 
-    info = property(lambda self: {'game': self.gametype.__name__})
+    info = property(lambda self: {'gamename': self.game.__class__.__name__})
 
 
     def __init__(self):
@@ -49,12 +46,12 @@ class RemoteTable(pb.RemoteCache):
 
     def setCopyableState(self, state):
         self.id = state['id']
-        if state['gametype'] in GAMETYPES:
-            self.gametype = GAMETYPES[state['gametype']]
-            self.game = self.gametype()
+        if state['gamename'] in SUPPORTED_GAMES:
+            gameclass = SUPPORTED_GAMES[state['gamename']]
+            self.game = gameclass()
             self.game.setState(state['gamestate'])
         else:
-            raise NameError, "Unknown game type %s" % state['gametype']
+            raise NameError, "Unsupported game class %s" % state['gamename']
 
         self.chat = state['chat']
         self.observers = state['observers']

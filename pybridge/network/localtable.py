@@ -37,7 +37,7 @@ class LocalTable(pb.Cacheable):
 
     implements(ITable, ISubject, IListener)
 
-    info = property(lambda self: {'game': self.gametype.__name__})
+    info = property(lambda self: {'gamename': self.game.__class__.__name__})
 
 
     class TableClient(pb.Viewable):
@@ -61,12 +61,11 @@ class LocalTable(pb.Cacheable):
             return self.__table.leaveGame(user, position)
 
 
-    def __init__(self, id, gametype, config={}):
+    def __init__(self, id, gameclass, config={}):
         self.listeners = []
 
         self.id = id
-        self.gametype = gametype
-        self.game = gametype()  # Initialise game.
+        self.game = gameclass()  # Initialise game.
         self.game.attach(self)  # Listen for game events.
         self.chat = LocalChat()
 
@@ -96,7 +95,7 @@ class LocalTable(pb.Cacheable):
         state = {}
         state['id'] = self.id
         state['chat'] = self.chat
-        state['gametype'] = self.gametype.__name__
+        state['gamename'] = self.info['gamename']
         state['gamestate'] = self.game.getState()
         state['observers'] = [p.name for p in self.observers.keys()]
         state['players'] = dict([(pos, p.name)

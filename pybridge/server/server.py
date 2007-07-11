@@ -21,13 +21,12 @@ from twisted.python import log
 
 import database as db
 from pybridge import __version__ as version
+from pybridge.games import SUPPORTED_GAMES
 
 from pybridge.network.error import DeniedRequest, IllegalRequest
 from pybridge.network.localtable import LocalTable
 from pybridge.network.tablemanager import LocalTableManager
 from pybridge.network.usermanager import LocalUserManager
-
-from pybridge.bridge.game import BridgeGame
 
 
 availableTables = LocalTableManager()
@@ -68,7 +67,7 @@ def changeUserPassword(username, password):
         raise DeniedRequest, "User account does not exist"
 
 
-def createTable(tableid, gametype):
+def createTable(tableid, gamename):
     """Create a new table for the specified game type.
     
     @param tableid: a unique identifier for the table.
@@ -80,10 +79,11 @@ def createTable(tableid, gametype):
         raise IllegalRequest, "Invalid table identifier format"
     if tableid in availableTables:
         raise DeniedRequest, "Table name exists"
-#    if tabletype not in supported:
-#        raise DeniedRequest, "Table type not suppported by this server"
+    if gamename not in SUPPORTED_GAMES:
+        raise DeniedRequest, "Unsupported game class %s" % gamename
 
-    table = LocalTable(tableid, BridgeGame)  # Ignore gametype for now.
+    gameclass = SUPPORTED_GAMES[gamename]
+    table = LocalTable(tableid, gameclass)
     # Provide table instance with a means of closing itself.
     table.close = lambda: availableTables.closeTable(table)
     availableTables.openTable(table)

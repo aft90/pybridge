@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from pybridge.games import SUPPORTED_GAMES
 from roster import LocalRoster, RemoteRoster
 
 
@@ -25,12 +26,12 @@ class LocalTableManager(LocalRoster):
     def openTable(self, table):
         # TODO: don't notify clients which don't recognise game type.
         self[table.id] = table
-        self.notify('openTable', tableid=table.id, info=table.info)
+        self.notify('openTable', table.id, table.info)
 
 
     def closeTable(self, table):
         del self[table.id]
-        self.notify('closeTable', tableid=table.id)
+        self.notify('closeTable', table.id)
 
 
 
@@ -40,10 +41,13 @@ class RemoteTableManager(RemoteRoster):
 
     def observe_openTable(self, tableid, info):
         self[tableid] = info
-        self.notify('openTable', tableid=tableid, info=info)
+        if info['gamename'] in SUPPORTED_GAMES:
+            self[tableid]['gameclass'] = SUPPORTED_GAMES[info['gamename']]
+
+        self.notify('openTable', tableid, info)
 
 
     def observe_closeTable(self, tableid):
         del self[tableid]
-        self.notify('closeTable', tableid=tableid)
+        self.notify('closeTable', tableid)
 

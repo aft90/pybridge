@@ -172,12 +172,16 @@ class NetworkClient(pb.Referenceable):
 
 
     def changePassword(self, password):
+        """Change password of user account.
+        
+        @param password: the new password.
+        """
         hash = sha.new(password).hexdigest()
         d = self.avatar.callRemote('changePassword', hash)
         return d
 
 
-    def joinTable(self, tableid, host=False):
+    def joinTable(self, tableid, gameclass=None, host=False):
 
         def success(table):
             self.tables[tableid] = table
@@ -185,7 +189,9 @@ class NetworkClient(pb.Referenceable):
             return table
 
         if host:
-            d = self.avatar.callRemote('hostTable', tableid, 'bridge')
+            # TODO: why not just joinTable, host=True?
+            gamename = gameclass.__name__
+            d = self.avatar.callRemote('hostTable', tableid, gamename)
         else:
             d = self.avatar.callRemote('joinTable', tableid)
         d.addCallback(success)
