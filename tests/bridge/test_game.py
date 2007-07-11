@@ -1,10 +1,10 @@
 import unittest
 
-from pybridge.bridge.board import Board
-from pybridge.bridge.call import Bid, Pass, Double, Redouble
-from pybridge.bridge.card import Card
-from pybridge.bridge.game import BridgeGame
-from pybridge.bridge.symbols import Direction, Level, Strain, Rank, Suit, Vulnerable
+from pybridge.games.bridge.board import Board
+from pybridge.games.bridge.call import Bid, Pass, Double, Redouble
+from pybridge.games.bridge.card import Card
+from pybridge.games.bridge.game import Bridge
+from pybridge.games.bridge.symbols import Direction, Level, Strain, Rank, Suit, Vulnerable
 from pybridge.network.error import GameError
 
 
@@ -20,7 +20,7 @@ class TestGame(unittest.TestCase):
 
 
     def setUp(self):
-        self.game = BridgeGame()
+        self.game = Bridge()
 
 
     def tearDown(self):
@@ -63,7 +63,7 @@ class TestGameRuns(unittest.TestCase):
 
 
     def setUp(self):
-        self.game = BridgeGame()
+        self.game = Bridge()
         self.players = {}
         for position in list(Direction):
             self.players[position] = self.game.addPlayer(position)

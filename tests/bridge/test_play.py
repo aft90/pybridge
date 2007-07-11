@@ -1,10 +1,10 @@
 import unittest
 import random
 
-from pybridge.bridge.card import Card
-from pybridge.bridge.deck import Deck
-from pybridge.bridge.playing import Playing
-from pybridge.bridge.symbols import Direction, Rank, Suit
+from pybridge.games.bridge.card import Card
+from pybridge.games.bridge.deck import Deck
+from pybridge.games.bridge.playing import Playing
+from pybridge.games.bridge.symbols import Direction, Rank, Suit
 
 
 class TestPlaying(unittest.TestCase):

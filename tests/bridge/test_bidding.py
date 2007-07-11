@@ -1,9 +1,9 @@
 import unittest
 import random
 
-from pybridge.bridge.bidding import Bidding
-from pybridge.bridge.call import Bid, Pass, Double, Redouble
-from pybridge.bridge.symbols import Direction, Level, Strain
+from pybridge.games.bridge.bidding import Bidding
+from pybridge.games.bridge.call import Bid, Pass, Double, Redouble
+from pybridge.games.bridge.symbols import Direction, Level, Strain
 
 
 class TestBidding(unittest.TestCase):
