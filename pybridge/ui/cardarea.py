@@ -58,6 +58,17 @@ class CardArea(CairoCanvas):
     spacing_x = int(card_width * 0.4)
     spacing_y = int(card_height * 0.2)
 
+    # Coordinates wrapped in lambdas, since positions may be remapped.
+
+    hand_xy = property(lambda s: {s.TOP: (0.5, 0.15), s.BOTTOM: (0.5, 0.85),
+                                  s.LEFT: (0.15, 0.5), s.RIGHT: (0.85, 0.5)})
+
+    player_xy = property(lambda s: {s.TOP: (0.5, 0.2), s.BOTTOM: (0.5, 0.9),
+                            s.LEFT: (0.125, 0.625), s.RIGHT: (0.875, 0.625)})
+
+    trick_xy = property(lambda s: {s.TOP: (0.5, 0.425), s.BOTTOM: (0.5, 0.575),
+                                   s.LEFT: (0.425, 0.5), s.RIGHT: (0.575, 0.5)})
+
 
     def __init__(self, positions):
         """Initialise card area.
@@ -70,12 +81,13 @@ class CardArea(CairoCanvas):
         """
         super(CardArea, self).__init__()  # Initialise parent.
 
+        self.positions = positions
         self.TOP, self.RIGHT, self.BOTTOM, self.LEFT = positions
         self.focus = self.BOTTOM
+
         self.hands = {}
         self.trick = None
         self.playernames = {}
-        #self.set_player_mapping(Direction.South, redraw=False)
 
         # Set up gtk.DrawingArea signals.
         self.connect('button_press_event', self._button_press)
@@ -186,10 +198,8 @@ class CardArea(CairoCanvas):
         if id in self.items:
             self.update_item(id, source=surface)
         else:
-            xy = {self.TOP: (0.5, 0.15), self.BOTTOM: (0.5, 0.85),
-                  self.LEFT: (0.15, 0.5), self.RIGHT: (0.85, 0.5)}
-            opacity = (self.playernames.get(position) is None) and 0.5 or 1
-            self.add_item(id, surface, xy[position], 0, opacity=opacity)
+            opacity = (self.playernames.get(position) and 1) or 0.5
+            self.add_item(id, surface, self.hand_xy[position], 0, opacity=opacity)
 
 
     def set_player_name(self, position, name=None):
@@ -234,50 +244,15 @@ class CardArea(CairoCanvas):
         if id in self.items:
             self.update_item(id, source=surface)
         else:
-            xy = {self.TOP : (0.5, 0.2), self.BOTTOM : (0.5, 0.9),
-                  self.LEFT : (0.125, 0.625), self.RIGHT : (0.875, 0.625), }
-            self.add_item(id, surface, xy[position], 2)
+            self.add_item(id, surface, self.player_xy[position], z_index=2)
 
 
-    def set_player_mapping(self, focus=Direction.South, redraw=True):
-        """Sets the mapping between players at table and positions of hands.
-        
-        @param focus: the position to be drawn "closest" to the observer.
-        @param redraw: if True, redraw the card area display immediately.
-        """
-        # Assumes Direction elements are ordered clockwise from North.
-        order = Direction[focus.index:] + Direction[:focus.index]
-        for player, attr in zip(order, ('BOTTOM', 'LEFT', 'TOP', 'RIGHT')):
-            setattr(self, attr, player)
-
-        # Only redraw if focus has changed.
-        if redraw and focus != self.focus:
-            self.focus = focus
-            self.clear()  # Wipe all saved ImageSurface objects - not subtle!
-
-            # Use a copy of self.hands, since it will be changed by set_hand().
-            hands = self.hands.copy()
-            self.hands.clear()
-            for position in Direction:
-                self.set_player_name(position, self.playernames.get(position))
-                self.set_hand(hands[position]['hand'], position,
-                              facedown=hands[position]['facedown'],
-                              visible=hands[position]['visible'])
-
-            trick = self.trick
-            self.trick = None
-            self.set_trick(trick)
-
-        
     def set_trick(self, trick):
         """Sets the current trick.
         Draws representation of current trick to context.
         
         @param trick: a (leader, cards_played) pair, or None.
         """
-        xy = {self.TOP : (0.5, 0.425), self.BOTTOM : (0.5, 0.575),
-              self.LEFT : (0.425, 0.5), self.RIGHT : (0.575, 0.5), }
-
         if trick:
             leader, cards = trick
             # The order of play is the leader, then clockwise around Direction.
@@ -291,7 +266,7 @@ class CardArea(CairoCanvas):
                 if old_card is None and new_card is not None:
                     surface, context = self.new_surface(self.card_width, self.card_height)
                     self.draw_card(context, 0, 0, new_card)
-                    self.add_item(id, surface, xy[position], z_index=i+1)
+                    self.add_item(id, surface, self.trick_xy[position], z_index=i+1)
                 elif new_card is None and old_card is not None:
                     self.remove_item(id)
                 elif old_card != new_card:
@@ -306,6 +281,44 @@ class CardArea(CairoCanvas):
                     self.remove_item(id)
 
         self.trick = trick  # Save trick.
+
+
+    def set_position_mapping(self, focus):
+        """Move displayed items to new positions, with respect to focus.
+        
+        @param focus: the position to be drawn 'closest' to user.
+        """
+        if self.focus == focus:
+            return  # No need to do anything!
+        self.focus = focus
+
+        # Remap position symbols, with self.BOTTOM assigned focus.
+        order = self.positions
+        neworder = order[focus.index:] + order[:focus.index]
+        self.BOTTOM, self.LEFT, self.TOP, self.RIGHT = neworder
+
+        # Disclaimer:
+        # CardArea was not designed with this operation in mind, and the
+        # following code works as 'brain surgery' on the unsuspecting module.
+
+        # Use a copy of self.hands, since it will be changed by set_hand().
+        hands = self.hands.copy(); self.hands.clear()
+        # Make a copy of self.items, since self.clear() resets it.
+        items = self.items.copy()
+        self.clear()  # Resets self.items.
+
+        for id, item in items.iteritems():
+            cls, position = id
+            self.items[id] = item  # Add the item back.
+
+            if cls == 'hand':  # Rebuild hands.
+                del self.items[id]
+                h = hands[position]
+                self.set_hand(h['hand'], position, h['facedown'], h['visible'])
+            elif cls == 'playername':
+                self.update_item(id, xy=self.player_xy[position])
+            elif cls == 'trick':
+                self.update_item(id, xy=self.trick_xy[position])
 
 
     def on_card_clicked(self, card, position):

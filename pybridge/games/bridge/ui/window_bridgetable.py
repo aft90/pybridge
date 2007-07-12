@@ -209,7 +209,7 @@ class WindowBridgeTable(WindowGameTable):
 
         # Set up CardArea widget.
         self.cardarea = CardArea(positions=Direction)
-        #self.cardarea.set_player_mapping(focus=Direction.South)
+        #self.cardarea.set_position_mapping(focus=Direction.South)
 
         self.cardarea.on_card_clicked = self.on_card_clicked
         self.cardarea.on_hand_clicked = self.on_hand_clicked
@@ -232,7 +232,7 @@ class WindowBridgeTable(WindowGameTable):
         self.sidebar.pack_start(exp)
 
 #        self.lasttrick = CardArea(positions=Direction)
-#        self.lasttrick.set_player_mapping(focus=Direction.South)
+#        self.lasttrick.set_position_mapping(focus=Direction.South)
 #        frame = gtk.Frame()
 #        frame.add(self.lasttrick)
 #        exp = gtk.Expander(_('Last Trick'))
@@ -558,8 +558,8 @@ class WindowBridgeTable(WindowGameTable):
     def on_takeseat_clicked(self, widget, position=None):
 
         def success(r):
-            self.cardarea.set_player_mapping(self.position)
-            #self.lasttrick.set_player_mapping(self.position)
+            self.cardarea.set_position_mapping(self.position)
+            #self.lasttrick.set_position_mapping(self.position)
             if self.table.game.inProgress():
                 d = self.player.callRemote('getHand')
                 d.addCallbacks(self.table.game.revealHand, self.errback,

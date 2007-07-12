@@ -58,7 +58,7 @@ class CairoCanvas(gtk.DrawingArea):
         context.rectangle(0, 0, width, height)
         context.set_source(self.pattern)
         context.paint()
-        # Trigger a call to self.expose().
+        # Trigger a call to self._expose().
         self.window.invalidate_rect((0, 0, width, height), False)
 
 
@@ -75,7 +75,7 @@ class CairoCanvas(gtk.DrawingArea):
         # Calculate and cache the on-screen area of the item.
         area = self.get_area(source, xy)
         self.items[id] = {'source': source, 'area': area, 'xy': xy,
-                            'z-index': z_index, 'opacity' : opacity}
+                          'z-index': z_index, 'opacity': opacity}
         self.redraw(*area)
 
 
@@ -120,7 +120,7 @@ class CairoCanvas(gtk.DrawingArea):
             area = self.items[id]['area']
 
         self.items[id] = {'source': source, 'area': area, 'xy' : xy,
-                            'z-index': z_index, 'opacity' : opacity}
+                          'z-index': z_index, 'opacity' : opacity}
         self.redraw(*area)
 
 
