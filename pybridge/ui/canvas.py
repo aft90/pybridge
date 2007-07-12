@@ -24,9 +24,13 @@ from config import config
 
 
 class CairoCanvas(gtk.DrawingArea):
-    """Provides a simple canvas layer for the display of graphics."""
-
-    # TODO: enhance documentation.
+    """A simple canvas layer for the display of graphics.
+    
+    This may be useful for other projects which require a cross-platform
+    PyGTK+Cairo canvas layer.
+    
+    Requirements: Cairo (>=1.0), PyGTK (>= 2.8).
+    """
 
     background_path = config['Appearance'].get('Background',
                                                env.find_pixmap('baize.png'))
@@ -37,18 +41,17 @@ class CairoCanvas(gtk.DrawingArea):
 
     def __init__(self):
         super(CairoCanvas, self).__init__()  # Initialise parent.
-        
         self.items = {}
-        
-        # Set up gtk.Widget signals.
-        self.connect('configure_event', self.configure)
-        self.connect('expose_event', self.expose)
+
+        # Set up gtk.DrawingArea signals.
+        self.connect('configure_event', self._configure)
+        self.connect('expose_event', self._expose)
 
 
     def clear(self):
         """Clears all items from canvas."""
         self.items = {}  # Remove all item references.
-        
+
         # Redraw background pattern on backing.
         width, height = self.window.get_size()
         context = cairo.Context(self.backing)
@@ -62,39 +65,42 @@ class CairoCanvas(gtk.DrawingArea):
     def add_item(self, id, source, xy, z_index, opacity=1):
         """Places source item into items list.
 
-        @param id: unique identifier for source.
-        @param source: ImageSurface.
-        @param xy: tuple providing (x, y) coords for source in backing.
-        @param z_index: integer.
-        @param opacity: integer in range 0 to 1.
+        @param id: a unique identifier for source.
+        @param source: an ImageSurface.
+        @param xy: tuple providing (x, y) coords for source.
+        @param z_index: an integer for the z-index of the item.
+        @param opacity: a number between 0.0 to 1.0.
         """
+        assert id not in self.items
         # Calculate and cache the on-screen area of the item.
         area = self.get_area(source, xy)
         self.items[id] = {'source': source, 'area': area, 'xy': xy,
-                          'z-index': z_index, 'opacity' : opacity, }
+                            'z-index': z_index, 'opacity' : opacity}
         self.redraw(*area)
 
 
     def remove_item(self, id):
         """Removes source item with identifier from items list.
 
-        @param id: unique identifier for source.
+        @param id: the identifier for source.
         """
-        if self.items.get(id):
-            area = self.items[id]['area']
-            del self.items[id]
-            self.redraw(*area)
+        assert id in self.items
+
+        area = self.items[id]['area']
+        del self.items[id]
+        self.redraw(*area)
 
 
     def update_item(self, id, source=None, xy=None, z_index=0, opacity=0):
         """
-        @param id: unique identifier for source.
-        @param source: if specified, ImageSurface.
-        @param xy: if specified, tuple providing (x, y) coords for source
-                   in backing.
-        @param z_index: if specified, integer.
-        @param opacity: if specified, integer in range 0 to 1. 
+        @param id: the identifier for source.
+        @param source: if specified, an ImageSurface.
+        @param xy: if specified, tuple providing (x, y) coords for source.
+        @param z_index: if specified, an integer for the z-index of the item.
+        @param opacity: if specified, a number between 0.0 and 1.0.
         """
+        assert id in self.items
+
         # If optional parameters are not specified, use stored values.
         z_index = z_index or self.items[id]['z-index']
         opacity = opacity or self.items[id]['opacity']
@@ -112,9 +118,9 @@ class CairoCanvas(gtk.DrawingArea):
             source = self.items[id]['source']
             xy = self.items[id]['xy']
             area = self.items[id]['area']
-        
+
         self.items[id] = {'source': source, 'area': area, 'xy' : xy,
-                          'z-index': z_index, 'opacity' : opacity, }
+                            'z-index': z_index, 'opacity' : opacity}
         self.redraw(*area)
 
 
@@ -133,19 +139,18 @@ class CairoCanvas(gtk.DrawingArea):
         # Redraw background pattern in area.
         context.set_source(self.pattern)
         context.paint()
-        
+
         # Build list of sources to redraw in area, in order of z-index.
         # TODO: Find sources which intersect with area.
         area = gtk.gdk.Rectangle(x, y, width, height)
         items = self.items.values()
         items.sort(lambda i, j : cmp(i['z-index'], j['z-index']))
-        
+
         for item in items:
             pos_x, pos_y = item['area'][0:2]
             context.set_source_surface(item['source'], pos_x, pos_y)
-#            context.paint()
             context.paint_with_alpha(item['opacity'])
-        
+
         context.reset_clip()
         self.window.invalidate_rect((x, y, width, height), False)  # Expose.
 
@@ -153,8 +158,8 @@ class CairoCanvas(gtk.DrawingArea):
     def get_area(self, source, xy):
         """Calculates the on-screen area of the specified source centred at xy.
         
-        @param source:
-        @param xy:
+        @param source: an ImageSurface.
+        @param xy: tuple providing (x, y) coords for source.
         @return: a tuple (x, y, width, height)
         """
         win_w, win_h = self.window.get_size()  # Window width and height.
@@ -192,19 +197,19 @@ class CairoCanvas(gtk.DrawingArea):
         return surface, context
 
 
-    def configure(self, widget, event):
+    def _configure(self, widget, event):
         width, height = self.window.get_size()
         self.backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        
+
         # Recalculate position of all items.
         for id, item in self.items.iteritems():
             self.items[id]['area'] = self.get_area(item['source'], item['xy'])
-        
+
         self.redraw(0, 0, width, height)  # Full redraw required.
         return True  # Expected to return True.
 
 
-    def expose(self, widget, event):
+    def _expose(self, widget, event):
         context = widget.window.cairo_create()
         context.rectangle(*event.area)
         context.clip()  # Only redraw the exposed area.

@@ -208,7 +208,9 @@ class WindowBridgeTable(WindowGameTable):
         self.takeseat.set_menu(menu)
 
         # Set up CardArea widget.
-        self.cardarea = CardArea()
+        self.cardarea = CardArea(positions=Direction)
+        #self.cardarea.set_player_mapping(focus=Direction.South)
+
         self.cardarea.on_card_clicked = self.on_card_clicked
         self.cardarea.on_hand_clicked = self.on_hand_clicked
         self.cardarea.set_size_request(640, 480)
@@ -229,7 +231,8 @@ class WindowBridgeTable(WindowGameTable):
         exp.add(frame)
         self.sidebar.pack_start(exp)
 
-#        self.lasttrick = CardArea()
+#        self.lasttrick = CardArea(positions=Direction)
+#        self.lasttrick.set_player_mapping(focus=Direction.South)
 #        frame = gtk.Frame()
 #        frame.add(self.lasttrick)
 #        exp = gtk.Expander(_('Last Trick'))
@@ -251,7 +254,7 @@ class WindowBridgeTable(WindowGameTable):
 
     def errback(self, failure):
         print "Error: %s" % failure.getErrorMessage()
-        #print failure.getBriefTraceback()
+        print failure.getBriefTraceback()
 
 
     def setTable(self, table):
@@ -271,17 +274,12 @@ class WindowBridgeTable(WindowGameTable):
             # If trick play in progress, redraw trick.
             if self.table.game.play:
                 self.redrawTrick()
+                # TODO: redraw last trick.
             self.setTurnIndicator()
 
             for call in self.table.game.bidding.calls:
                 position = self.table.game.bidding.whoCalled(call)
                 self.biddingview.add_call(call, position)
-
-            # If playing, set trick counts.
-            if self.table.game.play:
-                for position, cards in self.table.game.play.played.items():
-                    for card in cards:
-                        self.addCard(card, position)
 
             # If user is a player and bidding in progress, open bidding box.
             if self.player and not self.table.game.bidding.isComplete():
@@ -309,24 +307,6 @@ class WindowBridgeTable(WindowGameTable):
         self.dashboard.set_trickcount(self.table.game)
         self.dashboard.set_dealer(self.table.game)
         self.dashboard.set_vulnerability(self.table.game)
-
-
-    def addCard(self, card, position):
-        """"""
-#        position = self.table.game.play.whoPlayed(card)
-#        column = position.index
-#        row = self.table.game.play.played[position].index(card)
-#
-#        if self.trick_store.get_iter_first() == None:
-#            self.trick_store.append()
-#        iter = self.trick_store.get_iter_first()
-#        for i in range(row):
-#            iter = self.trick_store.iter_next(iter)
-#            if iter is None:
-#                iter = self.trick_store.append()
-#
-#        format = render_card(card)
-#        self.trick_store.set(iter, column, format)
 
 
     def gameComplete(self):
@@ -535,12 +515,15 @@ class WindowBridgeTable(WindowGameTable):
     def event_playCard(self, card, position):
         # Determine the position of the hand from which card was played.
         playfrom = self.table.game.play.whoPlayed(card)
-        self.addCard(card, playfrom)
         self.setTurnIndicator()
         self.dashboard.set_trickcount(self.table.game)
         self.redrawTrick()
         self.redrawHand(playfrom)
-        
+
+#        if len(self.table.game.play.winners) > 0:
+#            lasttrick = self.table.game.play.getTrick(len(self.table.game.play.winners) - 1)
+#            self.lasttrick.set_trick(lasttrick)
+
         if not self.table.game.inProgress():
             self.gameComplete()
 
@@ -576,6 +559,7 @@ class WindowBridgeTable(WindowGameTable):
 
         def success(r):
             self.cardarea.set_player_mapping(self.position)
+            #self.lasttrick.set_player_mapping(self.position)
             if self.table.game.inProgress():
                 d = self.player.callRemote('getHand')
                 d.addCallbacks(self.table.game.revealHand, self.errback,
