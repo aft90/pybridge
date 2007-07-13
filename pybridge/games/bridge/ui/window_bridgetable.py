@@ -69,6 +69,20 @@ class BiddingView(gtk.TreeView):
 
 
 
+class TrickArea(CardArea):
+    """A display of the previous trick."""
+
+    # TODO: consider providing support for user to review all previous tricks.
+    # However, this may break the Laws of Bridge, and also slow down play.
+
+    border_x, border_y = 6, 6
+
+    trick_xy = property(lambda s: {s.TOP: (0.5, 0.2), s.BOTTOM: (0.5, 0.8),
+                                   s.LEFT: (0.2, 0.5), s.RIGHT: (0.8, 0.5)})
+
+
+
+
 class ScoreView(gtk.TreeView):
     """A display of contracts bid, their results and their scores."""
 
@@ -209,7 +223,6 @@ class WindowBridgeTable(WindowGameTable):
 
         # Set up CardArea widget.
         self.cardarea = CardArea(positions=Direction)
-        #self.cardarea.set_position_mapping(focus=Direction.South)
 
         self.cardarea.on_card_clicked = self.on_card_clicked
         self.cardarea.on_hand_clicked = self.on_hand_clicked
@@ -231,14 +244,14 @@ class WindowBridgeTable(WindowGameTable):
         exp.add(frame)
         self.sidebar.pack_start(exp)
 
-#        self.lasttrick = CardArea(positions=Direction)
-#        self.lasttrick.set_position_mapping(focus=Direction.South)
-#        frame = gtk.Frame()
-#        frame.add(self.lasttrick)
-#        exp = gtk.Expander(_('Last Trick'))
-#        exp.set_expanded(True)
-#        exp.add(frame)
-#        self.sidebar.pack_start(exp)
+        self.trickarea = TrickArea(positions=Direction)
+        self.trickarea.set_size_request(-1, 180)
+        frame = gtk.Frame()
+        frame.add(self.trickarea)
+        exp = gtk.Expander(_('Previous Trick'))
+        exp.set_expanded(True)
+        exp.add(frame)
+        self.sidebar.pack_start(exp, expand=False)
 
         self.scoreview = ScoreView()
         sw = gtk.ScrolledWindow()
@@ -249,7 +262,7 @@ class WindowBridgeTable(WindowGameTable):
         exp = gtk.Expander(_('Score Sheet'))
         exp.set_expanded(False)
         exp.add(frame)
-        self.sidebar.pack_start(exp)
+        self.sidebar.pack_start(exp, expand=False)
 
 
     def errback(self, failure):
@@ -274,7 +287,10 @@ class WindowBridgeTable(WindowGameTable):
             # If trick play in progress, redraw trick.
             if self.table.game.play:
                 self.redrawTrick()
-                # TODO: redraw last trick.
+                index = max([len(cards) for cards in self.table.game.play.played.values()]) - 2
+                if index >= 0:
+                    self.trickarea.set_trick(self.table.game.play.getTrick(index))
+
             self.setTurnIndicator()
 
             for call in self.table.game.bidding.calls:
@@ -302,6 +318,7 @@ class WindowBridgeTable(WindowGameTable):
         """Clear bidding history, contract, trick counts."""
         self.cardarea.clear()
         self.biddingview.clear()   # Reset bidding history.
+        self.trickarea.set_trick(None)
 
         self.dashboard.set_contract(self.table.game)
         self.dashboard.set_trickcount(self.table.game)
@@ -520,9 +537,9 @@ class WindowBridgeTable(WindowGameTable):
         self.redrawTrick()
         self.redrawHand(playfrom)
 
-#        if len(self.table.game.play.winners) > 0:
-#            lasttrick = self.table.game.play.getTrick(len(self.table.game.play.winners) - 1)
-#            self.lasttrick.set_trick(lasttrick)
+        index = max([len(cards) for cards in self.table.game.play.played.values()]) - 2
+        if index >= 0:
+            self.trickarea.set_trick(self.table.game.play.getTrick(index))
 
         if not self.table.game.inProgress():
             self.gameComplete()
@@ -559,7 +576,7 @@ class WindowBridgeTable(WindowGameTable):
 
         def success(r):
             self.cardarea.set_position_mapping(self.position)
-            #self.lasttrick.set_position_mapping(self.position)
+            self.trickarea.set_position_mapping(self.position)
             if self.table.game.inProgress():
                 d = self.player.callRemote('getHand')
                 d.addCallbacks(self.table.game.revealHand, self.errback,
