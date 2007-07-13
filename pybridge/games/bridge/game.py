@@ -25,7 +25,7 @@ from pybridge.network.error import GameError
 
 from bidding import Bidding
 from board import Board
-from playing import Playing
+from play import Trick, TrickPlay
 from scoring import scoreDuplicate
 
 from call import Bid, Pass, Double, Redouble
@@ -59,9 +59,11 @@ class Bridge(object):
     def __init__(self):
         self.listeners = []
 
+        # TODO: are these necessary?
         self.board = None
         self.bidding = None
         self.contract = None
+        self.trumpSuit = None
         self.play = None
 
         self.boardQueue = []  # Boards for successive games.
@@ -85,6 +87,7 @@ class Bridge(object):
             self.board.nextDeal()
         self.bidding = Bidding(self.board['dealer'])  # Start bidding.
         self.contract = None
+        self.trumpSuit = None
         self.play = None
         self.visibleHands.clear()
 
@@ -96,7 +99,7 @@ class Bridge(object):
 
 
     def inProgress(self):
-        if self.play:
+        if self.play is not None:
             return not self.play.isComplete()
         elif self.bidding:
             return not self.bidding.isPassedOut()
@@ -119,14 +122,8 @@ class Bridge(object):
 
         if self.bidding:
             state['calls'] = self.bidding.calls
-        if self.play:
-            state['played'] = []
-            trickcount = max([len(s) for s in self.play.played.values()])
-            for index in range(trickcount):
-                leader, cards = self.play.getTrick(index)
-                for pos in Direction[leader.index:] + Direction[:leader.index]:
-                    if pos in cards:
-                        state['played'].append(cards[pos])
+        if self.play is not None:
+            state['play'] = [dict(trick) for trick in self.play]
 
         return state
 
@@ -139,12 +136,11 @@ class Bridge(object):
                 turn = self.getTurn()
                 self.makeCall(call, position=turn)
 
-            for card in state.get('played', []):
-                turn = self.getTurn()
-                # TODO: remove this hack
-                if turn == self.play.dummy:
-                    turn = self.play.declarer
-                self.playCard(card, position=turn)
+            for trick in state.get('play', []):
+                turn = self.play.whoseTurn()
+                trickobj = Trick(leader=turn, trumpSuit=self.trumpSuit)
+                trickobj.update(trick)  # Populate with cards.
+                self.play.append(trickobj)
 
 
     def updateState(self, event, *args, **kwargs):
@@ -237,8 +233,8 @@ class Bridge(object):
 
         if self.bidding.isComplete() and not self.bidding.isPassedOut():
             self.contract = self.bidding.getContract()  # TODO: make a property
-            trumpSuit = self.trumpMap[self.contract['bid'].strain]
-            self.play = Playing(self.contract['declarer'], trumpSuit)
+            self.trumpSuit = self.trumpMap[self.contract['bid'].strain]
+            self.play = TrickPlay(self.contract['declarer'], self.trumpSuit)
 
         self.notify('makeCall', call=call, position=position)
 
@@ -279,7 +275,7 @@ class Bridge(object):
         if position not in Direction:
             raise TypeError, "Expected Direction, got %s" % type(position)
 
-        if not self.play or self.play.isComplete():
+        if self.play is None or self.play.isComplete():
             raise GameError, "No game in progress, or play complete"
 
         playfrom = position
@@ -294,15 +290,16 @@ class Bridge(object):
         if self.getTurn() != playfrom:
             raise GameError, "Card played out of turn"
 
-        hand = self.board['deal'].get(playfrom, [])  # Empty if hand unknown.
-        if not self.play.isValidPlay(card, playfrom, hand):
-            raise GameError, "Card cannot be played from hand"
+        # If complete deal known, validate card play.
+        if len(self.board['deal']) == len(Direction):
+            if not self.play.isValidCardPlay(card, self.board['deal']):
+                raise GameError, "Card cannot be played from hand"
 
-        self.play.playCard(card)
+        self.play.playCard(card, playfrom)
         self.notify('playCard', card=card, position=position)
 
         # Dummy's hand is revealed when the first card of first trick is played.
-        if len(self.play.getTrick(0)[1]) == 1:
+        if len(self.play[0]) == 1:
             dummyhand = self.board['deal'].get(self.play.dummy)
             if dummyhand:  # Reveal hand only if known.
                 self.revealHand(dummyhand, self.play.dummy)
@@ -380,15 +377,10 @@ class Bridge(object):
         else:  # East or West
             vulnerable = (self.board['vuln'] in (Vulnerable.EastWest, Vulnerable.All))
 
-        tricksMade = 0  # Count of tricks won by declarer or dummy.
-        for index in range(len(self.play.winners)):
-            trick = self.play.getTrick(index)
-            winningCard = self.play.winningCard(trick)
-            winner = self.play.whoPlayed(winningCard)
-            tricksMade += winner in (declarer, dummy)
-        result = {'contract'   : contract,
-                  'tricksMade' : tricksMade,
-                  'vulnerable' : vulnerable, }
+        declarerWon, defenceWon = self.play.wonTrickCount()
+
+        result = {'contract': contract, 'tricksMade': declarerWon,
+                  'vulnerable': vulnerable}
         return scoreDuplicate(result)
 
 

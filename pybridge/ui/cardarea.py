@@ -251,16 +251,15 @@ class CardArea(CairoCanvas):
         """Sets the current trick.
         Draws representation of current trick to context.
         
-        @param trick: a (leader, cards_played) pair, or None.
+        @param trick: a Trick object, or None.
         """
         if trick:
-            leader, cards = trick
             # The order of play is the leader, then clockwise around Direction.
-            order = Direction[leader.index:] + Direction[:leader.index]
+            order = Direction[trick.leader.index:] + Direction[:trick.leader.index]
             for i, position in enumerate(order):
                 id = ('trick', position)
-                old_card = self.trick and self.trick[1].get(position) or None
-                new_card = cards.get(position) or None
+                old_card = self.trick and self.trick.get(position)
+                new_card = trick.get(position)
 
                 # If old card matches new card, take no action.
                 if old_card is None and new_card is not None:
@@ -275,11 +274,14 @@ class CardArea(CairoCanvas):
                     self.update_item(id, surface, z_index=i+1)
 
         elif self.trick:  # Remove all cards from previous trick.
-            for position in self.trick[1]:
+            for position in self.trick:
                 id = ('trick', position)
                 if id in self.items:
                     self.remove_item(id)
 
+        # Copy trick object, to distinguish it from itself in the future.
+        if trick:
+            trick = trick.copy()
         self.trick = trick  # Save trick.
 
 

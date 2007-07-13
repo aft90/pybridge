@@ -107,7 +107,7 @@ class TestGameRuns(unittest.TestCase):
             turn = self.game.getTurn()
             # Find a valid card.
             for card in board['deal'][turn]:
-                if self.game.play.isValidPlay(card, turn, hand=board['deal'][turn]):
+                if self.game.play.isValidCardPlay(card, deal=board['deal']):
                     if turn == self.game.play.dummy:
                         turn = self.game.play.declarer
                     self.players[turn].playCard(card)

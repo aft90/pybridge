@@ -102,7 +102,7 @@ class ScoreView(gtk.TreeView):
 
 
     def add_score(self, game):
-        declarerWon, defenceWon = game.play.getTrickCount()
+        declarerWon, defenceWon = game.play.wonTrickCount()
         score = game.getScore()
 
         textContract = render_contract(game.contract)
@@ -169,15 +169,15 @@ class BridgeDashboard(gtk.VBox):
 
     def set_trickcount(self, game):
         if game.play:
-            declarer, defence = game.play.getTrickCount()
+            declarerWon, defenceWon = game.play.wonTrickCount()
             required = game.contract['bid'].level.index + 7
-            declarerNeeds = max(0, required - declarer)
-            defenceNeeds = max(0, 13 + 1 - required - defence)
+            declarerNeeds = max(0, required - declarerWon)
+            defenceNeeds = max(0, 13 + 1 - required - defenceWon)
         else:
-            declarer, defence, declarerNeeds, defenceNeeds = 0, 0, 0, 0
+            declarerWon, defenceWon, declarerNeeds, defenceNeeds = 0, 0, 0, 0
         format = "<span size='x-large'><b>%s</b> (%s)</span>"
-        self.declarer_tricks.set_markup(format % (declarer, declarerNeeds))
-        self.defence_tricks.set_markup(format % (defence, defenceNeeds))
+        self.declarer_tricks.set_markup(format % (declarerWon, declarerNeeds))
+        self.defence_tricks.set_markup(format % (defenceWon, defenceNeeds))
 
 
     def set_dealer(self, game):
@@ -285,11 +285,10 @@ class WindowBridgeTable(WindowGameTable):
 
         if self.table.game.inProgress():
             # If trick play in progress, redraw trick.
-            if self.table.game.play:
+            if self.table.game.play is not None:
                 self.redrawTrick()
-                index = max([len(cards) for cards in self.table.game.play.played.values()]) - 2
-                if index >= 0:
-                    self.trickarea.set_trick(self.table.game.play.getTrick(index))
+                if len(self.table.game.play) > 1:
+                    self.trickarea.set_trick(self.table.game.play[-2])
 
             self.setTurnIndicator()
 
@@ -340,7 +339,7 @@ class WindowBridgeTable(WindowGameTable):
         if self.table.game.contract:
             self.scoreview.add_score(self.table.game)
 
-            declarerWon, defenceWon = self.table.game.play.getTrickCount()
+            declarerWon, defenceWon = self.table.game.play.wonTrickCount()
             required = self.table.game.contract['bid'].level.index + 7
             offset = declarerWon - required
             score = self.table.game.getScore()
@@ -410,7 +409,7 @@ class WindowBridgeTable(WindowGameTable):
         if all is True or self.table.game.play is None:
             available = hand
         else:
-            played = self.table.game.play.played[position]
+            played = [trick[position] for trick in self.table.game.play if trick.get(position)]
             if facedown:  # Draw cards face down for unknown hand. 
                 available = range(13 - len(played))
             else:
@@ -427,7 +426,7 @@ class WindowBridgeTable(WindowGameTable):
         """
         trick = None
         if self.table.game.play:
-            trick = self.table.game.play.getCurrentTrick()
+            trick = self.table.game.play[-1]
         self.cardarea.set_trick(trick)
 
 
@@ -439,7 +438,7 @@ class WindowBridgeTable(WindowGameTable):
         try:
             turn = self.table.game.getTurn()
 
-            if self.table.game.play:
+            if self.table.game.play is not None:
                 declarer, dummy = self.table.game.play.declarer, self.table.game.play.dummy
                 if self.position and self.position == turn != dummy:
                     text = _("Play a card from your hand.")
@@ -531,15 +530,13 @@ class WindowBridgeTable(WindowGameTable):
 
     def event_playCard(self, card, position):
         # Determine the position of the hand from which card was played.
-        playfrom = self.table.game.play.whoPlayed(card)
+        playfrom = self.table.game.play[-1].whoPlayed(card)
         self.setTurnIndicator()
         self.dashboard.set_trickcount(self.table.game)
         self.redrawTrick()
         self.redrawHand(playfrom)
-
-        index = max([len(cards) for cards in self.table.game.play.played.values()]) - 2
-        if index >= 0:
-            self.trickarea.set_trick(self.table.game.play.getTrick(index))
+        if len(self.table.game.play) > 1:
+            self.trickarea.set_trick(self.table.game.play[-2])
 
         if not self.table.game.inProgress():
             self.gameComplete()
@@ -567,7 +564,7 @@ class WindowBridgeTable(WindowGameTable):
 
     def on_card_clicked(self, card, position):
         if self.player:
-            if self.table.game.inProgress() and self.table.game.play:
+            if self.table.game.inProgress() and self.table.game.play is not None:
                 d = self.player.callRemote('playCard', card)
                 d.addErrback(self.errback)
 
