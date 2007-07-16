@@ -26,7 +26,7 @@ import pybridge.games.bridge.call as Call
 
 
 class WindowBidbox(object):
-    """The bidding box is presented to a player, during bidding.
+    """The bidding box is presented to the playing user, during an auction.
     
     Each call (bid, pass, double or redouble) is displayed as a button.
     When it is the player's turn to bid, a call is made by clicking the
@@ -104,9 +104,9 @@ class WindowBidbox(object):
 
 
     def setTable(self, table, position):
-        """Monitor the state of bidding in game at specified table.
+        """Monitor the state of auction in game at specified table.
         
-        @param table: the BridgeGame for which to observe bidding session.
+        @param table: the BridgeGame for which to observe auction session.
         @param: 
         """
         if self.table:
@@ -134,7 +134,7 @@ class WindowBidbox(object):
         if self.position == self.table.game.getTurn():
             self.window.set_property('sensitive', True)
             for call, button in self.callButtons.items():
-                isvalid = self.table.game.bidding.isValidCall(call)
+                isvalid = self.table.game.auction.isValidCall(call)
                 button.set_property('sensitive', isvalid)
         else:
             self.window.set_property('sensitive', False)

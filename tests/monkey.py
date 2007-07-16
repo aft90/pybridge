@@ -221,7 +221,7 @@ class Monkey:
 
         def loop():
             if self.table.game.inProgress():
-                if not self.table.game.bidding.isComplete():
+                if not self.table.game.auction.isComplete():
                     self.chooseCall()
                 else:
                     self.chooseCard()

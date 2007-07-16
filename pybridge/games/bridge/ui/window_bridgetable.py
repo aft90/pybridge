@@ -107,8 +107,8 @@ class ScoreView(gtk.TreeView):
 
         textContract = render_contract(game.contract)
         textMade = str(declarerWon)
-        if game.contract['declarer'] in (Direction.North, Direction.South) and score > 0 \
-        or game.contract['declarer'] in (Direction.East, Direction.West) and score < 0:
+        if game.contract.declarer in (Direction.North, Direction.South) and score > 0 \
+        or game.contract.declarer in (Direction.East, Direction.West) and score < 0:
             textNS, textEW = str(abs(score)), ''
         else:
             textNS, textEW = '', str(abs(score))
@@ -170,7 +170,7 @@ class BridgeDashboard(gtk.VBox):
     def set_trickcount(self, game):
         if game.play:
             declarerWon, defenceWon = game.play.wonTrickCount()
-            required = game.contract['bid'].level.index + 7
+            required = game.contract.bid.level.index + 7
             declarerNeeds = max(0, required - declarerWon)
             defenceNeeds = max(0, 13 + 1 - required - defenceWon)
         else:
@@ -292,12 +292,12 @@ class WindowBridgeTable(WindowGameTable):
 
             self.setTurnIndicator()
 
-            for call in self.table.game.bidding.calls:
-                position = self.table.game.bidding.whoCalled(call)
+            for call in self.table.game.auction:
+                position = self.table.game.auction.whoCalled(call)
                 self.biddingview.add_call(call, position)
 
-            # If user is a player and bidding in progress, open bidding box.
-            if self.player and not self.table.game.bidding.isComplete():
+            # If user is a player and auction in progress, open bidding box.
+            if self.player and not self.table.game.auction.isComplete():
                 bidbox = self.children.open(WindowBidbox, parent=self)
                 bidbox.setCallSelectHandler(self.on_call_selected)
                 bidbox.setTable(self.table, self.position)
@@ -340,7 +340,7 @@ class WindowBridgeTable(WindowGameTable):
             self.scoreview.add_score(self.table.game)
 
             declarerWon, defenceWon = self.table.game.play.wonTrickCount()
-            required = self.table.game.contract['bid'].level.index + 7
+            required = self.table.game.contract.bid.level.index + 7
             offset = declarerWon - required
             score = self.table.game.getScore()
 
@@ -519,7 +519,7 @@ class WindowBridgeTable(WindowGameTable):
         self.biddingview.add_call(call, position)
         self.setTurnIndicator()
 
-        if self.table.game.bidding.isComplete():
+        if self.table.game.auction.isComplete():
             self.dashboard.set_contract(self.table.game)
             if self.children.get(WindowBidbox):  # If a player.
                 self.children.close(self.children[WindowBidbox])
@@ -578,8 +578,8 @@ class WindowBridgeTable(WindowGameTable):
                 d = self.player.callRemote('getHand')
                 d.addCallbacks(self.table.game.revealHand, self.errback,
                                callbackKeywords={'position' : self.position})
-                # If game is running and bidding is active, open bidding box.
-                if not self.table.game.bidding.isComplete():
+                # If game is running and auction is active, open bidding box.
+                if not self.table.game.auction.isComplete():
                     bidbox = self.children.open(WindowBidbox, parent=self)
                     bidbox.setCallSelectHandler(self.on_call_selected)
                     bidbox.setTable(self.table, self.position)

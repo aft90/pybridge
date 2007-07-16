@@ -191,11 +191,11 @@ def render_contract(contract):
     @return: a format string representing the contract.
     @rtype: str
     """
-    doubled = contract['redoubleBy'] and CALLTYPE_SYMBOLS[Call.Redouble] \
-              or contract['doubleBy'] and CALLTYPE_SYMBOLS[Call.Double] or ''
+    doubled = contract.redoubleBy and CALLTYPE_SYMBOLS[Call.Redouble] \
+              or contract.doubleBy and CALLTYPE_SYMBOLS[Call.Double] or ''
 
-    fields = {'bid': render_call(contract['bid']), 'doubled': doubled,
-              'declarer': DIRECTION_NAMES[contract['declarer']]}
+    fields = {'bid': render_call(contract.bid), 'doubled': doubled,
+              'declarer': DIRECTION_NAMES[contract.declarer]}
 
     if doubled:
         return _('%(bid)s %(doubled)s by %(declarer)s') % fields

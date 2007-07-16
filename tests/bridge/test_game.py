@@ -96,7 +96,7 @@ class TestGameRuns(unittest.TestCase):
         
         This does not attempt to test the integrity of Bidding and Play.
         """
-        calls = [Bid(l, s) for l in Level for s in Strain] + [Pass()]*3
+        calls = [Bid(l, s) for l in Level for s in Strain] + [Pass(), Pass(), Pass()]
         self.game.start(board)
 
         for call in calls:

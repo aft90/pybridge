@@ -23,7 +23,7 @@ from pybridge.interfaces.game import ICardGame
 from pybridge.interfaces.observer import ISubject
 from pybridge.network.error import GameError
 
-from bidding import Bidding
+from auction import Auction
 from board import Board
 from play import Trick, TrickPlay
 from scoring import scoreDuplicate
@@ -34,7 +34,7 @@ from symbols import Direction, Suit, Strain, Vulnerable
 
 
 class Bridge(object):
-    """A bridge game models the bidding and play sequence.
+    """A bridge game sequences the auction and trick play.
     
     The methods of this class comprise the interface of a state machine.
     Clients should only use the class methods to interact with the game state.
@@ -59,16 +59,16 @@ class Bridge(object):
     def __init__(self):
         self.listeners = []
 
-        # TODO: are these necessary?
         self.board = None
-        self.bidding = None
-        self.contract = None
-        self.trumpSuit = None
+        self.auction = None
         self.play = None
 
         self.boardQueue = []  # Boards for successive games.
         self.visibleHands = {}  # A subset of deal, containing revealed hands.
         self.players = {}  # One-to-one mapping from BridgePlayer to Direction.
+
+    contract = property(lambda self: self.auction and self.auction.contract or None)
+    trumpSuit = property(lambda self: self.play and self.play.trumpSuit or None)
 
 
 # Implementation of ICardGame.
@@ -85,9 +85,7 @@ class Bridge(object):
         else:  # Create a board.
             self.board = Board()
             self.board.nextDeal()
-        self.bidding = Bidding(self.board['dealer'])  # Start bidding.
-        self.contract = None
-        self.trumpSuit = None
+        self.auction = Auction(self.board['dealer'])  # Start auction.
         self.play = None
         self.visibleHands.clear()
 
@@ -101,8 +99,8 @@ class Bridge(object):
     def inProgress(self):
         if self.play is not None:
             return not self.play.isComplete()
-        elif self.bidding:
-            return not self.bidding.isPassedOut()
+        elif self.auction is not None:
+            return not self.auction.isPassedOut()
         else:
             return False
 
@@ -120,8 +118,8 @@ class Bridge(object):
             visibleBoard['deal'] = self.visibleHands
             state['board'] = visibleBoard
 
-        if self.bidding:
-            state['calls'] = self.bidding.calls
+        if self.auction:
+            state['auction'] = list(self.auction)
         if self.play is not None:
             state['play'] = [dict(trick) for trick in self.play]
 
@@ -132,15 +130,23 @@ class Bridge(object):
         if state.get('board'):
             self.start(state['board'])
 
-            for call in state.get('calls', []):
+            # Perform validation on game provided by server.
+            # Better to encounter errors earlier than later.
+
+            for call in state.get('auction', []):
                 turn = self.getTurn()
                 self.makeCall(call, position=turn)
 
             for trick in state.get('play', []):
-                turn = self.play.whoseTurn()
-                trickobj = Trick(leader=turn, trumpSuit=self.trumpSuit)
-                trickobj.update(trick)  # Populate with cards.
-                self.play.append(trickobj)
+                # TODO: clean this up.
+                leader = self.getTurn()
+                for turn in Direction[leader.index:] + Direction[:leader.index]:
+                    if turn in trick:
+                        card = trick[turn]
+                        if turn == self.play.dummy:
+                            self.playCard(card, position=self.play.declarer)
+                        else:
+                            self.playCard(card, position=turn)
 
 
     def updateState(self, event, *args, **kwargs):
@@ -200,7 +206,7 @@ class Bridge(object):
 
 
     def makeCall(self, call, player=None, position=None):
-        """Make a call in the current bidding session.
+        """Make a call in the current auction.
         
         This method expects to receive either a player argument or a position.
         If both are given, the position argument is disregarded.
@@ -222,19 +228,19 @@ class Bridge(object):
             raise TypeError, "Expected Direction, got %s" % type(position)
 
         # Validate call according to game state.
-        if not self.bidding or self.bidding.isComplete():
-            raise GameError, "No game in progress, or bidding complete"
+        if self.auction is None or self.auction.isComplete():
+            raise GameError, "No game in progress, or auction complete"
         if self.getTurn() != position:
             raise GameError, "Call made out of turn"
-        if not self.bidding.isValidCall(call, position):
+        if not self.auction.isValidCall(call, position):
             raise GameError, "Call cannot be made"
 
-        self.bidding.makeCall(call, position)
+        self.auction.makeCall(call)
 
-        if self.bidding.isComplete() and not self.bidding.isPassedOut():
-            self.contract = self.bidding.getContract()  # TODO: make a property
-            self.trumpSuit = self.trumpMap[self.contract['bid'].strain]
-            self.play = TrickPlay(self.contract['declarer'], self.trumpSuit)
+        if self.auction.isComplete() and not self.auction.isPassedOut():
+            declarer = self.auction.contract.declarer
+            trumpSuit = self.trumpMap[self.contract.bid.strain]
+            self.play = TrickPlay(declarer, trumpSuit)
 
         self.notify('makeCall', call=call, position=position)
 
@@ -349,10 +355,10 @@ class Bridge(object):
 
     def getTurn(self):
         if self.inProgress():
-            if self.bidding.isComplete():  # In trick play.
+            if self.auction.isComplete():  # In trick play.
                 return self.play.whoseTurn()
-            else:  # Currently in the bidding.
-                return self.bidding.whoseTurn()
+            else:  # Currently in the auction.
+                return self.auction.whoseTurn()
         else:  # Not in game.
             raise GameError, "No game in progress"
 
@@ -360,16 +366,15 @@ class Bridge(object):
     def getScore(self):
         """Returns the integer score value for declarer/dummy if:
 
-        - bidding stage has been passed out, with no bids made.
-        - play stage is complete.
+        - auction has been passed out, with no bids made.
+        - trick play is complete.
         """
-        if self.inProgress() or self.bidding is None:
+        if self.inProgress() or self.auction is None:
             raise GameError, "Game not complete"
-        if self.bidding.isPassedOut():
+        if self.auction.isPassedOut():
             return 0  # A passed out deal does not score.
 
-        contract = self.bidding.getContract()
-        declarer = contract['declarer']
+        declarer = self.contract.declarer
         dummy = Direction[(declarer.index + 2) % 4]
 
         if declarer in (Direction.North, Direction.South):
@@ -379,7 +384,7 @@ class Bridge(object):
 
         declarerWon, defenceWon = self.play.wonTrickCount()
 
-        result = {'contract': contract, 'tricksMade': declarerWon,
+        result = {'contract': self.contract, 'tricksMade': declarerWon,
                   'vulnerable': vulnerable}
         return scoreDuplicate(result)
 

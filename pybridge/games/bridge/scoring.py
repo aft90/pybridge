@@ -31,13 +31,13 @@ def scoreDuplicate(result):
     """
     score = 0
 
-    isDoubled      = result['contract']['doubleBy']
-    isRedoubled    = result['contract']['redoubleBy']
+    isDoubled      = bool(result['contract'].doubleBy)
+    isRedoubled    = bool(result['contract'].redoubleBy)
     isVulnerable   = result['vulnerable']
-    contractLevel  = result['contract']['bid'].level.index + 1
+    contractLevel  = result['contract'].bid.level.index + 1
     tricksMade     = result['tricksMade']
-    tricksRequired = result['contract']['bid'].level.index + 7
-    trumpSuit      = result['contract']['bid'].strain
+    tricksRequired = result['contract'].bid.level.index + 7
+    trumpSuit      = result['contract'].bid.strain
 
     if tricksMade >= tricksRequired:
         # Contract fulfilled.
