@@ -13,9 +13,9 @@
           <widget class="GtkMenuBar" id="menubar_main">
             <property name="visible">True</property>
             <child>
-              <widget class="GtkMenuItem" id="menu_server">
+              <widget class="GtkMenuItem" id="menu_connection">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">_Server</property>
+                <property name="label" translatable="yes">_Connection</property>
                 <property name="use_underline">True</property>
                 <child>
                   <widget class="GtkMenu" id="menu_server_menu">
@@ -815,7 +815,7 @@
   </widget>
   <widget class="GtkDialog" id="dialog_newtable">
     <property name="visible">True</property>
-    <property name="title" translatable="yes">New Table</property>
+    <property name="title" translatable="yes">Create a New Table</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
@@ -835,12 +835,39 @@
             <child>
               <widget class="GtkTable" id="table2">
                 <property name="visible">True</property>
-                <property name="n_rows">1</property>
+                <property name="n_rows">2</property>
                 <property name="n_columns">2</property>
-                <property name="column_spacing">4</property>
-                <property name="row_spacing">2</property>
+                <property name="column_spacing">8</property>
+                <property name="row_spacing">4</property>
                 <child>
-                  <widget class="GtkEntry" id="entry_tablename">
+                  <widget class="GtkLabel" id="label_gamelist">
+                    <property name="visible">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                    <property name="xalign">0</property>
+                    <property name="label" translatable="yes">Game at Table:</property>
+                  </widget>
+                  <packing>
+                    <property name="top_attach">1</property>
+                    <property name="bottom_attach">2</property>
+                    <property name="y_options"></property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkComboBox" id="gamelist">
+                    <property name="visible">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                    <signal name="changed" handler="on_gamelist_changed"/>
+                  </widget>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="right_attach">2</property>
+                    <property name="top_attach">1</property>
+                    <property name="bottom_attach">2</property>
+                    <property name="y_options">GTK_FILL</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkEntry" id="tablename">
                     <property name="width_request">140</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -850,16 +877,16 @@
                   <packing>
                     <property name="left_attach">1</property>
                     <property name="right_attach">2</property>
-                    <property name="y_options"></property>
+                    <property name="y_options">GTK_FILL</property>
                   </packing>
                 </child>
                 <child>
                   <widget class="GtkLabel" id="label_tablename">
                     <property name="visible">True</property>
+                    <property name="xalign">0</property>
                     <property name="label" translatable="yes">Table Name:</property>
                   </widget>
                   <packing>
-                    <property name="x_options">GTK_FILL</property>
                     <property name="y_options"></property>
                   </packing>
                 </child>

@@ -30,8 +30,17 @@ class DialogNewtable(GladeWrapper):
 
 
     def setUp(self):
+        # Build and populate list of supported games.
+        model = gtk.ListStore(str)
+        self.gamelist.set_model(model)
+        cell = gtk.CellRendererText()
+        self.gamelist.pack_start(cell, True)
+        self.gamelist.add_attribute(cell, 'text', 0)
+
+        for gamename in sorted(SUPPORTED_GAMES):
+            iter = model.append((gamename, ))
+        self.gamelist.set_active_iter(iter)
         # TODO: display intersection of games supported by client and server.
-        pass
 
 
     def createSuccess(self, table):
@@ -43,11 +52,14 @@ class DialogNewtable(GladeWrapper):
         dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
                                 type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
         dialog.set_title(_('Could not create table'))
-        dialog.set_markup(_('The table could not be created.'))
+        dialog.set_markup(_('The table was not created by the server.'))
         dialog.format_secondary_text(_('Reason: %s') % error)
 
-        dialog.run()
-        dialog.destroy()
+        def dialog_response_cb(dialog, response_id):
+            dialog.destroy()
+
+        dialog.connect('response', dialog_response_cb)
+        dialog.show()
 
 
 # Signal handlers.
@@ -58,15 +70,19 @@ class DialogNewtable(GladeWrapper):
 
 
     def on_okbutton_clicked(self, widget, *args):
-        tableid = self.entry_tablename.get_text()
-        d = client.joinTable(tableid, gameclass=SUPPORTED_GAMES['Bridge'],
-                             host=True)
+        model = self.gamelist.get_model()
+        iter = self.gamelist.get_active_iter()
+        gamename = model.get_value(iter, 0)
+
+        tableid = self.tablename.get_text()
+        gameclass = SUPPORTED_GAMES[gamename]
+        d = client.joinTable(tableid, gameclass, host=True)
         d.addCallbacks(self.createSuccess, self.createFailure)
 
 
     def on_tablename_changed(self, widget, *args):
         # Disable the OK button if the table name field is empty.
-        sensitive = self.entry_tablename.get_text() != ""
+        sensitive = self.tablename.get_text() != ""
         self.okbutton.set_property('sensitive', sensitive)
 
 
