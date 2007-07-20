@@ -145,8 +145,8 @@ class Deal(dict):
         return long(num)
 
 
-    __pbnDirection = dict(zip('NESW', Direction))
-    __pbnRank = dict(zip('23456789TJQKA', Rank))
+    __pbnDirection = dict(zip('NESW', Direction) + zip(Direction, 'NESW'))
+    __pbnRank = dict(zip('23456789TJQKA', Rank) + zip(Rank, '23456789TJQKA'))
 
 
     @classmethod
@@ -175,10 +175,25 @@ class Deal(dict):
         return cls(deal)
 
 
-    def toString(self):
+    def toString(self, dealer=Direction.North):
         """Computes the PBN deal string which corresponds to this deal.
         
+        In PBN 'export format', the hands must be given in clockwise order,
+        starting from the dealer's position.
+        
+        @param dealer: if specified, the dealer of this deal.
         @return: a PBN deal string.
         """
-        raise NotImplementedError
+        order = Direction[dealer.index:] + Direction[:dealer.index]
+        hs = {}
+
+        for position in order:
+            # Split hand into suits.
+            suits = dict((suit, '') for suit in Suit)
+            for card in sorted(self[position], reverse=True):  # High to low.
+                suits[card.suit] += self.__pbnRank[card.rank]
+            hs[position] = '%s.%s.%s.%s' % tuple(suits[s] for s in reversed(Suit))
+
+        return self.__pbnDirection[dealer] + \
+               ':%s %s %s %s' % tuple(hs[position] for position in order)
 
