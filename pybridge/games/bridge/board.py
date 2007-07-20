@@ -18,7 +18,7 @@
 
 import random
 import time
-from deck import Deck
+from deal import Deal
 from symbols import Direction, Vulnerable
 
 
@@ -53,8 +53,7 @@ class Board(dict):
         @param result:
         @type result:
         """
-        deck = Deck()
-        self['deal'] = deck.randomDeal()
+        self['deal'] = Deal.fromRandom()
 
         self['num'] = self.get('num', 0) + 1
         self['time'] = tuple(time.localtime())
