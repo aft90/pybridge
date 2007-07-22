@@ -28,7 +28,8 @@ import server
 
 class RegisteredUser(pb.Avatar):
 
-    info = property(lambda self: {})  # TODO: Send profile data?
+    # Static for duration of connection.
+    info = property(lambda self: {'registered': True})
 
 
     def __init__(self, name):
@@ -56,11 +57,6 @@ class RegisteredUser(pb.Avatar):
 # Perspective methods, accessible by client.
 
 
-    def perspective_getServerInfo(self):
-        """Provides a dict of information about the server."""
-        return server.getServerInfo()
-
-
     def perspective_getRoster(self, name):
         """Provides roster requested by client."""
         if name == 'tables':
@@ -71,9 +67,31 @@ class RegisteredUser(pb.Avatar):
             raise DeniedRequest, "Unknown roster name \'%s\'" % name
 
 
-    def perspective_getUserProfile(self, username):
-        """Provides profile information for user with specified username."""
-        pass
+    def perspective_getServerData(self):
+        """Provides a dict of information about the server."""
+        return server.serverData
+
+
+    def perspective_getUserInformation(self, username=None):
+        """Returns public information for user with specified username.
+        
+        If username is unspecified, returns user's own profile.
+        """
+        if username is None:
+            username = self.name
+
+        try:
+            user = db.UserAccount.selectBy(username=username)[0]
+        except IndexError:
+            raise DeniedRequest, "Specified user does not exist"
+
+        return {'realname': user.realname, 'email': user.email,
+                'profile': user.profile}
+
+
+#    def perspective_setProfile(self, **kwargs):
+#        """Sets avatar's user account profile information to that specified."""
+#        pass
 
 
     def perspective_changePassword(self, password):
@@ -81,34 +99,27 @@ class RegisteredUser(pb.Avatar):
         if not isinstance(password, str):
             raise IllegalRequest, "Invalid parameter for password"
 
-        try:
-            server.changeUserPassword(self.name, password)
+        try:  # Validate password before it is changed.
+            server.setUserPassword(self.name, password)
         except ValueError, err:  # Password validation failed.
             raise DeniedRequest, err
 
 
-    def perspective_hostTable(self, tableid, gametype):
-        """Creates a new table."""
+    def perspective_joinTable(self, tableid, host=False, **hostParams):
+        """Joins an existing table, or creates and joins a new table."""
         if not isinstance(tableid, str):
             raise IllegalRequest, "Invalid parameter for table identifier"
-        if not isinstance(gametype, str):
-            raise IllegalRequest, "Invalid parameter for game type"
-        
-        table = server.createTable(tableid, gametype)
-        # Force client to join table.
-        return self.perspective_joinTable(tableid)
-
-
-    def perspective_joinTable(self, tableid):
-        """Joins an existing table."""
-        if not isinstance(tableid, str):
-            raise IllegalRequest, "Invalid parameter for table identifier"
-        elif tableid not in server.availableTables:
-            raise DeniedRequest, "No such table"
         elif tableid in self.joinedTables:
             raise DeniedRequest, "Already joined table"
-        
-        table = server.availableTables[tableid]
+
+        if host:
+            table = server.createTable(tableid, **hostParams)
+        else:
+            try:
+                table = server.availableTables[tableid]
+            except KeyError:
+                raise DeniedRequest, "No such table"
+
         self.joinedTables[tableid] = table
         return table
 
@@ -135,3 +146,4 @@ class AnonymousUser(pb.Avatar):
             server.registerUser(username, password)
         except ValueError, err:  # Username/password validation failed.
             raise DeniedRequest, err
+

@@ -188,12 +188,11 @@ class NetworkClient(pb.Referenceable):
             self.notify('joinTable', tableid=tableid, table=table)
             return table
 
+        params = {}
         if host:
-            # TODO: why not just joinTable, host=True?
-            gamename = gameclass.__name__
-            d = self.avatar.callRemote('hostTable', tableid, gamename)
-        else:
-            d = self.avatar.callRemote('joinTable', tableid)
+            params['gamename'] = gameclass.__name__
+
+        d = self.avatar.callRemote('joinTable', tableid, host, **params)
         d.addCallback(success)
         return d
 

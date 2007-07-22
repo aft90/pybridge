@@ -33,10 +33,9 @@ availableTables = LocalTableManager()
 onlineUsers = LocalUserManager()
 
 
-def getServerInfo():
-    return {'compatibleVersions': (version, version),  # minimum, maximum
-            'supportedGames': 'bridge',  # TODO
-            'version': version}
+serverData = {'compatibleClients': (version, version),  # minimum, maximum
+              'supportedGames': SUPPORTED_GAMES.keys(),
+              'version': version}
 
 
 def registerUser(username, password):
@@ -54,8 +53,8 @@ def registerUser(username, password):
     log.msg("New user %s registered" % username)
 
 
-def changeUserPassword(username, password):
-    """Sets the password of user's account.
+def setUserPassword(username, password):
+    """Changes the password of user's account.
     
     @param username: the user identifier.
     @param password: the new password for user.
@@ -67,11 +66,12 @@ def changeUserPassword(username, password):
         raise DeniedRequest, "User account does not exist"
 
 
-def createTable(tableid, gamename):
+def createTable(tableid, gamename, **tableOptions):
     """Create a new table for the specified game type.
     
     @param tableid: a unique identifier for the table.
-    @param gametype: a game identifier.
+    @param gamename: a game class identifier.
+    @param tableOptions: optional parameters for table initialisation.
     """
     # TODO: convert gametype string to corresponding class.
 
@@ -87,5 +87,6 @@ def createTable(tableid, gamename):
     # Provide table instance with a means of closing itself.
     table.close = lambda: availableTables.closeTable(table)
     availableTables.openTable(table)
+
     return table
 
