@@ -35,7 +35,7 @@ pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
 
 
 
-class NetworkClient(pb.Referenceable):
+class NetworkClient(object):
     """Provides the glue between the client code and the server."""
 
     implements(ISubject)
@@ -145,7 +145,7 @@ class NetworkClient(pb.Referenceable):
 
         hash = sha.new(password).hexdigest()
         creds = credentials.UsernamePassword(username, hash)
-        d = self.factory.login(creds, client=self)
+        d = self.factory.login(creds, client=None)
         d.addCallback(connectedAsUser)
 
         return d
@@ -205,6 +205,12 @@ class NetworkClient(pb.Referenceable):
 
         d = self.avatar.callRemote('leaveTable', tableid)
         d.addCallback(success)
+        return d
+
+
+    def getUserInformation(self, username):
+        # TODO: cache user information once retrieved.
+        d = self.avatar.callRemote('getUserInformation', username)
         return d
 
 
