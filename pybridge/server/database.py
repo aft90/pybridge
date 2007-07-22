@@ -79,6 +79,13 @@ except Exception, e:
 sqlhub.processConnection = connection  # Set all SQLObjects to use connection.
 
 
+# Email address validator from Django: see django/core/validators.py
+email_re = re.compile(
+    r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
+    r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-\011\013\014\016-\177])*"' # quoted-string
+    r')@(?:[A-Z0-9-]+\.)+[A-Z]{2,6}$', re.IGNORECASE)  # domain
+
+
 class UserAccount(SQLObject):
     """A store of user information.
     
@@ -89,6 +96,7 @@ class UserAccount(SQLObject):
     password = StringCol(length=40, notNone=True)  # Store SHA-1 hex hashes.
     allowLogin = BoolCol(default=True)  # If False, account login is disabled.
     email = StringCol(default=None, length=320)  # See RFC 2821 section 4.5.3.1.
+    # Don't split name field - see http://people.w3.org/rishida/blog/?p=100
     realname = UnicodeCol(default=None, length=40)
     profile = UnicodeCol(default=None)
     created = DateTimeCol(default=datetime.now)
@@ -109,7 +117,7 @@ class UserAccount(SQLObject):
 
     def _set_email(self, value):
         # This regexp matches virtually all well-formatted email addresses.
-        if value and not re.match("^[A-z0-9_.+-]+@([A-z0-9-]+\.)+[A-z]{2,6}$", value):
+        if value and not email_re.search(value):
             raise ValueError, "Invalid or ill-formatted email address"
         self._SO_set_email(value)
 
