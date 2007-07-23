@@ -28,12 +28,13 @@ import pybridge.environment as env
 from pybridge.network.client import client
 
 from eventhandler import SimpleEventHandler
-from manager import WindowManager, wm
+from manager import wm
 
 from dialog_connection import DialogConnection
 from dialog_newtable import DialogNewtable
 from dialog_preferences import DialogPreferences
 from dialog_userinfo import DialogUserInfo
+from window_gametable import WindowGameTable
 
 # TODO: import all Window*Table classes automatically.
 from pybridge.games.bridge.ui.window_bridgetable import WindowBridgeTable
@@ -51,9 +52,6 @@ class WindowMain(GladeWrapper):
 
 
     def setUp(self):
-        # Use a private WindowManager for table window instances.
-        self.tables = WindowManager()
-
         # Set up table model and icon view.
         self.tableview.set_text_column(0)
         self.tableview.set_pixbuf_column(1)
@@ -110,8 +108,9 @@ class WindowMain(GladeWrapper):
 
 
     def event_loggedOut(self):
-        for table in self.tables.values():
-            self.tables.close(table)
+        for window in wm.values():
+            if isinstance(window, WindowGameTable):
+                wm.close(window)
 
         self.notebook.set_property('sensitive', False)
         self.menu_connect.set_property('visible', True)
@@ -119,7 +118,6 @@ class WindowMain(GladeWrapper):
         self.menu_newtable.set_property('sensitive', False)
         #self.newtable.set_property('sensitive', False)
 
-        print self.tableview.get_model()
         self.tableview.get_model().clear()
         self.userview.get_model().clear()
 
@@ -155,15 +153,6 @@ class WindowMain(GladeWrapper):
             roster.attach(self.eventHandler)
         except KeyError:
             pass  # Ignore an unrecognised roster.
-
-
-    def event_joinTable(self, tableid, table):
-        window = self.tables.open(WindowBridgeTable, id=tableid)
-        window.setTable(table)
-
-
-    def event_leaveTable(self, tableid):
-        self.tables.close(self.tables[tableid])  # Close window.
 
 
     def event_openTable(self, tableid, info):
@@ -210,12 +199,18 @@ class WindowMain(GladeWrapper):
 
 
     def on_tableview_item_activated(self, iconview, path, *args):
+
+        def joinedTable(table):
+            # TODO: select correct table window class.
+            window = wm.open(WindowBridgeTable, id=tableid)
+            window.setTable(table)
+
         model = self.tableview.get_model()
         iter = model.get_iter(path)
         tableid = model.get_value(iter, 0)
         if tableid not in client.tables:
             d = client.joinTable(tableid)
-            d.addErrback(self.errback)
+            d.addCallbacks(joinedTable, self.errback)
             self.jointable.set_property('sensitive', False)
 
 
@@ -285,7 +280,8 @@ class WindowMain(GladeWrapper):
     def on_disconnect_activate(self, widget, *args):
         do_disconnect = True
 
-        if len([True for table in self.tables.values() if table.player]) > 0:
+        # TODO: avoid introspection of table windows.
+        if len([True for w in wm.values() if isinstance(w, WindowGameTable) and w.player]) > 0:
             dialog = gtk.MessageDialog(parent=self.window,
                                        flags=gtk.DIALOG_MODAL,
                                        type=gtk.MESSAGE_QUESTION)

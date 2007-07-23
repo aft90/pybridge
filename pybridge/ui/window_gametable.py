@@ -50,7 +50,7 @@ class WindowGameTable(object):
 
 
     def setUp(self):
-        self.children = WindowManager()
+        self.children = WindowManager()  # Private to this window.
         self.eventHandler = SimpleEventHandler(self)
 
         self.player = None
@@ -192,14 +192,14 @@ class WindowGameTable(object):
                 dialog.destroy()
                 if response_id == gtk.RESPONSE_OK:
                     d = client.leaveTable(self.table.id)
-                    #d.addErrback(self.errback)
+                    d.addCallbacks(lambda _: wm.close(self), self.errback)
 
             dialog.connect('response', dialog_response_cb)
             dialog.show()
 
         else:
             d = client.leaveTable(self.table.id)
-            #d.addErrback(self.errback)
+            d.addCallbacks(lambda _: wm.close(self), self.errback)
 
 
     def on_fullscreen_clicked(self, widget, *args):
