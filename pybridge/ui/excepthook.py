@@ -28,7 +28,7 @@ import traceback
 from StringIO import StringIO
 
 
-def excepthook(type, value, tb):
+def exceptdialog(errormessage):
     dialog = gtk.MessageDialog(parent=None, flags=gtk.DIALOG_MODAL,
                            buttons=gtk.BUTTONS_CLOSE, type=gtk.MESSAGE_WARNING)
     dialog.set_title(_('Program error'))
@@ -47,9 +47,7 @@ def excepthook(type, value, tb):
     frame.set_border_width(6)
     dialog.vbox.add(frame)
     textbuffer = textview.get_buffer()
-    trace = StringIO()
-    traceback.print_exception(type, value, tb, None, trace)
-    textbuffer.set_text(trace.getvalue())
+    textbuffer.set_text(errormessage)
     textview.set_size_request(320, 240)
 
     dialog.details = frame
@@ -60,4 +58,10 @@ def excepthook(type, value, tb):
 
     dialog.connect('response', dialog_response_cb)
     dialog.run()
+
+
+def excepthook(type, value, tb):
+    trace = StringIO()
+    traceback.print_exception(type, value, tb, None, trace)
+    exceptdialog(trace.getvalue())
 
