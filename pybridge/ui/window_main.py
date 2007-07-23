@@ -33,6 +33,7 @@ from manager import WindowManager, wm
 from dialog_connection import DialogConnection
 from dialog_newtable import DialogNewtable
 from dialog_preferences import DialogPreferences
+from dialog_userinfo import DialogUserInfo
 
 # TODO: import all Window*Table classes automatically.
 from pybridge.games.bridge.ui.window_bridgetable import WindowBridgeTable
@@ -46,7 +47,7 @@ class WindowMain(GladeWrapper):
     glade_name = 'window_main'
 
     tableview_icon = gtk.gdk.pixbuf_new_from_file_at_size(TABLE_ICON, 48, 48)
-    peopleview_icon = gtk.gdk.pixbuf_new_from_file_at_size(USER_ICON, 48, 48)
+    userview_icon = gtk.gdk.pixbuf_new_from_file_at_size(USER_ICON, 48, 48)
 
 
     def setUp(self):
@@ -56,17 +57,16 @@ class WindowMain(GladeWrapper):
         # Set up table model and icon view.
         self.tableview.set_text_column(0)
         self.tableview.set_pixbuf_column(1)
-        self.tableview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
-        self.tableview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
-        self.tableview.set_model(self.tableview_model)
+        model = gtk.ListStore(str, gtk.gdk.Pixbuf)
+        model.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        self.tableview.set_model(model)
 
-        # Set up people model and icon view.
-        # TODO: allow users to provide their own "avatar" icons.
-        self.peopleview.set_text_column(0)
-        self.peopleview.set_pixbuf_column(1)
-        self.peopleview_model = gtk.ListStore(str, gtk.gdk.Pixbuf)
-        self.peopleview_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
-        self.peopleview.set_model(self.peopleview_model)
+        # Set up user model and icon view.
+        self.userview.set_text_column(0)
+        self.userview.set_pixbuf_column(1)
+        model = gtk.ListStore(str, gtk.gdk.Pixbuf)
+        model.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        self.userview.set_model(model)
 
         # Attach event handler to listen for events.
         self.eventHandler = SimpleEventHandler(self)
@@ -87,6 +87,7 @@ class WindowMain(GladeWrapper):
 
     def quit(self):
         """Shut down gracefully."""
+        client.detach(self.eventHandler)
         wm.close(self)
         reactor.stop()
         gtk.main_quit()
@@ -94,6 +95,7 @@ class WindowMain(GladeWrapper):
 
     def errback(self, failure):
         print "Error: %s" % failure.getErrorMessage()
+        print failure.getTraceback()
 
 
 # Event handlers.
@@ -115,10 +117,11 @@ class WindowMain(GladeWrapper):
         self.menu_connect.set_property('visible', True)
         self.menu_disconnect.set_property('visible', False)
         self.menu_newtable.set_property('sensitive', False)
-        self.newtable.set_property('sensitive', False)
+        #self.newtable.set_property('sensitive', False)
 
-        self.tableview_model.clear()
-        self.peopleview_model.clear()
+        print self.tableview.get_model()
+        self.tableview.get_model().clear()
+        self.userview.get_model().clear()
 
 
     def event_connectionLost(self, host, port):
@@ -142,8 +145,8 @@ class WindowMain(GladeWrapper):
 
 
     def event_gotRoster(self, name, roster):
-        lookup = {'tables' : (self.tableview_model, self.tableview_icon),
-                  'users' : (self.peopleview_model, self.peopleview_icon)}
+        lookup = {'tables' : (self.tableview.get_model(), self.tableview_icon),
+                  'users' : (self.userview.get_model(), self.userview_icon)}
 
         try:
             model, icon = lookup[name]
@@ -167,7 +170,7 @@ class WindowMain(GladeWrapper):
         """Adds a table to the table listing."""
         # Only display table if it supported by client.
         if info['gamename'] in SUPPORTED_GAMES:
-            self.tableview_model.append([tableid, self.tableview_icon])
+            self.tableview.get_model().append([tableid, self.tableview_icon])
 
 
     def event_closeTable(self, tableid):
@@ -177,13 +180,14 @@ class WindowMain(GladeWrapper):
             if model.get_value(iter, 0) in user_data:
                 model.remove(iter)
                 return True
-        
-        self.tableview_model.foreach(func, tableid)
+
+        model = self.tableview.get_model()
+        model.foreach(func, tableid)
 
 
     def event_userLogin(self, username, info):
         """Adds a user to the people listing."""
-        self.peopleview_model.append([username, self.peopleview_icon])
+        self.userview.get_model().append([username, self.userview_icon])
 
 
     def event_userLogout(self, username):
@@ -193,8 +197,9 @@ class WindowMain(GladeWrapper):
             if model.get_value(iter, 0) in user_data:
                 model.remove(iter)
                 return True
-        
-        self.peopleview_model.foreach(func, username)
+
+        model = self.userview.get_model()
+        model.foreach(func, username)
 
 
 # Signal handlers.
@@ -205,8 +210,9 @@ class WindowMain(GladeWrapper):
 
 
     def on_tableview_item_activated(self, iconview, path, *args):
-        iter = self.tableview_model.get_iter(path)
-        tableid = self.tableview_model.get_value(iter, 0)
+        model = self.tableview.get_model()
+        iter = model.get_iter(path)
+        tableid = model.get_value(iter, 0)
         if tableid not in client.tables:
             d = client.joinTable(tableid)
             d.addErrback(self.errback)
@@ -216,32 +222,40 @@ class WindowMain(GladeWrapper):
     def on_tableview_selection_changed(self, iconview, *args):
         cursor = self.tableview.get_cursor()
         if cursor:  # Ensure cursor contains a path, not None.
-            iter = self.tableview_model.get_iter(cursor[0])  # Path.
-            tableid = self.tableview_model.get_value(iter, 0)
+            model = self.tableview.get_model()
+            iter = model.get_iter(cursor[0])  # Path.
+            tableid = model.get_value(iter, 0)
             # If client not joined to table, enable Join Table button.
             sensitive = tableid not in client.tables
             self.jointable.set_property('sensitive', sensitive)
-            # Display information about table.
-            self.frame_tableinfo.set_property('sensitive', True)
-            self.label_tableid.set_text(tableid)
-            self.label_tabletype.set_text(client.tableRoster[tableid]['gamename'])
         else:
-            self.frame_tableinfo.set_property('sensitive', False)
-            self.label_tableid.set_text('')
-            self.label_tabletype.set_text('')
+            self.jointable.set_property('sensitive', False)
 
 
-    def on_peopleview_selection_changed(self, iconview, *args):
-        cursor = self.peopleview.get_cursor()
+    def on_userview_item_activated(self, iconview, path, *args):
+        model = self.userview.get_model()
+        iter = model.get_iter(path)
+        username = model.get_value(iter, 0)
+
+        # Allow one DialogUserInfo instance for each user.
+        winid = (DialogUserInfo, username)
+
+        def gotUserInfo(info):
+            w = wm.open(DialogUserInfo, winid)
+            w.setUserInfo(username, info)
+
+        if not wm.get(winid):
+            # TODO: if user info in cache, do not request again from server.
+            d = client.getUserInformation(username)
+            d.addCallback(gotUserInfo)
+
+
+    def on_userview_selection_changed(self, iconview, *args):
+        cursor = self.userview.get_cursor()
         if cursor:  # Ensure cursor contains a path, not None.
-            iter = self.peopleview_model.get_iter(cursor[0])  # Path.
-            person = self.peopleview_model.get_value(iter, 0)
-            # Display information about person.
-            self.frame_personinfo.set_property('sensitive', True)
-            self.label_personname.set_text(person)
+            self.buttonbox_users.set_property('sensitive', True)
         else:
-            self.frame_personinfo.set_property('sensitive', False)
-            self.label_personname.set_text('')
+            self.buttonbox_users.set_property('sensitive', False)
 
 
     def on_window_main_delete_event(self, widget, *args):
@@ -256,6 +270,11 @@ class WindowMain(GladeWrapper):
     def on_jointable_clicked(self, widget, *args):
         path = self.tableview.get_cursor()[0]
         self.on_tableview_item_activated(self.tableview, path)
+
+
+    def on_userinfo_clicked(self, widget, *args):
+        path = self.userview.get_cursor()[0]
+        self.on_userview_item_activated(self.userview, path)
 
 
     def on_connect_activate(self, widget, *args):

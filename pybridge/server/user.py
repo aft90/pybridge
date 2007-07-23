@@ -75,7 +75,7 @@ class RegisteredUser(pb.Avatar):
     def perspective_getUserInformation(self, username=None):
         """Returns public information for user with specified username.
         
-        If username is unspecified, returns user's own profile.
+        If username is unspecified, returns user's own public information.
         """
         if username is None:
             username = self.name
@@ -85,8 +85,13 @@ class RegisteredUser(pb.Avatar):
         except IndexError:
             raise DeniedRequest, "Specified user does not exist"
 
-        return {'realname': user.realname, 'email': user.email,
-                'profile': user.profile}
+        info = {}
+        for field in 'realname', 'email', 'country', 'profile':
+            value = getattr(user, field, None)
+            # Do not send unspecified (null) values.
+            if value is not None:
+                info[field] = value
+        return info
 
 
 #    def perspective_setProfile(self, **kwargs):
