@@ -23,6 +23,9 @@ from pybridge.network.client import client
 from pybridge.games import SUPPORTED_GAMES
 from manager import wm
 
+# TODO: import all Window*Table classes automatically.
+from pybridge.games.bridge.ui.window_bridgetable import WindowBridgeTable
+
 
 class DialogNewtable(GladeWrapper):
 
@@ -45,6 +48,9 @@ class DialogNewtable(GladeWrapper):
 
     def createSuccess(self, table):
         wm.close(self)
+        # TODO: select correct table window class.
+        window = wm.open(WindowBridgeTable, id=table.id)
+        window.setTable(table)
 
 
     def createFailure(self, reason):
