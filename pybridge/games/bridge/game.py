@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not write to the Free Software
-# Foundation Inc. 51 Franklin Street Fifth Floor Boston MA 02110-1301 USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 from twisted.spread import pb
@@ -26,7 +26,7 @@ from pybridge.network.error import GameError
 from auction import Auction
 from board import Board
 from play import Trick, TrickPlay
-from scoring import scoreDuplicate
+from result import DuplicateResult, RubberResult
 
 from call import Bid, Pass, Double, Redouble
 from card import Card
@@ -47,13 +47,13 @@ class Bridge(object):
     implements(ICardGame, ISubject)
 
 
-    # Valid positions.
+    # Valid positions (for Table).
     positions = Direction
 
-    # Mapping from Strain symbols (in bidding) to Suit symbols (in play).
-    trumpMap = {Strain.Club: Suit.Club, Strain.Diamond: Suit.Diamond,
-                Strain.Heart: Suit.Heart, Strain.Spade: Suit.Spade,
-                Strain.NoTrump: None}
+    # Mapping from Strain symbols (in auction) to Suit symbols (in play).
+    __trumpMap = {Strain.Club: Suit.Club, Strain.Diamond: Suit.Diamond,
+                  Strain.Heart: Suit.Heart, Strain.Spade: Suit.Spade,
+                  Strain.NoTrump: None}
 
 
     def __init__(self):
@@ -239,7 +239,7 @@ class Bridge(object):
 
         if self.auction.isComplete() and not self.auction.isPassedOut():
             declarer = self.auction.contract.declarer
-            trumpSuit = self.trumpMap[self.contract.bid.strain]
+            trumpSuit = self.__trumpMap[self.contract.bid.strain]
             self.play = TrickPlay(declarer, trumpSuit)
 
         self.notify('makeCall', call=call, position=position)
@@ -374,19 +374,9 @@ class Bridge(object):
         if self.auction.isPassedOut():
             return 0  # A passed out deal does not score.
 
-        declarer = self.contract.declarer
-        dummy = Direction[(declarer.index + 2) % 4]
-
-        if declarer in (Direction.North, Direction.South):
-            vulnerable = (self.board['vuln'] in (Vulnerable.NorthSouth, Vulnerable.All))
-        else:  # East or West
-            vulnerable = (self.board['vuln'] in (Vulnerable.EastWest, Vulnerable.All))
-
-        declarerWon, defenceWon = self.play.wonTrickCount()
-
-        result = {'contract': self.contract, 'tricksMade': declarerWon,
-                  'vulnerable': vulnerable}
-        return scoreDuplicate(result)
+        tricksMade, _ = self.play.wonTrickCount()
+        result = DuplicateResult(self.contract, self.board['vuln'], tricksMade)
+        return result.score
 
 
 
