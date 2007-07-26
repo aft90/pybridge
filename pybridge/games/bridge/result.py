@@ -30,14 +30,17 @@ class GameResult(object):
                      Vulnerable.All: tuple(Direction)}
 
 
-    def __init__(self, contract, vuln, tricksMade=None):
+    def __init__(self, board, contract, tricksMade=None):
         """
+        @type board: Board
         @type contract: Contract
-        @type vuln: Vulnerable
         @type tricksMade: int or None
         """
+        self.board = board
         self.contract = contract
         self.tricksMade = tricksMade
+
+        vuln = self.board.get('vuln', Vulnerable.None)
         self.isVulnerable = self.contract.declarer in self.__vulnMapping[vuln]
 
         self.score = self._getScore()

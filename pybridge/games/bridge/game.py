@@ -63,12 +63,14 @@ class Bridge(object):
         self.auction = None
         self.play = None
 
-        self.boardQueue = []  # Boards for successive games.
+        self.boardQueue = []  # Boards for successive rounds.
+        self.results = []  # Results of previous rounds.
         self.visibleHands = {}  # A subset of deal, containing revealed hands.
         self.players = {}  # One-to-one mapping from BridgePlayer to Direction.
 
     contract = property(lambda self: self.auction and self.auction.contract or None)
     trumpSuit = property(lambda self: self.play and self.play.trumpSuit or None)
+    result = property(lambda self: not self.inProgress() and self.results[-1])
 
 
 # Implementation of ICardGame.
@@ -81,10 +83,12 @@ class Bridge(object):
         if board:  # Use specified board.
             self.board = board
         elif self.board:  # Advance to next deal.
-            self.board.nextDeal(result=self)  # TODO: proper GameResult object.
+            tricksMade, _ = self.play.wonTrickCount()
+            result = DuplicateResult(self.board, self.contract, tricksMade)
+            self.board = self.board.next(result)
         else:  # Create a board.
-            self.board = Board()
-            self.board.nextDeal()
+            self.board = Board.first()
+
         self.auction = Auction(self.board['dealer'])  # Start auction.
         self.play = None
         self.visibleHands.clear()
@@ -242,10 +246,14 @@ class Bridge(object):
             trumpSuit = self.__trumpMap[self.contract.bid.strain]
             self.play = TrickPlay(declarer, trumpSuit)
 
+        # If bidding is passed out, game is complete.
+        if not self.inProgress() and self.board['deal']:
+            self.results.append(DuplicateResult(self.board, contract=None))
+
         self.notify('makeCall', call=call, position=position)
 
-        # If bidding is passed out, reveal all hands.
         if not self.inProgress() and self.board['deal']:
+            # Reveal all unrevealed hands.
             for position in Direction:
                 hand = self.board['deal'].get(position)
                 if hand and position not in self.visibleHands:
@@ -302,7 +310,6 @@ class Bridge(object):
                 raise GameError, "Card cannot be played from hand"
 
         self.play.playCard(card, playfrom)
-        self.notify('playCard', card=card, position=position)
 
         # Dummy's hand is revealed when the first card of first trick is played.
         if len(self.play[0]) == 1:
@@ -310,12 +317,21 @@ class Bridge(object):
             if dummyhand:  # Reveal hand only if known.
                 self.revealHand(dummyhand, self.play.dummy)
 
-        # If play is complete, reveal all hands.
+        # If play is complete, game is complete.
         if not self.inProgress() and self.board['deal']:
+            tricksMade, _ = self.play.wonTrickCount()
+            result = DuplicateResult(self.board, self.contract, tricksMade)
+            self.results.append(result)
+
+        self.notify('playCard', card=card, position=position)
+
+        if not self.inProgress() and self.board['deal']:
+            # Reveal all unrevealed hands.
             for position in Direction:
                 hand = self.board['deal'].get(position)
                 if hand and position not in self.visibleHands:
                     self.revealHand(hand, position)
+
  
 
     def revealHand(self, hand, position):
@@ -361,22 +377,6 @@ class Bridge(object):
                 return self.auction.whoseTurn()
         else:  # Not in game.
             raise GameError, "No game in progress"
-
-
-    def getScore(self):
-        """Returns the integer score value for declarer/dummy if:
-
-        - auction has been passed out, with no bids made.
-        - trick play is complete.
-        """
-        if self.inProgress() or self.auction is None:
-            raise GameError, "Game not complete"
-        if self.auction.isPassedOut():
-            return 0  # A passed out deal does not score.
-
-        tricksMade, _ = self.play.wonTrickCount()
-        result = DuplicateResult(self.contract, self.board['vuln'], tricksMade)
-        return result.score
 
 
 

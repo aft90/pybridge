@@ -18,7 +18,9 @@
 
 import random
 import time
+
 from deal import Deal
+from result import DuplicateResult, RubberResult
 from symbols import Direction, Vulnerable
 
 
@@ -43,32 +45,68 @@ class Board(dict):
     @type vuln: Vulnerable
     """
 
+    __directionToVuln = {Direction.North: Vulnerable.NorthSouth,
+                         Direction.East: Vulnerable.EastWest,
+                         Direction.South: Vulnerable.NorthSouth,
+                         Direction.West: Vulnerable.EastWest}
 
-    def nextDeal(self, result=None):
-        """Generates and stores a random deal for the board.
+
+    @classmethod
+    def first(cls, deal=None):
+        """Build an initial board.
         
-        If result of a previous game is provided, the dealer and vulnerability
-        are rotated according to the rules of bridge.
-        
-        @param result:
-        @type result:
+        @deal: if provided, the deal to be wrapped by board.
+               Otherwise, a randomly-generated deal is wrapped.
         """
-        self['deal'] = Deal.fromRandom()
+        board = cls()
+        board['deal'] = deal or Deal.fromRandom()
+        board['num'] = 1
+        board['time'] = tuple(time.localtime())
 
-        self['num'] = self.get('num', 0) + 1
-        self['time'] = tuple(time.localtime())
+        board['dealer'] = Direction.North  # Arbitary.
+        board['vuln'] = Vulnerable.None
 
-        if self.get('dealer'):  # Rotate dealer.
-            self['dealer'] = Direction[(self['dealer'].index + 1) % 4]
-        else:  # Select any player as the dealer.
-            self['dealer'] = random.choice(Direction)
+        return board
 
-        if result:
-            # TODO: proper GameResult object.
-            # TODO: consider vulnerability rules for duplicate, rubber bridge.
-            #if result.bidding.isPassedOut():
-            #    self['vuln'] = result.board['vuln']
-            #elif result.getScore() >= 0 
-            self['vuln'] = Vulnerable[(result.board['vuln'].index + 1) % 4]
-        else:
-            self['vuln'] = Vulnerable.None  # The default value.
+
+    def next(self, result, deal=None):
+        """Given the result for this board, builds the next board.
+        
+        The dealer and vulnerability of the next board are calculated
+        from the result provided.
+        
+        @param result: the result of the this board.
+        @param deal: if provided, the deal to be wrapped by next board.
+                     Otherwise, a randomly-generated deal is wrapped.
+        """
+        assert result.board == self
+
+        board = Board(self.copy())  # copy() returns a dict.
+        board['deal'] = deal or Deal.fromRandom()
+        board['num'] = board.get('num', 0) + 1
+        board['time'] = tuple(time.localtime())
+
+        # Dealer rotates clockwise.
+        board['dealer'] = Direction[(board['dealer'].index + 1) % 4]
+
+        if isinstance(result, DuplicateResult):
+            # See http://www.d21acbl.com/References/Laws/node5.html#law2
+            i = (board['num'] - 1) % 16
+            # Map from duplicate board index range 1..16 to vulnerability.
+            board['vuln'] = Vulnerable[(i%4 + i/4)%4]
+
+        elif isinstance(result, RubberResult):
+            # Determine vulnerability of board from result of previous board.
+            above, below = result.score
+            if below >= 100:  # Game contract successful.
+                pair = __directionToVuln[result.contract.declarer]
+                # Vulnerability transitions.
+                if board['vuln'] == Vulnerable.None:
+                    board['vuln'] = pair
+                elif board['vuln'] in (pair, Vulnerable.All):  # Rubber won.
+                    board['vuln'] = Vulnerable.None
+                else:  # Pair not vulnerable, other pair are vulnerable.
+                    board['vuln'] = Vulnerable.All
+
+        return board
+

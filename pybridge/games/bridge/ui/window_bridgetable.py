@@ -103,7 +103,7 @@ class ScoreView(gtk.TreeView):
 
     def add_score(self, game):
         declarerWon, defenceWon = game.play.wonTrickCount()
-        score = game.getScore()
+        score = game.result.score
 
         textContract = render_contract(game.contract)
         textMade = str(declarerWon)
@@ -339,13 +339,13 @@ class WindowBridgeTable(WindowGameTable):
         if self.table.game.contract:
             self.scoreview.add_score(self.table.game)
 
-            declarerWon, defenceWon = self.table.game.play.wonTrickCount()
-            required = self.table.game.contract.bid.level.index + 7
-            offset = declarerWon - required
-            score = self.table.game.getScore()
+            tricksMade = self.table.game.result.tricksMade
+            tricksRequired = self.table.game.contract.bid.level.index + 7
+            offset = tricksMade - tricksRequired
+            score = self.table.game.result.score
 
             fields = {'contract': render_contract(self.table.game.contract),
-                      'offset': abs(offset) }
+                      'offset': abs(offset)}
             if offset > 0:
                 if offset == 1:
                     resultText = _('Contract %(contract)s made by 1 trick.') % fields
