@@ -40,8 +40,9 @@ class GameResult(object):
         self.contract = contract
         self.tricksMade = tricksMade
 
-        vuln = self.board.get('vuln', Vulnerable.None)
-        self.isVulnerable = self.contract.declarer in self.__vulnMapping[vuln]
+        if self.contract:
+            vuln = self.board.get('vuln', Vulnerable.None)
+            self.isVulnerable = self.contract.declarer in self.__vulnMapping[vuln]
 
         self.score = self._getScore()
 
