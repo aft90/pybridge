@@ -45,11 +45,6 @@ class Board(dict):
     @type vuln: Vulnerable
     """
 
-    __directionToVuln = {Direction.North: Vulnerable.NorthSouth,
-                         Direction.East: Vulnerable.EastWest,
-                         Direction.South: Vulnerable.NorthSouth,
-                         Direction.West: Vulnerable.EastWest}
-
 
     @classmethod
     def first(cls, deal=None):
@@ -69,17 +64,20 @@ class Board(dict):
         return board
 
 
-    def next(self, result, deal=None):
-        """Given the result for this board, builds the next board.
+    def next(self, results, deal=None):
+        """Given the results for this board (and all previous boards),
+        builds the next board.
         
         The dealer and vulnerability of the next board are calculated
-        from the result provided.
+        from the results provided.
         
-        @param result: the result of the this board.
+        @param result: a list of all previous results, ordered from earliest
+                       to most recent, ie. this board's result is last in list.
         @param deal: if provided, the deal to be wrapped by next board.
                      Otherwise, a randomly-generated deal is wrapped.
         """
-        assert result.board == self
+        boardresult = results[-1]
+        assert boardresult.board == self
 
         board = Board(self.copy())  # copy() returns a dict.
         board['deal'] = deal or Deal.fromRandom()
@@ -89,24 +87,33 @@ class Board(dict):
         # Dealer rotates clockwise.
         board['dealer'] = Direction[(board['dealer'].index + 1) % 4]
 
-        if isinstance(result, DuplicateResult):
+        if isinstance(boardresult, DuplicateResult):
             # See http://www.d21acbl.com/References/Laws/node5.html#law2
             i = (board['num'] - 1) % 16
             # Map from duplicate board index range 1..16 to vulnerability.
             board['vuln'] = Vulnerable[(i%4 + i/4)%4]
 
-        elif isinstance(result, RubberResult):
-            # Determine vulnerability of board from result of previous board.
-            above, below = result.score
-            if below >= 100:  # Game contract successful.
-                pair = __directionToVuln[result.contract.declarer]
-                # Vulnerability transitions.
-                if board['vuln'] == Vulnerable.None:
-                    board['vuln'] = pair
-                elif board['vuln'] in (pair, Vulnerable.All):  # Rubber won.
-                    board['vuln'] = Vulnerable.None
-                else:  # Pair not vulnerable, other pair are vulnerable.
-                    board['vuln'] = Vulnerable.All
+        elif isinstance(boardresult, RubberResult):
+            belowNS, belowEW = 0, 0  # Running totals of below-the-line scores.
+            board['vuln'] = Vulnerable.None
+            # Only consider rounds which score below-the-line.
+            for result in (r for r in results if r.score.below > 0):
+                if result.contract.declarer in (Direction.North, Direction.South):
+                    belowNS += result.score.below
+                    pair = Vulnerable.NorthSouth
+                else:
+                    belowEW += result.score.below
+                    pair = Vulnerable.EastWest
+                # If either score exceeds 100, pair has made game.
+                if belowNS >= 100 or belowEW >= 100:
+                    belowNS, belowEW = 0, 0  # Reset totals for next game.
+                    # Vulnerability transitions.
+                    if board['vuln'] == Vulnerable.None:
+                        board['vuln'] = pair
+                    elif board['vuln'] in (pair, Vulnerable.All):
+                        board['vuln'] = Vulnerable.None
+                    else:  # Pair was not vulnerable, but other pair was.
+                        board['vuln'] = Vulnerable.All
 
         return board
 

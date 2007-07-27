@@ -82,10 +82,8 @@ class Bridge(object):
 
         if board:  # Use specified board.
             self.board = board
-        elif self.board:  # Advance to next deal.
-            tricksMade, _ = self.play.wonTrickCount()
-            result = DuplicateResult(self.board, self.contract, tricksMade)
-            self.board = self.board.next(result)
+        elif self.board:  # Advance to next round.
+            self.board = self.board.next(self.results)
         else:  # Create a board.
             self.board = Board.first()
 
