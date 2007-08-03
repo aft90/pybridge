@@ -24,10 +24,10 @@ class GameResult(object):
 
     _getScore = NotImplemented  # Expected to be implemented by subclasses.
 
-    __vulnMapping = {Vulnerable.None: (),
-                     Vulnerable.NorthSouth: (Direction.North, Direction.South),
-                     Vulnerable.EastWest: (Direction.East, Direction.West),
-                     Vulnerable.All: tuple(Direction)}
+    __vulnMap = {Vulnerable.None: (),
+                 Vulnerable.NorthSouth: (Direction.North, Direction.South),
+                 Vulnerable.EastWest: (Direction.East, Direction.West),
+                 Vulnerable.All: tuple(Direction)}
 
 
     def __init__(self, board, contract, tricksMade=None):
@@ -42,7 +42,7 @@ class GameResult(object):
 
         if self.contract:
             vuln = self.board.get('vuln', Vulnerable.None)
-            self.isVulnerable = self.contract.declarer in self.__vulnMapping[vuln]
+            self.isVulnerable = self.contract.declarer in self.__vulnMap[vuln]
 
         self.score = self._getScore()
 
@@ -217,4 +217,56 @@ class RubberResult(GameResult):
                 elif key == 'odd':
                     below += value
         return above, below
+
+
+
+
+class Rubber(list):
+    """A rubber set, in which pairs compete to make two consecutive games.
+    
+    A game is made by accumulation of 100+ points from below-the-line scores
+    without interruption from an opponent's game.
+    """
+
+    games = property(lambda self: self._getGames())
+    winner = property(lambda self: self._getWinner())
+
+
+    def _getGames(self):
+        """Returns, for each pair, a list of completed 'games' won by the pair
+        in this rubber.
+        
+        A game is represented as the list of consecutive results in this rubber,
+        with below-the-line scores that count towards the game.
+        """
+        gamesNS, gamesEW = [], []
+
+        game = []
+        belowNS, belowEW = 0, 0  # Cumulative totals for results.
+        for result in self:
+            game.append(result)
+
+            if result.contract.declarer in (Direction.North, Direction.South):
+                belowNS += result.score[1]
+                if belowNS >= 100:
+                    gamesNS.append(game)
+            else:
+                belowEW += result.score[1]
+                if belowEW >= 100:
+                    gamesEW.append(game)
+
+            # If either accumulated total exceeds 100, proceed to next game.
+            if belowNS >= 100 or belowEW >= 100:
+                game = []
+                belowNS, belowEW = 0, 0
+
+        return {(Direction.North, Direction.South): gamesNS,
+                (Direction.East, Direction.West): gamesEW}
+
+
+    def _getWinner(self):
+        """The rubber is won by the pair which have completed two games."""
+        for pair, games in self.games.items():
+            if len(games) >= 2:
+                return pair
 

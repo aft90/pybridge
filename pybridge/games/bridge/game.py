@@ -25,8 +25,8 @@ from pybridge.network.error import GameError
 
 from auction import Auction
 from board import Board
-from play import Trick, TrickPlay
-from result import DuplicateResult, RubberResult
+from play import TrickPlay
+from result import DuplicateResult, Rubber, RubberResult
 
 from call import Bid, Pass, Double, Redouble
 from card import Card
@@ -56,7 +56,7 @@ class Bridge(object):
                   Strain.NoTrump: None}
 
 
-    def __init__(self):
+    def __init__(self, **options):
         self.listeners = []
 
         self.board = None
@@ -67,6 +67,11 @@ class Bridge(object):
         self.results = []  # Results of previous rounds.
         self.visibleHands = {}  # A subset of deal, containing revealed hands.
         self.players = {}  # One-to-one mapping from BridgePlayer to Direction.
+
+        self.options = options
+        if self.options.get('RubberScoring'):  # Use rubber scoring?
+            self.rubbers = []  # Group results into Rubber objects.
+
 
     contract = property(lambda self: self.auction and self.auction.contract or None)
     trumpSuit = property(lambda self: self.play and self.play.trumpSuit or None)
@@ -83,9 +88,26 @@ class Bridge(object):
         if board:  # Use specified board.
             self.board = board
         elif self.board:  # Advance to next round.
-            self.board = self.board.next(self.results)
-        else:  # Create a board.
+            self.board = self.board.next()
+        else:  # Create an initial board.
             self.board = Board.first()
+
+        if self.options.get('RubberScoring'):
+            # Vulnerability determined by number of games won by each pair.
+            if len(self.rubbers) == 0 or self.rubbers[-1].winner:
+                self.board['vuln'] = Vulnerable.None  # First round, new rubber.
+            else:
+                games = self.rubbers[-1].games
+                if len(games[(Direction.North, Direction.South)]) > 0:
+                    if len(games[(Direction.East, Direction.West)]) > 0:
+                        self.board['vuln'] = Vulnerable.All
+                    else:
+                        self.board['vuln'] = Vulnerable.NorthSouth
+                else:
+                    if len(games[(Direction.East, Direction.West)]) > 0:
+                        self.board['vuln'] = Vulnerable.EastWest
+                    else:
+                        self.board['vuln'] = Vulnerable.None
 
         self.auction = Auction(self.board['dealer'])  # Start auction.
         self.play = None
@@ -246,7 +268,7 @@ class Bridge(object):
 
         # If bidding is passed out, game is complete.
         if not self.inProgress() and self.board['deal']:
-            self.results.append(DuplicateResult(self.board, contract=None))
+            self._addResult(self.board, contract=None)
 
         self.notify('makeCall', call=call, position=position)
 
@@ -318,8 +340,7 @@ class Bridge(object):
         # If play is complete, game is complete.
         if not self.inProgress() and self.board['deal']:
             tricksMade, _ = self.play.wonTrickCount()
-            result = DuplicateResult(self.board, self.contract, tricksMade)
-            self.results.append(result)
+            self._addResult(self.board, self.contract, tricksMade)
 
         self.notify('playCard', card=card, position=position)
 
@@ -329,8 +350,21 @@ class Bridge(object):
                 hand = self.board['deal'].get(position)
                 if hand and position not in self.visibleHands:
                     self.revealHand(hand, position)
-
  
+
+    def _addResult(self, board, contract=None, tricksMade=None):
+        if self.options.get('RubberScoring'):
+            result = RubberResult(board, contract, tricksMade)
+            if len(self.rubbers) > 0 and self.rubbers[-1].winner is None:
+                rubber = self.rubbers[-1]
+            else:   # Instantiate new rubber.
+                rubber = Rubber()
+                self.rubbers.append(rubber)
+            rubber.append(result)
+        else:
+            result = DuplicateResult(board, contract, tricksMade)
+        self.results.append(result)
+
 
     def revealHand(self, hand, position):
         """Reveal hand to all observers.
