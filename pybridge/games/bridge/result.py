@@ -233,40 +233,41 @@ class Rubber(list):
 
 
     def _getGames(self):
-        """Returns, for each pair, a list of completed 'games' won by the pair
-        in this rubber.
+        """Returns a list of completed (ie. won) 'games' in this rubber, in the
+        order of their completion.
         
-        A game is represented as the list of consecutive results in this rubber,
-        with below-the-line scores that count towards the game.
+        A game is represented as a list of consecutive results from this rubber,
+        coupled with the identifier of the scoring pair.
         """
-        gamesNS, gamesEW = [], []
+        games = []
 
-        game = []
-        belowNS, belowEW = 0, 0  # Cumulative totals for results.
+        thisgame = []
+        belowNS, belowEW = 0, 0  # Cumulative totals for results in this game.
+
         for result in self:
-            game.append(result)
-
+            thisgame.append(result)
             if result.contract.declarer in (Direction.North, Direction.South):
                 belowNS += result.score[1]
                 if belowNS >= 100:
-                    gamesNS.append(game)
+                    games.append((thisgame, (Direction.North, Direction.South)))
             else:
                 belowEW += result.score[1]
                 if belowEW >= 100:
-                    gamesEW.append(game)
+                    games.append((thisgame, (Direction.East, Direction.West)))
 
-            # If either accumulated total exceeds 100, proceed to next game.
-            if belowNS >= 100 or belowEW >= 100:
-                game = []
-                belowNS, belowEW = 0, 0
+            # If either total for this game exceeds 100, proceed to next game.
+            if belowNS >= 100 or belowEW >= 100:  
+                thisgame = []
+                belowNS, belowEW = 0, 0  # Reset accumulators.
 
-        return {(Direction.North, Direction.South): gamesNS,
-                (Direction.East, Direction.West): gamesEW}
+        return games
 
 
     def _getWinner(self):
         """The rubber is won by the pair which have completed two games."""
-        for pair, games in self.games.items():
-            if len(games) >= 2:
+        pairs = [pair for game, pair in self.games]
+
+        for pair in ((Direction.North, Direction.South), (Direction.East, Direction.West)):
+            if pairs.count(pair) >= 2:
                 return pair
 

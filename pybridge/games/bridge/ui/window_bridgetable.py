@@ -29,6 +29,7 @@ from pybridge.ui.vocabulary import *
 
 from pybridge.ui.window_gametable import WindowGameTable
 from window_bidbox import WindowBidbox
+from window_scoresheet import ScoreSheet
 
 
 class BiddingView(gtk.TreeView):
@@ -79,41 +80,6 @@ class TrickArea(CardArea):
 
     trick_xy = property(lambda s: {s.TOP: (0.5, 0.2), s.BOTTOM: (0.5, 0.8),
                                    s.LEFT: (0.2, 0.5), s.RIGHT: (0.8, 0.5)})
-
-
-
-
-class ScoreView(gtk.TreeView):
-    """A display of contracts bid, their results and their scores."""
-
-
-    def __init__(self):
-        gtk.TreeView.__init__(self)
-        self.set_rules_hint(True)
-
-        self.store = gtk.ListStore(str, str, str, str)
-        self.set_model(self.store)
-        self.clear = self.store.clear
-        renderer = gtk.CellRendererText()
-
-        for index, title in enumerate([_('Contract'), _('Made'), _('N/S'), _('E/W')]):
-            column = gtk.TreeViewColumn(title, renderer, markup=index)
-            self.append_column(column)
-
-
-    def add_score(self, game):
-        declarerWon, defenceWon = game.play.wonTrickCount()
-        score = game.result.score
-
-        textContract = render_contract(game.contract)
-        textMade = str(declarerWon)
-        if game.contract.declarer in (Direction.North, Direction.South) and score > 0 \
-        or game.contract.declarer in (Direction.East, Direction.West) and score < 0:
-            textNS, textEW = str(abs(score)), ''
-        else:
-            textNS, textEW = '', str(abs(score))
-
-        self.store.prepend([textContract, textMade, textNS, textEW]) 
 
 
 
@@ -242,7 +208,7 @@ class WindowBridgeTable(WindowGameTable):
         exp = gtk.Expander(_('Bidding'))
         exp.set_expanded(True)
         exp.add(frame)
-        self.sidebar.pack_start(exp)
+        self.sidebar.pack_start(exp, expand=True)
 
         self.trickarea = TrickArea(positions=Direction)
         self.trickarea.set_size_request(-1, 180)
@@ -253,21 +219,16 @@ class WindowBridgeTable(WindowGameTable):
         exp.add(frame)
         self.sidebar.pack_start(exp, expand=False)
 
-        self.scoreview = ScoreView()
+        self.scoresheet = ScoreSheet()
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.add(self.scoreview)
+        sw.add(self.scoresheet)
         frame = gtk.Frame()
         frame.add(sw)
         exp = gtk.Expander(_('Score Sheet'))
         exp.set_expanded(False)
         exp.add(frame)
         self.sidebar.pack_start(exp, expand=False)
-
-
-    def errback(self, failure):
-        print "Error: %s" % failure.getErrorMessage()
-        print failure.getBriefTraceback()
 
 
     def setTable(self, table):
@@ -337,12 +298,11 @@ class WindowBridgeTable(WindowGameTable):
 
         # Determine and display score in dialog box and score sheet.
         if self.table.game.contract:
-            self.scoreview.add_score(self.table.game)
+            self.scoresheet.add_result(self.table.game.result)
 
             tricksMade = self.table.game.result.tricksMade
             tricksRequired = self.table.game.contract.bid.level.index + 7
             offset = tricksMade - tricksRequired
-            score = self.table.game.result.score
 
             fields = {'contract': render_contract(self.table.game.contract),
                       'offset': abs(offset)}
@@ -358,6 +318,10 @@ class WindowBridgeTable(WindowGameTable):
                     resultText = _('Contract %(contract)s failed by %(offset)s tricks.') % fields
             else:
                 resultText = _('Contract %(contract)s made exactly.') % fields
+
+            score = self.table.game.result.score
+            if isinstance(score, tuple):  # Rubber scoring.
+                score = sum(score)  # TODO: display above, below separately.
 
             pair = (score >= 0 and _('declarer')) or _('defence')
             scoreText = _('Score %(points)s points for %(pair)s.') % {'points': abs(score), 'pair': pair}

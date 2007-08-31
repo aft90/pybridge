@@ -97,14 +97,14 @@ class Bridge(object):
             if len(self.rubbers) == 0 or self.rubbers[-1].winner:
                 self.board['vuln'] = Vulnerable.None  # First round, new rubber.
             else:
-                games = self.rubbers[-1].games
-                if len(games[(Direction.North, Direction.South)]) > 0:
-                    if len(games[(Direction.East, Direction.West)]) > 0:
+                pairs = [pair for game, pair in self.rubbers[-1].games]
+                if pairs.count((Direction.North, Direction.South)) > 0:
+                    if pairs.count((Direction.East, Direction.West)) > 0:
                         self.board['vuln'] = Vulnerable.All
                     else:
                         self.board['vuln'] = Vulnerable.NorthSouth
                 else:
-                    if len(games[(Direction.East, Direction.West)]) > 0:
+                    if pairs.count((Direction.East, Direction.West)) > 0:
                         self.board['vuln'] = Vulnerable.EastWest
                     else:
                         self.board['vuln'] = Vulnerable.None
