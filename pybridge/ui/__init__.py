@@ -18,17 +18,22 @@
 
 from twisted.internet import gtk2reactor
 gtk2reactor.install()
-import gtk
 
-from twisted.internet import reactor
 
+# Default settings based on the user's environment.
 import locale
-import gettext
 locale.setlocale(locale.LC_ALL, '')
+
+import gettext, gtk.glade as glade
 import pybridge.environment as env
-gettext.bindtextdomain('pybridge', env.get_localedir())
-gettext.textdomain('pybridge')
-gettext.install('pybridge')
+
+for module in gettext, glade:
+    module.bindtextdomain('pybridge', env.get_localedir())
+    module.textdomain('pybridge')
+
+# Register the gettext function for the whole interpreter as "_"
+gettext.install('pybridge', env.get_localedir())
+
 
 import config
 config.load()
@@ -47,7 +52,9 @@ def run():
     wm.open(WindowMain)
 
     # Start the event loop.
+    from twisted.internet import reactor
     reactor.run()
+    import gtk
     gtk.main()
 
     config.save()  # Save config at exit.
