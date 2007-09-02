@@ -1,0 +1,658 @@
+# French translation for pybridge
+# Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+# This file is distributed under the same license as the pybridge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: pybridge\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2007-08-26 18:09+0100\n"
+"PO-Revision-Date: 2007-09-02 13:13+0000\n"
+"Last-Translator: Aldo Reset <aldo@placenet.org>\n"
+"Language-Team: French <fr@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Rosetta-Export-Date: 2007-09-02 14:18:13+0000\n"
+
+#: ../../glade/pybridge.glade.h:1
+msgid "<b>Server Address</b>"
+msgstr "<b>Adresse du Serveur</b>"
+
+#: ../../glade/pybridge.glade.h:2
+msgid "<b>User Account</b>"
+msgstr "<b>Compte Joueur</b>"
+
+#: ../../glade/pybridge.glade.h:3
+msgid ""
+"<i>Changes to these settings are effective after restarting PyBridge.</i>"
+msgstr ""
+"<i>Les modifications seront effectives au redemmarage de PyBridge.</i>"
+
+#: ../../glade/pybridge.glade.h:4
+msgid "Background:"
+msgstr "Arrire Plan"
+
+#: ../../glade/pybridge.glade.h:5
+msgid "C"
+msgstr "C"
+
+#: ../../glade/pybridge.glade.h:6
+msgid "Card Style:"
+msgstr "Modle Carte"
+
+#: ../../glade/pybridge.glade.h:7
+msgid "Connect to Server"
+msgstr "Connexion au Serveur"
+
+#: ../../glade/pybridge.glade.h:8
+msgid "Create a New Table"
+msgstr "Crer une nouvelle Table"
+
+#: ../../glade/pybridge.glade.h:9
+msgid "D"
+msgstr "D"
+
+#: ../../glade/pybridge.glade.h:10
+msgid "Display suits as symbols?"
+msgstr "Reprsenter les couleurs par des symboles ?"
+
+#: ../../glade/pybridge.glade.h:11
+msgid "Game Display"
+msgstr "Affichage du Jeu"
+
+#: ../../glade/pybridge.glade.h:12
+msgid "Game at Table:"
+msgstr "Jeu  la table:"
+
+#: ../../glade/pybridge.glade.h:13
+msgid "H"
+msgstr "H"
+
+#: ../../glade/pybridge.glade.h:14
+msgid "Host Name:"
+msgstr "Nom du Poste"
+
+#: ../../glade/pybridge.glade.h:15
+msgid "Open Tables"
+msgstr "Tables Ouvertes"
+
+#: ../../glade/pybridge.glade.h:16
+msgid "Password:"
+msgstr "Mot de Passe"
+
+#: ../../glade/pybridge.glade.h:17
+msgid "Port:"
+msgstr "Port:"
+
+#: ../../glade/pybridge.glade.h:18
+msgid "PyBridge"
+msgstr "PyBridge"
+
+#: ../../glade/pybridge.glade.h:19
+msgid "PyBridge Preferences"
+msgstr "PyBridge Prfrences"
+
+#: ../../glade/pybridge.glade.h:20
+msgid "PyBridge _Home Page"
+msgstr "PyBridge _Page d'accueil"
+
+#: ../../glade/pybridge.glade.h:21
+msgid "Register as New User"
+msgstr "Inscrire Nouveau Joueur"
+
+#: ../../glade/pybridge.glade.h:22 ../../pybridge/ui/vocabulary.py:53
+msgid "S"
+msgstr "S"
+
+#: ../../glade/pybridge.glade.h:23
+msgid "Save Password"
+msgstr "Sauvegarder Mot de Passe"
+
+#: ../../glade/pybridge.glade.h:24
+msgid "Suit Colours:"
+msgstr ""
+
+#: ../../glade/pybridge.glade.h:25
+msgid "Table Name:"
+msgstr "Nom de la Table"
+
+#: ../../glade/pybridge.glade.h:26
+msgid "User Information"
+msgstr "Information Joueur"
+
+#: ../../glade/pybridge.glade.h:27
+msgid "User Name:"
+msgstr "Nom du Joueur"
+
+#: ../../glade/pybridge.glade.h:28
+msgid "Users Online"
+msgstr "Joueurs en Ligne"
+
+#: ../../glade/pybridge.glade.h:29
+msgid "_About PyBridge"
+msgstr "_Au sujet de Pybridge"
+
+#: ../../glade/pybridge.glade.h:30
+msgid "_Connect to Server..."
+msgstr "_Connexion au Serveur"
+
+#: ../../glade/pybridge.glade.h:31
+msgid "_Connection"
+msgstr "_Connexion"
+
+#: ../../glade/pybridge.glade.h:32
+msgid "_Disconnect"
+msgstr "_Dconnexion"
+
+#: ../../glade/pybridge.glade.h:33
+msgid "_Help"
+msgstr "_Aide"
+
+#: ../../glade/pybridge.glade.h:34
+msgid "_New Table..."
+msgstr "_Nouvelle Table"
+
+#: ../../glade/pybridge.glade.h:35
+msgid "_Open Game..."
+msgstr "_Ouvrir Jeu..."
+
+#: ../../glade/pybridge.glade.h:36
+msgid "_Options"
+msgstr "_Options"
+
+#: ../../glade/pybridge.glade.h:37
+msgid "gtk-cancel"
+msgstr "gtk-cancel"
+
+#: ../../glade/pybridge.glade.h:38
+msgid "gtk-close"
+msgstr "gtk-close"
+
+#: ../../glade/pybridge.glade.h:39
+msgid "gtk-ok"
+msgstr "gtk-ok"
+
+#: ../../glade/pybridge.glade.h:40
+msgid "gtk-preferences"
+msgstr "gtk-preferences"
+
+#: ../../pybridge/ui/dialog_connection.py:74
+msgid "Connection failed"
+msgstr "Connexion choue"
+
+#: ../../pybridge/ui/dialog_connection.py:75
+msgid "Could not connect to server."
+msgstr "Impossible de se connecter au serveur"
+
+#: ../../pybridge/ui/dialog_connection.py:76
+#: ../../pybridge/ui/dialog_newtable.py:62
+#, python-format
+msgid "Reason: %s"
+msgstr "Raison: %s"
+
+#: ../../pybridge/ui/dialog_newtable.py:60
+msgid "Could not create table"
+msgstr "Impossible de crer la table"
+
+#: ../../pybridge/ui/dialog_newtable.py:61
+msgid "The table was not created by the server."
+msgstr "La table n'a pas t cre par le serveur"
+
+#: ../../pybridge/ui/dialog_preferences.py:43
+msgid "PNG images"
+msgstr "Images PNG"
+
+#: ../../pybridge/ui/dialog_preferences.py:98
+#, python-format
+msgid "Select colour for %s symbol"
+msgstr "Choisir la couleur comem symbole %s"
+
+#: ../../pybridge/ui/dialog_userinfo.py:29
+msgid "Real Name"
+msgstr "Nom rel"
+
+#: ../../pybridge/ui/dialog_userinfo.py:30
+msgid "Email Address"
+msgstr "Adresse courriel"
+
+#: ../../pybridge/ui/dialog_userinfo.py:32
+msgid "Profile"
+msgstr "Profil"
+
+#: ../../pybridge/ui/dialog_userinfo.py:54
+#, python-format
+msgid "Information for %(user)s"
+msgstr "Information pour %(user)s"
+
+#: ../../pybridge/ui/dialog_userinfo.py:68
+msgid "not specified"
+msgstr "Non prcis"
+
+#: ../../pybridge/ui/excepthook.py:34
+msgid "Program error"
+msgstr "Erreur de programme"
+
+#: ../../pybridge/ui/excepthook.py:35
+msgid ""
+"PyBridge detected an unexpected program error. You should close and restart "
+"PyBridge."
+msgstr "Pybridge a dtect une erreur. vosu devez fermer et relancer Pybridge."
+
+#: ../../pybridge/ui/excepthook.py:36
+msgid ""
+"If you continue to experience this error, please submit a bug report, "
+"attaching the following error trace."
+msgstr ""
+"Si cette erreur est frquente, svp informer nous du bug, en attachant les "
+"informations suivantes."
+
+#: ../../pybridge/ui/vocabulary.py:32
+msgid "Pass"
+msgstr "Passe"
+
+#: ../../pybridge/ui/vocabulary.py:33
+msgid "Double"
+msgstr "Contre"
+
+#: ../../pybridge/ui/vocabulary.py:34
+msgid "Redouble"
+msgstr "Surcintre"
+
+#: ../../pybridge/ui/vocabulary.py:44
+msgid "North"
+msgstr "Nord"
+
+#: ../../pybridge/ui/vocabulary.py:45
+msgid "East"
+msgstr "Est"
+
+#: ../../pybridge/ui/vocabulary.py:46
+msgid "South"
+msgstr "Sud"
+
+#: ../../pybridge/ui/vocabulary.py:47
+msgid "West"
+msgstr "Ouest"
+
+#: ../../pybridge/ui/vocabulary.py:51
+msgid "N"
+msgstr "N"
+
+#: ../../pybridge/ui/vocabulary.py:52
+msgid "E"
+msgstr "E"
+
+#: ../../pybridge/ui/vocabulary.py:54
+msgid "W"
+msgstr "O"
+
+#: ../../pybridge/ui/vocabulary.py:68
+msgid "Two"
+msgstr "Deux"
+
+#: ../../pybridge/ui/vocabulary.py:69
+msgid "Three"
+msgstr "Trois"
+
+#: ../../pybridge/ui/vocabulary.py:70
+msgid "Four"
+msgstr "Quatre"
+
+#: ../../pybridge/ui/vocabulary.py:71
+msgid "Five"
+msgstr "Cinq"
+
+#: ../../pybridge/ui/vocabulary.py:72
+msgid "Six"
+msgstr "Six"
+
+#: ../../pybridge/ui/vocabulary.py:73
+msgid "Seven"
+msgstr "Sept"
+
+#: ../../pybridge/ui/vocabulary.py:74
+msgid "Eight"
+msgstr "Huit"
+
+#: ../../pybridge/ui/vocabulary.py:75
+msgid "Nine"
+msgstr "Neuf"
+
+#: ../../pybridge/ui/vocabulary.py:76
+msgid "Ten"
+msgstr "Dix"
+
+#: ../../pybridge/ui/vocabulary.py:77
+msgid "Jack"
+msgstr "Valet"
+
+#: ../../pybridge/ui/vocabulary.py:78
+msgid "Queen"
+msgstr "Dame"
+
+#: ../../pybridge/ui/vocabulary.py:79
+msgid "King"
+msgstr "Roi"
+
+#: ../../pybridge/ui/vocabulary.py:80
+msgid "Ace"
+msgstr "As"
+
+#: ../../pybridge/ui/vocabulary.py:100
+msgid "Clubs"
+msgstr "Trefles"
+
+#: ../../pybridge/ui/vocabulary.py:101
+msgid "Diamonds"
+msgstr "Carreaux"
+
+#: ../../pybridge/ui/vocabulary.py:102
+msgid "Hearts"
+msgstr "Coeurs"
+
+#: ../../pybridge/ui/vocabulary.py:103
+msgid "Spades"
+msgstr "Piques"
+
+#: ../../pybridge/ui/vocabulary.py:122
+msgid "Club"
+msgstr "Trefle"
+
+#: ../../pybridge/ui/vocabulary.py:123
+msgid "Diamond"
+msgstr "Carreau"
+
+#: ../../pybridge/ui/vocabulary.py:124
+msgid "Heart"
+msgstr "Coeur"
+
+#: ../../pybridge/ui/vocabulary.py:125
+msgid "Spade"
+msgstr "Pique"
+
+#: ../../pybridge/ui/vocabulary.py:126
+msgid "No Trump"
+msgstr "Sans Atout"
+
+#: ../../pybridge/ui/vocabulary.py:147
+msgid "All"
+msgstr "Tout"
+
+#: ../../pybridge/ui/vocabulary.py:148
+#: ../../pybridge/games/bridge/ui/scoresheet.py:42
+#: ../../pybridge/games/bridge/ui/scoresheet.py:87
+msgid "N/S"
+msgstr "N/S"
+
+#: ../../pybridge/ui/vocabulary.py:149
+#: ../../pybridge/games/bridge/ui/scoresheet.py:42
+#: ../../pybridge/games/bridge/ui/scoresheet.py:87
+msgid "E/W"
+msgstr "E/O"
+
+#: ../../pybridge/ui/vocabulary.py:150
+msgid "None"
+msgstr "Aucun"
+
+#: ../../pybridge/ui/vocabulary.py:169
+#, python-format
+msgid "%(level)s %(strain)s"
+msgstr ""
+
+#: ../../pybridge/ui/vocabulary.py:183
+#, python-format
+msgid "%(rank)s of %(suit)s"
+msgstr ""
+
+#: ../../pybridge/ui/vocabulary.py:201
+#, python-format
+msgid "%(bid)s %(doubled)s by %(declarer)s"
+msgstr "%(bid)s %(doubled)s par %(declarer)s"
+
+#: ../../pybridge/ui/vocabulary.py:203
+#, python-format
+msgid "%(bid)s by %(declarer)s"
+msgstr "%(bid)s par %(declarer)s"
+
+#: ../../pybridge/ui/window_chat.py:73
+msgid "1 person in room"
+msgstr "1 personne dans la pice"
+
+#: ../../pybridge/ui/window_chat.py:75
+#, python-format
+msgid "%(num)s people in room"
+msgstr "%(num)s personne dans la pice"
+
+#: ../../pybridge/ui/window_chat.py:194
+#, python-format
+msgid "%(user)s has joined the conversation"
+msgstr "%(user)s a rejoint la conversation"
+
+#: ../../pybridge/ui/window_chat.py:196
+#, python-format
+msgid "%(user)s has left the conversation"
+msgstr "%(user)s a quitt la conversation"
+
+#: ../../pybridge/ui/window_chat.py:290
+msgid "Chat"
+msgstr "Chat"
+
+#: ../../pybridge/ui/window_gametable.py:37
+msgid "Unnamed Game"
+msgstr "Jeu sans Nom"
+
+#: ../../pybridge/ui/window_gametable.py:46
+msgid "Table"
+msgstr "Table"
+
+#: ../../pybridge/ui/window_gametable.py:78
+msgid "Take Seat"
+msgstr "Prendre Place"
+
+#: ../../pybridge/ui/window_gametable.py:84
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:336
+msgid "Leave Seat"
+msgstr "Quitter Place"
+
+#: ../../pybridge/ui/window_gametable.py:99
+#: ../../pybridge/ui/window_gametable.py:193
+msgid "Leave Table"
+msgstr "Quitter la Table"
+
+#: ../../pybridge/ui/window_gametable.py:135
+#, python-format
+msgid "%(tablename)s (%(gametype)s)"
+msgstr "%(tablename)s (%(gametype)s)"
+
+#: ../../pybridge/ui/window_gametable.py:191
+msgid "Leave table?"
+msgstr "Quitter la table ?"
+
+#: ../../pybridge/ui/window_gametable.py:194
+msgid "Are you sure you wish to leave this table?"
+msgstr "Etes vous sure de vouloir quitter cette table?"
+
+#: ../../pybridge/ui/window_gametable.py:195
+msgid ""
+"You are currently playing a game. Leaving may forfeit the game, or incur "
+"penalties."
+msgstr ""
+"Vous etes en train de jouer. Quiter peut faire forfait le jeu, ou provoquer "
+"de pnalits"
+
+#: ../../pybridge/ui/window_main.py:125
+msgid "Connection to server lost"
+msgstr "Connexion au serveur rompue"
+
+#: ../../pybridge/ui/window_main.py:126
+#, python-format
+msgid "The connection to %s was lost unexpectedly."
+msgstr "La connexion a %s a t perdue."
+
+#: ../../pybridge/ui/window_main.py:127
+msgid ""
+"Please check your computer's network connection status before reconnecting. "
+"If you cannot reconnect, the server may be offline."
+msgstr ""
+"Verifier votre connexion avant tenter une reconnexion.Si vous ne vous "
+"reconnectez pas, le serveur est peut tre hors ligne."
+
+#: ../../pybridge/ui/window_main.py:272
+msgid "Disconnect from server"
+msgstr "Deconnexion du serveur"
+
+#: ../../pybridge/ui/window_main.py:275
+msgid "Are you sure you wish to disconnect?"
+msgstr "Etes vous sur de vouloir vous deconnecter?"
+
+#: ../../pybridge/ui/window_main.py:276
+msgid ""
+"You are playing at a table. Disconnecting may forfeit the game, or incur "
+"penalties."
+msgstr ""
+"Vous etes en train de jouer. Quiter peut faire forfait le jeu, ou provoquer "
+"de pnalits"
+
+#: ../../pybridge/ui/window_main.py:305
+msgid "A free online bridge game."
+msgstr "Un jeu libre de brige en ligne"
+
+#: ../../pybridge/games/bridge/ui/scoresheet.py:42
+msgid "Board"
+msgstr ""
+
+#: ../../pybridge/games/bridge/ui/scoresheet.py:42
+msgid "Contract"
+msgstr "Contrat"
+
+#: ../../pybridge/games/bridge/ui/scoresheet.py:42
+msgid "Made"
+msgstr ""
+
+#: ../../pybridge/games/bridge/ui/scoresheet.py:55
+msgid "Passed out"
+msgstr ""
+
+#: ../../pybridge/games/bridge/ui/scoresheet.py:124
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:228
+msgid "Score Sheet"
+msgstr "Scores"
+
+#: ../../pybridge/games/bridge/ui/window_bidbox.py:41
+msgid "Bidding Box"
+msgstr "Enchre"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:103
+msgid "Declarer"
+msgstr "Dclarant"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:109
+msgid "Defence"
+msgstr ""
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:132
+msgid "No contract"
+msgstr "Pas de contrat"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:154
+msgid "Dealer"
+msgstr "Ouvreur"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:162
+msgid "Vuln"
+msgstr "Vulnrable"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:169
+msgid "Contract Bridge"
+msgstr "Contrat"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:208
+msgid "Bidding"
+msgstr "Ouverture"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:217
+msgid "Previous Trick"
+msgstr "Leve prcdente"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:297
+msgid "Game result"
+msgstr "Resultat de la Partie"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:311
+#, python-format
+msgid "Contract %(contract)s made by 1 trick."
+msgstr "Le Contrat %(contract)s raliser d'une leve."
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:313
+#, python-format
+msgid "Contract %(contract)s made by %(offset)s tricks."
+msgstr "Le Contrat %(contract)s raliser avec %(offset)s leves."
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:316
+#, python-format
+msgid "Contract %(contract)s failed by 1 trick."
+msgstr "Le contrat %(contract)s chute d'une leve"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:318
+#, python-format
+msgid "Contract %(contract)s failed by %(offset)s tricks."
+msgstr "Le contrat %(contract)s chute de %(offset)s leves"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:320
+#, python-format
+msgid "Contract %(contract)s made exactly."
+msgstr "Le contrat %(contract)s russit"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:326
+msgid "declarer"
+msgstr "dclare"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:326
+msgid "defence"
+msgstr "Intervention"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:327
+#, python-format
+msgid "Score %(points)s points for %(pair)s."
+msgstr "Score %(points)s points pour %(pair)s."
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:332
+msgid "Bidding passed out."
+msgstr "Enchere passe"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:333
+msgid "No score."
+msgstr "Pas de point"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:337
+msgid "Click OK to start next game."
+msgstr "Cliquer Ok pour dmarrer la prochaine partie"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:408
+msgid "Play a card from your hand."
+msgstr "Jouer une carte de votre main"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:410
+msgid "Play a card from dummy's hand."
+msgstr "Jouer une carte de la main du mort"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:412
+#, python-format
+msgid "It is %s's turn to play a card."
+msgstr "Ce n'est pas %s's de jouer une carte"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:416
+msgid "Make a call from the bidding box."
+msgstr "Faire un appel de l'enchre"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:418
+#, python-format
+msgid "It is %s's turn to make a call."
+msgstr "Ce n'est pas le tour de %s's de faire un appel"
+
+#: ../../pybridge/games/bridge/ui/window_bridgetable.py:421
+msgid "Waiting for next game to start."
+msgstr "Attender que la prochaine partie commence"
