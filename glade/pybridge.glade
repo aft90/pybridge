@@ -115,7 +115,7 @@
                     <child>
                       <widget class="GtkImageMenuItem" id="menu_preferences">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">gtk-preferences</property>
+                        <property name="label">gtk-preferences</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <signal name="activate" handler="on_preferences_activate"/>
@@ -217,7 +217,7 @@
                       <widget class="GtkToolButton" id="newtable">
                         <property name="visible">True</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                        <property name="label">New Table...</property>
+                        <property name="label" translatable="yes">New Table...</property>
                         <property name="stock_id">gtk-new</property>
                         <signal name="clicked" handler="on_newtable_clicked"/>
                       </widget>
@@ -229,7 +229,7 @@
                       <widget class="GtkToolButton" id="jointable">
                         <property name="visible">True</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                        <property name="label">Join Table</property>
+                        <property name="label" translatable="yes">Join Table</property>
                         <property name="stock_id">gtk-jump-to</property>
                         <signal name="clicked" handler="on_jointable_clicked"/>
                       </widget>
@@ -244,9 +244,6 @@
                   </packing>
                 </child>
               </widget>
-              <packing>
-                <property name="tab_expand">False</property>
-              </packing>
             </child>
             <child>
               <widget class="GtkLabel" id="label_tabletab">
@@ -255,7 +252,6 @@
               </widget>
               <packing>
                 <property name="type">tab</property>
-                <property name="tab_expand">False</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -309,7 +305,6 @@
               </widget>
               <packing>
                 <property name="position">1</property>
-                <property name="tab_expand">False</property>
               </packing>
             </child>
             <child>
@@ -320,7 +315,6 @@
               <packing>
                 <property name="type">tab</property>
                 <property name="position">1</property>
-                <property name="tab_expand">False</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -523,6 +517,7 @@
                             <property name="can_focus">True</property>
                             <property name="label" translatable="yes">Save Password</property>
                             <property name="use_underline">True</property>
+                            <property name="response_id">0</property>
                             <property name="draw_indicator">True</property>
                           </widget>
                           <packing>
@@ -537,6 +532,7 @@
                             <property name="can_focus">True</property>
                             <property name="label" translatable="yes">Register as New User</property>
                             <property name="use_underline">True</property>
+                            <property name="response_id">0</property>
                             <property name="draw_indicator">True</property>
                           </widget>
                           <packing>
@@ -843,6 +839,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                            <property name="response_id">0</property>
                             <signal name="clicked" handler="on_suitcolour_clicked"/>
                             <child>
                               <widget class="GtkLabel" id="label_clubcolour">
@@ -863,6 +860,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                            <property name="response_id">0</property>
                             <signal name="clicked" handler="on_suitcolour_clicked"/>
                             <child>
                               <widget class="GtkLabel" id="label_diamondcolour">
@@ -884,6 +882,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                            <property name="response_id">0</property>
                             <signal name="clicked" handler="on_suitcolour_clicked"/>
                             <child>
                               <widget class="GtkLabel" id="label_heartcolour">
@@ -905,6 +904,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                            <property name="response_id">0</property>
                             <signal name="clicked" handler="on_suitcolour_clicked"/>
                             <child>
                               <widget class="GtkLabel" id="label_spadecolour">
@@ -939,6 +939,7 @@
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                     <property name="label" translatable="yes">Display suits as symbols?</property>
+                    <property name="response_id">0</property>
                     <property name="draw_indicator">True</property>
                   </widget>
                   <packing>
@@ -958,9 +959,6 @@
                   </packing>
                 </child>
               </widget>
-              <packing>
-                <property name="tab_expand">False</property>
-              </packing>
             </child>
             <child>
               <widget class="GtkLabel" id="label_gamedisplay">
@@ -969,7 +967,6 @@
               </widget>
               <packing>
                 <property name="type">tab</property>
-                <property name="tab_expand">False</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -986,16 +983,18 @@
             <child>
               <widget class="GtkButton" id="cancelbutton">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">gtk-cancel</property>
+                <property name="label">gtk-cancel</property>
                 <property name="use_stock">True</property>
+                <property name="response_id">0</property>
                 <signal name="clicked" handler="on_cancelbutton_clicked"/>
               </widget>
             </child>
             <child>
               <widget class="GtkButton" id="okbutton">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">gtk-ok</property>
+                <property name="label">gtk-ok</property>
                 <property name="use_stock">True</property>
+                <property name="response_id">0</property>
                 <signal name="clicked" handler="on_okbutton_clicked"/>
               </widget>
               <packing>
@@ -1088,8 +1087,9 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                <property name="label" translatable="yes">gtk-close</property>
+                <property name="label">gtk-close</property>
                 <property name="use_stock">True</property>
+                <property name="response_id">0</property>
                 <signal name="clicked" handler="on_closebutton_clicked"/>
               </widget>
             </child>
