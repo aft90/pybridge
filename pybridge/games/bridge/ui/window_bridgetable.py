@@ -29,7 +29,7 @@ from pybridge.ui.vocabulary import *
 
 from pybridge.ui.window_gametable import WindowGameTable
 from window_bidbox import WindowBidbox
-from window_scoresheet import ScoreSheet
+from window_scoresheet import WindowScoreSheet
 
 
 class BiddingView(gtk.TreeView):
@@ -187,6 +187,12 @@ class WindowBridgeTable(WindowGameTable):
             self.takeseat_menuitems[position] = item
         self.takeseat.set_menu(menu)
 
+        # Set up bridge-specific toolbar buttons.
+        self.showscores = gtk.ToggleToolButton(gtk.STOCK_EDIT)
+        self.showscores.set_label(_('Show Scoresheet'))
+        self.showscores.connect('clicked', self.on_showscores_clicked)
+        self.toolbar.insert(self.showscores, -1)
+
         # Set up CardArea widget.
         self.cardarea = CardArea(positions=Direction)
 
@@ -205,10 +211,7 @@ class WindowBridgeTable(WindowGameTable):
         sw.add(self.biddingview)
         frame = gtk.Frame()
         frame.add(sw)
-        exp = gtk.Expander(_('Bidding'))
-        exp.set_expanded(True)
-        exp.add(frame)
-        self.sidebar.pack_start(exp, expand=True)
+        self.sidebar.pack_start(frame, expand=True)
 
         self.trickarea = TrickArea(positions=Direction)
         self.trickarea.set_size_request(-1, 180)
@@ -219,16 +222,16 @@ class WindowBridgeTable(WindowGameTable):
         exp.add(frame)
         self.sidebar.pack_start(exp, expand=False)
 
-        self.scoresheet = ScoreSheet()
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.add(self.scoresheet)
-        frame = gtk.Frame()
-        frame.add(sw)
-        exp = gtk.Expander(_('Score Sheet'))
-        exp.set_expanded(False)
-        exp.add(frame)
-        self.sidebar.pack_start(exp, expand=False)
+#        self.scoresheet = ScoreSheet()
+#        sw = gtk.ScrolledWindow()
+#        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+#        sw.add(self.scoresheet)
+#        frame = gtk.Frame()
+#        frame.add(sw)
+#        exp = gtk.Expander(_('Score Sheet'))
+#        exp.set_expanded(False)
+#        exp.add(frame)
+#        self.sidebar.pack_start(exp, expand=False)
 
 
     def setTable(self, table):
@@ -262,7 +265,6 @@ class WindowBridgeTable(WindowGameTable):
                 bidbox = self.children.open(WindowBidbox, parent=self)
                 bidbox.setCallSelectHandler(self.on_call_selected)
                 bidbox.setTable(self.table, self.position)
-
 
         # Initialise seat menu and player labels.
         for position in Direction:
@@ -298,7 +300,7 @@ class WindowBridgeTable(WindowGameTable):
 
         # Determine and display score in dialog box and score sheet.
         if self.table.game.contract:
-            self.scoresheet.add_result(self.table.game.result)
+            #self.scoresheet.add_result(self.table.game.result)
 
             tricksMade = self.table.game.result.tricksMade
             tricksRequired = self.table.game.contract.bid.level.index + 7
@@ -564,4 +566,16 @@ class WindowBridgeTable(WindowGameTable):
 
         d = super(WindowBridgeTable, self).on_leaveseat_clicked(widget, *args)
         d.addCallback(success)
+
+
+    def on_showscores_clicked(self, widget, *args):
+        if self.showscores.get_active():
+            w = self.children.open(WindowScoreSheet)
+            # This re-invokes on_showscores_clicked if user closes w.
+            delete_event = lambda w, e: self.showscores.set_active(False)
+            w.window.connect('delete_event', delete_event)
+            w.setTable(self.table)
+
+        else:
+            self.children.close(self.children[WindowScoreSheet])
 
