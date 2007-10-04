@@ -52,7 +52,7 @@ class ScoreSheet(gtk.TreeView):
             score = result.score
 
         if result.contract is None:  # Bidding passed out.
-            row = (result.board['num'], _('Passed out'), '-', '-', '', '')
+            row = (result.board['num'], _('Passed out'), '-', '', '')
 
         else:
             if result.contract.declarer in (Direction.North, Direction.South) and score > 0 \
@@ -122,19 +122,53 @@ class WindowScoreSheet(object):
         if parent:
             self.window.set_transient_for(parent.window)
         self.window.set_title(_('Score Sheet'))
-        self.window.connect('delete_event', self.on_delete_event)
-        #self.window.set_resizable(False)
+        #self.window.connect('delete_event', self.on_delete_event)
 
         self.eventHandler = SimpleEventHandler(self)
         self.table = None
 
+        self.window.show()
+
 
     def tearDown(self):
-        pass
+        self.table.game.detach(self.eventHandler)
+        self.table = None  # Dereference table.
+
+
+    def setTable(self, table):
+        self.table = table
+        self.table.game.attach(self.eventHandler)
+
+        if hasattr(self.table.game, 'rubbers'):
+            self.scoresheet = RubberScoreSheet()
+            if self.table.game.rubbers:
+                rubber = self.table.game.rubbers[-1]
+                self.scoresheet.set_rubber(rubber)
+
+        else:  # Duplicate-style list of results.
+            self.scoresheet = ScoreSheet()
+            for result in self.table.game.results:
+                self.scoresheet.add_result(result)
+
+        self.window.add(self.scoresheet)
+        self.scoresheet.show()
+
+
+    def update(self):
+        if self.table.game.results and not self.table.game.inProgress():
+            if isinstance(self.scoresheet, RubberScoreSheet):
+                rubber = self.table.game.rubbers[-1]
+                self.scoresheet.set_rubber(rubber)
+            else:
+                result = self.table.game.results[-1]
+                self.scoresheet.add_result(result)
 
 
 
-    def on_delete_event(self, widget, *args):
-        # TODO: call wm.close(self)
-        return True  # Stops window deletion taking place.
+    def event_makeCall(self, call, position):
+        self.update()
+
+
+    def event_playCard(self, card, position):
+        self.update()
 

@@ -16,11 +16,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.spread import pb
+
 from call import Bid, Pass, Double, Redouble
 from symbols import Direction
 
 
-class Contract(object):
+class Contract(object, pb.Copyable, pb.RemoteCopy):
     """Represents the result of an auction."""
 
 
@@ -52,6 +54,17 @@ class Contract(object):
             if auction.currentRedouble:
                 # The partner who redoubled an opponent's double.
                 self.redoubleBy = auction.whoCalled(auction.currentRedouble)
+
+
+    def getStateToCopy(self):
+        return self.bid, self.declarer, self.doubleBy, self.redoubleBy
+
+
+    def setCopyableState(self, state):
+        self.bid, self.declarer, self.doubleBy, self.redoubleBy = state
+
+
+pb.setUnjellyableForClass(Contract, Contract)
 
 
 

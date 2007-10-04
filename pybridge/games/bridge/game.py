@@ -87,6 +87,8 @@ class Bridge(object):
 
         if board:  # Use specified board.
             self.board = board
+        elif self.boardQueue:  # Use pre-specified board.
+            self.board = self.boardQueue.pop(0)
         elif self.board:  # Advance to next round.
             self.board = self.board.next()
         else:  # Create an initial board.
@@ -136,6 +138,9 @@ class Bridge(object):
     def getState(self):
         state = {}
 
+        state['options'] = self.options
+        state['results'] = self.results
+
         if self.inProgress():
             # Remove hidden hands from deal.
             visibleBoard = self.board.copy()
@@ -151,6 +156,8 @@ class Bridge(object):
 
 
     def setState(self, state):
+        self.options = state.get('options', {})
+
         if state.get('board'):
             self.start(state['board'])
 
@@ -171,6 +178,8 @@ class Bridge(object):
                             self.playCard(card, position=self.play.declarer)
                         else:
                             self.playCard(card, position=turn)
+
+        self.results = state.get('results', [])  # Overwrites current game result.
 
 
     def updateState(self, event, *args, **kwargs):

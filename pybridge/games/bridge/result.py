@@ -16,6 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from twisted.spread import pb
+
 from symbols import Direction, Strain, Vulnerable
 
 
@@ -40,11 +42,22 @@ class GameResult(object):
         self.contract = contract
         self.tricksMade = tricksMade
 
+        self.isVulnerable = None
         if self.contract:
             vuln = self.board.get('vuln', Vulnerable.None)
             self.isVulnerable = self.contract.declarer in self.__vulnMap[vuln]
 
         self.score = self._getScore()
+
+
+    def getStateToCopy(self):
+        return (self.board.copy(), self.contract, self.tricksMade,
+                self.isVulnerable, self.score)
+
+
+    def setCopyableState(self, state):
+        self.board, self.contract, self.tricksMade, self.isVulnerable, self.score = state
+        # assert self.score == self._getScore()
 
 
     def _getScoreComponents(self):
@@ -178,7 +191,7 @@ class GameResult(object):
 
 
 
-class DuplicateResult(GameResult):
+class DuplicateResult(GameResult, pb.Copyable, pb.RemoteCopy):
     """Represents the result of a completed round of duplicate bridge."""
 
 
@@ -196,9 +209,12 @@ class DuplicateResult(GameResult):
         return score
 
 
+pb.setUnjellyableForClass(DuplicateResult, DuplicateResult)
 
 
-class RubberResult(GameResult):
+
+
+class RubberResult(GameResult, pb.Copyable, pb.RemoteCopy):
     """Represents the result of a completed round of rubber bridge."""
 
 
@@ -217,6 +233,9 @@ class RubberResult(GameResult):
                 elif key == 'odd':
                     below += value
         return above, below
+
+
+pb.setUnjellyableForClass(RubberResult, RubberResult)
 
 
 
