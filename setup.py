@@ -21,7 +21,7 @@ setup(
     url = 'http://sourceforge.net/projects/pybridge/',
     description = 'A free online bridge game.',
     download_url = 'http://sourceforge.net/project/showfiles.php?group_id=114287',
-    packages = ['pybridge', 'pybridge.bridge', 'pybridge.interfaces', 'pybridge.network', 'pybridge.server', 'pybridge.ui'],
+    packages = ['pybridge', 'pybridge.games', 'pybridge.interfaces', 'pybridge.network', 'pybridge.server', 'pybridge.ui'],
     scripts = ['bin/pybridge', 'bin/pybridge-server'],
     data_files = [('share/applications', ['bin/pybridge.desktop']),
                   ('share/doc/pybridge', ['AUTHORS', 'COPYING', 'INSTALL', 'NEWS', 'README']),

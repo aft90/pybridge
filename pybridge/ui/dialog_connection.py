@@ -41,7 +41,7 @@ class DialogConnection(GladeWrapper):
             self.entry_username.set_text(connection.get('Username', ''))
             password = connection.get('Password', '').decode('rot13')
             self.entry_password.set_text(password)
-            self.check_savepassword.set_active(password != '')
+            self.check_savepassword.set_active(bool(password))
         else:
             self.entry_portnum.set_text(str(TCP_PORT))
 

@@ -99,6 +99,7 @@ class UserAccount(SQLObject):
     # Don't split name field - see http://people.w3.org/rishida/blog/?p=100
     realname = UnicodeCol(default=None, length=40)
     profile = UnicodeCol(default=None)
+    #country = StringCol(length=2, default=None)  # ISO 3166 country code.
     created = DateTimeCol(default=datetime.now)
     lastLogin = DateTimeCol(default=None)
     # friends = MultipleJoin('UserFriend', joinColumn='from_user')

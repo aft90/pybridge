@@ -150,7 +150,7 @@ class Monkey:
 # Selection of calls and cards.
 
 
-    calls = [lambda : Bid(random.choice(Level), random.choice(Strain)),
+    calls = [lambda : Bid(Level.One, random.choice(Strain)),
              Pass, Double, Redouble]
 
     def chooseCall(self):

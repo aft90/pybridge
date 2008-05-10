@@ -18,12 +18,12 @@
 	msgmerge -UN $@ $<
 
 #Generic rule for POT files
-%.pot: ../../glade/pybridge.glade ../../pybridge/ui/*.py
+%.pot: ../../glade/pybridge.glade
 	############
 	#CREATING $@
 	############
 	intltool-extract --type=gettext/glade ../../glade/pybridge.glade
-	xgettext -k_ -kN_ --from-code=UTF-8 -o $@ ../../glade/pybridge.glade.h ../../pybridge/ui/*.py
+	xgettext -k_ -kN_ --from-code=UTF-8 -o $@ ../../glade/pybridge.glade.h ../../pybridge/ui/*.py ../../pybridge/games/bridge/ui/*.py
 
 update: $(shell ls *.po)
 

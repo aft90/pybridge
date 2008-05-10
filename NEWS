@@ -1,3 +1,39 @@
+==========
+0.4.0 (??)
+==========
+
+New features
+------------
+
+  - Architecture:
+
+    - Full support for other games.
+
+
+  - User interface:
+
+    - Separation of bridge table UI from generic table window. Tables for particular games inherit. 
+
+    - Enhanced chat support.
+
+
+Bug fixes
+---------
+
+  - Fixed https://bugs.launchpad.net/pybridge/+bug/127974
+
+
+Translations
+------------
+
+  - French: Aldo Reset <aldo@placenet.org>
+
+  - Polish: 
+
+  Please help with translating PyBridge into your native language!
+  See https://translations.launchpad.net/pybridge/ to get started.
+
+
 =====================
 0.3.0 (25 June 2007)
 =====================

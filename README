@@ -1,6 +1,7 @@
-PyBridge 0.3.0 - a free online bridge game
+PyBridge 0.4.0 - a free online bridge game
 http://pybridge.sourceforge.net/
 http://sourceforge.net/projects/pybridge/
+https://launchpad.net/pybridge
 
 
 About PyBridge
@@ -31,11 +32,11 @@ features, bug fixes and other changes can be found in the NEWS file.
 
 Your feedback, bug reports and ideas for new features are especially welcome.
 
-  - Forums: http://sourceforge.net/forum/?group_id=114287
+  - Bug reports: https://bugs.launchpad.net/pybridge/
 
-  - Bug reports: http://sourceforge.net/tracker/?group_id=114287&atid=667822
-
-  - Feature ideas: http://sourceforge.net/tracker/?group_id=114287&atid=667825
+  - Feature ideas: https://blueprints.launchpad.net/pybridge/
+ 
+  - Translations: https://translations.launchpad.net/pybridge/
 
 If you are a competent (or aspiring!) Python programmer and would like to
 contribute code to PyBridge, then please get in touch with the developers!

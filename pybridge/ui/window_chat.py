@@ -115,12 +115,13 @@ class ChatBox(gtk.VPaned):
         # People list display.
         self.people = PeopleBox()
         hpaned.pack2(self.people, resize=False, shrink=True)
-        self.pack1(hpaned, resize=True, shrink=False)
+        self.pack1(hpaned, resize=True, shrink=True)
 
         self.textentry = gtk.TextView()
         self.textentry.set_editable(True)
         self.textentry.set_property('sensitive', False)
-        self.conversation.set_wrap_mode(gtk.WRAP_WORD)
+        self.textentry.set_wrap_mode(gtk.WRAP_WORD)
+        #self.textentry.set_size_request(30, 30)
         self.textentry.connect('key_press_event', self.on_textentry_key_pressed)
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
@@ -129,7 +130,7 @@ class ChatBox(gtk.VPaned):
         frame.set_shadow_type(gtk.SHADOW_IN)
         frame.add(sw)
         frame.set_border_width(6)
-        self.pack2(frame, resize=False, shrink=False)
+        self.pack2(frame, resize=True, shrink=True)
 
         # Populate conversation textview with text tags.
         tagtable = self.conversation.get_buffer().get_tag_table()
@@ -251,6 +252,7 @@ class WindowChat(object):
         self.chatboxes = {}  # Maps Chat objects to their ChatBox instances.
 
         self.notebook = gtk.Notebook()
+        self.notebook.set_scrollable(True)
         self.notebook.connect('switch-page', self.on_switch_page)
         self.window.add(self.notebook)
         self.window.set_border_width(4)

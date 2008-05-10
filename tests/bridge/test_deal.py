@@ -73,6 +73,12 @@ class TestDeck(unittest.TestCase):
             self.assertEqual(Deal.fromIndex(index), deal)
 
 
+#    def test_toString(self):
+#        """Testing toString method over a set of known deals"""
+#        for deal in self.samples.values():
+#            self.assertEqual(Deal.fromString(deal.toString()))
+
+
 def main():
     suite = unittest.makeSuite(TestDeck)
     unittest.TextTestRunner(verbosity=2).run(suite)

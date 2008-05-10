@@ -89,16 +89,16 @@ class WindowGameTable(object):
         self.toolbar.insert(gtk.SeparatorToolItem(), -1)
 
         self.fullscreen = gtk.ToggleToolButton(gtk.STOCK_FULLSCREEN)
+        self.fullscreen.set_label(_('Full Screen'))
         self.fullscreen.connect('clicked', self.on_fullscreen_clicked)
-        #self.fullscreen.set_tooltip()
         self.toolbar.insert(self.fullscreen, -1)
-
-        self.toolbar.insert(gtk.SeparatorToolItem(), -1)
 
         self.leavetable = gtk.ToolButton(gtk.STOCK_QUIT)
         self.leavetable.set_label(_('Leave Table'))
         self.leavetable.connect('clicked', self.on_leavetable_clicked)
         self.toolbar.insert(self.leavetable, -1)
+
+        self.toolbar.insert(gtk.SeparatorToolItem(), -1)
 
 
     def tearDown(self):
@@ -113,6 +113,12 @@ class WindowGameTable(object):
                 chatwin.removeChat(self.table.chat)
 
         self.table = None  # Dereference table.
+
+
+    def errback(self, failure):
+        # TODO: display error in window.
+        print "Error: %s" % failure.getErrorMessage()
+        print failure.getBriefTraceback()
 
 
     def setTable(self, table):

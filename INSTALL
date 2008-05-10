@@ -38,7 +38,7 @@ To run the PyBridge client, the following software is also required:
   - PyGTK (>= 2.8) - http://www.pygtk.org/
   - Cairo (>= 1.0) - http://cairographics.org/
   - PyCairo (>= 1.0) - http://cairographics.org/pycairo/
-  - ConfigObj (>= 4.0) -http://www.voidspace.org.uk/python/configobj.html 
+  - ConfigObj (>= 4.0) - http://www.voidspace.org.uk/python/configobj.html 
 
 
 To run the standalone PyBridge server, the following software is also required:

@@ -124,10 +124,15 @@ class WindowScoreSheet(object):
         self.window.set_title(_('Score Sheet'))
         #self.window.connect('delete_event', self.on_delete_event)
 
+        self.sw = gtk.ScrolledWindow()
+        self.sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
+        self.sw.set_size_request(-1, 150)
+        self.window.add(self.sw)
+
         self.eventHandler = SimpleEventHandler(self)
         self.table = None
 
-        self.window.show()
+        self.window.show_all()
 
 
     def tearDown(self):
@@ -150,7 +155,7 @@ class WindowScoreSheet(object):
             for result in self.table.game.results:
                 self.scoresheet.add_result(result)
 
-        self.window.add(self.scoresheet)
+        self.sw.add(self.scoresheet)
         self.scoresheet.show()
 
 
@@ -162,7 +167,6 @@ class WindowScoreSheet(object):
             else:
                 result = self.table.game.results[-1]
                 self.scoresheet.add_result(result)
-
 
 
     def event_makeCall(self, call, position):

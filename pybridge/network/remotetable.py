@@ -49,6 +49,8 @@ class RemoteTable(pb.RemoteCache):
         if state['gamename'] in SUPPORTED_GAMES:
             gameclass = SUPPORTED_GAMES[state['gamename']]
             self.game = gameclass()
+            # TODO: encapsulate within a try/except block, so errors are not
+            # propagated back to server, and client drops table gracefully.
             self.game.setState(state['gamestate'])
         else:
             raise NameError, "Unsupported game class %s" % state['gamename']
