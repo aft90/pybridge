@@ -1,9 +1,9 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # enum.py
 # Part of enum, a package providing enumerated types for Python.
 #
-# Copyright © 2006 Ben Finney
+# Copyright © 2007 Ben Finney
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later
 # or, at your option, the terms of the Python license.
@@ -50,13 +50,13 @@ original arguments used to create the enumeration::
 __author_name__ = "Ben Finney"
 __author_email__ = "ben+python@benfinney.id.au"
 __author__ = "%s <%s>" % (__author_name__, __author_email__)
-__date__ = "2006-10-13"
+__date__ = "2007-01-24"
 __copyright__ = "Copyright © %s %s" % (
     __date__.split('-')[0], __author_name__
 )
 __license__ = "Choice of GPL or Python license"
 __url__ = "http://cheeseshop.python.org/pypi/enum/"
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 
 class EnumException(Exception):
