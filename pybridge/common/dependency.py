@@ -29,6 +29,7 @@ Note to PyBridge packagers:
 
 PYTHON_REQUIRED = (2, 5)
 CONFIGOBJ_REQUIRED = '4.0'
+PYCAIRO_REQUIRED = '1.4'
 PYGTK_REQUIRED = '2.0'
 SQLOBJECT_REQUIRED = '0.9'
 TWISTED_REQUIRED = '2.5.0'
@@ -39,6 +40,7 @@ ZOPE_REQUIRED = '3.0'
 def verify_pybridge():
     check_python()
     check_pygtk()
+    check_pycairo()
     check_twisted()
     check_configobj()
     check_zope()
@@ -73,6 +75,17 @@ def check_python():
     import sys
     PYTHON_INSTALLED = sys.version_info[:2]
     dependency_check("Python", PYTHON_REQUIRED, PYTHON_INSTALLED)
+
+
+def check_pycairo():
+    PYCAIRO_INSTALLED = None
+    try:
+        import cairo
+        PYCAIRO_INSTALLED = cairo.cairo_version_string()
+    except ImportError:
+        pass
+    finally:
+        dependency_check("PyCairo", PYCAIRO_REQUIRED, PYCAIRO_INSTALLED)
 
 
 def check_configobj():
