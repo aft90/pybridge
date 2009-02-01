@@ -13,20 +13,23 @@ try:
 except ImportError:
     pass
 
+# http://docs.python.org/library/distutils.html
 setup(
-    name = 'pybridge',
+    name = 'PyBridge',
     version = __version__,
     author = 'Michael Banks',
     author_email = 'michael@banksie.co.uk',
-    url = 'http://sourceforge.net/projects/pybridge/',
+    url = 'http://www.pybridge.org/',
     description = 'A free online bridge game.',
+    long_description = 'With PyBridge, you can play contract bridge with your friends, over the Internet or a local network.',
     download_url = 'http://sourceforge.net/project/showfiles.php?group_id=114287',
-    packages = ['pybridge', 'pybridge.games', 'pybridge.interfaces', 'pybridge.network', 'pybridge.server', 'pybridge.ui'],
+    packages = ['pybridge', 'pybridge.common', 'pybridge.games', 'pybridge.games.bridge', 'pybridge.games.bridge.ui', 'pybridge.interfaces', 'pybridge.network', 'pybridge.server', 'pybridge.ui'],
     scripts = ['bin/pybridge', 'bin/pybridge-server'],
     data_files = [('share/applications', ['bin/pybridge.desktop']),
                   ('share/doc/pybridge', ['AUTHORS', 'COPYING', 'INSTALL', 'NEWS', 'README']),
+                  ('share/man/man6/', ['man/pybridge.6', 'man/pybridge-server.6']),
                   ('share/pybridge/glade', glob.glob('glade/*.glade')),
-                  ('share/pybridge/pixmaps', glob.glob('pixmaps/*')), ],
+                  ('share/pybridge/pixmaps', glob.glob('pixmaps/*.{png,svg}')), ],
     
     # py2exe
     console = ['bin/pybridge-server'],
