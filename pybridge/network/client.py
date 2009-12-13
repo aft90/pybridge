@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2007 PyBridge Project.
+# Copyright (C) 2004-2009 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import sha
+import hashlib
 from twisted.cred import credentials
 from twisted.internet import reactor
 from twisted.spread import pb
@@ -34,6 +34,9 @@ pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
 pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
 
 
+# TODO: this class should be split into:
+#   - a factory class which establishes connections with servers
+#   - a class which represents connections (and implements ISubject) 
 
 class NetworkClient(object):
     """Provides the glue between the client code and the server."""
@@ -143,7 +146,8 @@ class NetworkClient(object):
                 d = avatar.callRemote('getRoster', rostername)
                 d.addCallbacks(gotRoster, self.errback, callbackArgs=[rostername])
 
-        hash = sha.new(password).hexdigest()
+        # Generate a SHA-1 hash of password
+        hash = self.__hashPass(password)
         creds = credentials.UsernamePassword(username, hash)
         d = self.factory.login(creds, client=None)
         d.addCallback(connectedAsUser)
@@ -156,7 +160,7 @@ class NetworkClient(object):
 
         def connectedAsAnonymousUser(avatar):
             """Register user account on server."""
-            hash = sha.new(password).hexdigest()
+            hash = self.__hashPass(password)
             d = avatar.callRemote('register', username, hash)
             # TODO: after registration, need to disconnect from server?
             return d
@@ -176,7 +180,7 @@ class NetworkClient(object):
         
         @param password: the new password.
         """
-        hash = sha.new(password).hexdigest()
+        hash = self.__hashPass(password)
         d = self.avatar.callRemote('changePassword', hash)
         return d
 
@@ -212,6 +216,15 @@ class NetworkClient(object):
         # TODO: cache user information once retrieved.
         d = self.avatar.callRemote('getUserInformation', username)
         return d
+
+
+    def __hashPass(self, password):
+        """Generates a SHA-1 hash of supplied password."""
+        # TODO: may want to salt the hash with username, but this breaks backward compatibility.
+        m = hashlib.sha1()
+        m.update(password)
+        hash = m.hexdigest()
+        return hash
 
 
 client = NetworkClient()
