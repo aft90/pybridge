@@ -20,7 +20,7 @@ import re
 from twisted.python import log
 
 import database as db
-from pybridge import __version__ as version
+from pybridge import __version__ as SERVER_VERSION
 from pybridge.games import SUPPORTED_GAMES
 
 from pybridge.network.error import DeniedRequest, IllegalRequest
@@ -33,9 +33,10 @@ availableTables = LocalTableManager()
 onlineUsers = LocalUserManager()
 
 
-serverData = {'compatibleClients': (version, version),  # minimum, maximum
-              'supportedGames': SUPPORTED_GAMES.keys(),
-              'version': version}
+# Information about this server, for relay to clients.
+publicData = { 'supportedGames': SUPPORTED_GAMES.keys()
+             , 'version': SERVER_VERSION
+             }
 
 
 def registerUser(username, password):

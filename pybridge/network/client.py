@@ -19,8 +19,11 @@
 import hashlib
 from twisted.cred import credentials
 from twisted.internet import reactor
+from twisted.python import log
 from twisted.spread import pb
 from zope.interface import implements
+
+from pybridge import __version__ as CLIENT_VERSION
 
 from pybridge.interfaces.observer import ISubject
 
@@ -54,12 +57,15 @@ class NetworkClient(object):
         self.expectLoseConnection = False  # Indicates when disconnecting.
 
         self.username = None
+        self.serverVersion = None
         self.tables = {}  # Tables observed.
         self.tableRoster = None
         self.userRoster = None
 
 
     def connectionLost(self, connector, reason):
+        log.msg("Lost connection to server")
+
         if self.avatar:
             # Reset invalidated remote references.
             self.avatar = None
@@ -72,13 +78,14 @@ class NetworkClient(object):
 
         if not self.expectLoseConnection:
             # Connection lost unexpectedly, so notify user.
-            print "Lost connection: %s" % reason.getErrorMessage()
+            log.msg("Lost connection: %s" % reason.getErrorMessage())
             self.notify('connectionLost', host=connector.host,
                                           port=connector.port)
 
 
     def errback(self, failure):
-        print "Error: %s" % failure.getErrorMessage()
+        log.err("Error: %s" % failure.getErrorMessage())
+        return failure  # Pass through for next error handler.
 
 
 # Implementation of ISubject.
@@ -113,8 +120,8 @@ class NetworkClient(object):
 
 
     def disconnect(self):
-        """Drops connection to server."""
-        self.expectLoseConnection = True
+        """Drops connection to server cleanly."""
+        self.expectLoseConnection = True  # Suppress "Lost Connection" error.
         self.factory.disconnect()
 
 
@@ -128,6 +135,9 @@ class NetworkClient(object):
         the user's password from eavesdroppers.
         """
 
+        def gotServerVersion(version):
+            self.serverVersion = version
+
         def gotRoster(roster, name):
             if name == 'tables':
                 self.tableRoster = roster
@@ -135,11 +145,15 @@ class NetworkClient(object):
                 self.userRoster = roster
             self.notify('gotRoster', name=name, roster=roster)
 
-        def connectedAsUser(avatar):
+        def connectedAsRegisteredUser(avatar):
             """Actions to perform when connection succeeds."""
             self.avatar = avatar
             self.username = username
             self.notify('loggedIn', username=username)
+            
+            # Report client version number to server.
+            d = avatar.callRemote('setClientVersion', CLIENT_VERSION)
+            d.addCallbacks(gotServerVersion, self.errback)
 
             # Request services from server.
             for rostername in ['tables', 'users']:
@@ -150,7 +164,7 @@ class NetworkClient(object):
         hash = self.__hashPass(password)
         creds = credentials.UsernamePassword(username, hash)
         d = self.factory.login(creds, client=None)
-        d.addCallback(connectedAsUser)
+        d.addCallbacks(connectedAsRegisteredUser, self.errback)
 
         return d
 
@@ -165,9 +179,9 @@ class NetworkClient(object):
             # TODO: after registration, need to disconnect from server?
             return d
 
-        anon = credentials.UsernamePassword('', '')
+        anon = credentials.Anonymous()  # UsernamePassword('', '')
         d = self.factory.login(anon, client=None)
-        d.addCallback(connectedAsAnonymousUser)
+        d.addCallbacks(connectedAsAnonymousUser, self.errback)
 
         return d
 
@@ -197,7 +211,7 @@ class NetworkClient(object):
             params['gamename'] = gameclass.__name__
 
         d = self.avatar.callRemote('joinTable', tableid, host, **params)
-        d.addCallback(success)
+        d.addCallbacks(success, self.errback)
         return d
 
 
@@ -208,7 +222,7 @@ class NetworkClient(object):
             self.notify('leaveTable', tableid=tableid)
 
         d = self.avatar.callRemote('leaveTable', tableid)
-        d.addCallback(success)
+        d.addCallbacks(success, self.errback)
         return d
 
 

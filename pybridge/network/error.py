@@ -1,5 +1,5 @@
 # PyBridge -- online contract bridge made easy.
-# Copyright (C) 2004-2007 PyBridge Project.
+# Copyright (C) 2004-2009 PyBridge Project.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,6 +17,10 @@
 
 
 from twisted.spread import pb
+
+
+class IncompatibleVersion(pb.Error):
+    """Raised if an incompatibility between client and server is detected."""
 
 
 class DeniedRequest(pb.Error):
