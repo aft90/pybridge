@@ -38,6 +38,7 @@ sys.path.insert(0, pythonpath)
 import random
 import time
 from twisted.internet import reactor
+from twisted.python import log
 from zope.interface import implements
 
 from pybridge.interfaces.observer import IListener
@@ -262,6 +263,8 @@ def lostConnection(connector, reason):
 
 
 if __name__ == '__main__':
+    log.startLogging(sys.stdout)
+
     username, password = sys.argv[1], sys.argv[2]
 
     client.factory.clientConnectionLost = lostConnection

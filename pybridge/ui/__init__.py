@@ -51,6 +51,9 @@ def run():
     from window_main import WindowMain
     wm.open(WindowMain)
 
+    from twisted.python import log
+    log.startLogging(sys.stdout)
+
     # Start the event loop.
     from twisted.internet import reactor
     reactor.run()
