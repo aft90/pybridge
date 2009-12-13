@@ -3,12 +3,12 @@
 # enum.py
 # Part of enum, a package providing enumerated types for Python.
 #
-# Copyright © 2007 Ben Finney
+# Copyright © 2007–2009 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later
 # or, at your option, the terms of the Python license.
 
-"""Robust enumerated type support in Python
+""" Robust enumerated type support in Python.
 
 This package provides a module for robust enumerations in Python.
 
@@ -47,42 +47,56 @@ original arguments used to create the enumeration::
     2
 """
 
+
 __author_name__ = "Ben Finney"
 __author_email__ = "ben+python@benfinney.id.au"
-__author__ = "%s <%s>" % (__author_name__, __author_email__)
-__date__ = "2007-01-24"
-__copyright__ = "Copyright © %s %s" % (
-    __date__.split('-')[0], __author_name__
-)
+__author__ = "%(__author_name__)s <%(__author_email__)s>" % vars()
+
+_copyright_year_begin = "2007"
+__date__ = "2009-08-26"
+_copyright_year_latest = __date__.split('-')[0]
+_copyright_year_range = _copyright_year_begin
+if _copyright_year_latest > _copyright_year_begin:
+    _copyright_year_range += "–%(_copyright_year_latest)s" % vars()
+__copyright__ = (
+    "Copyright © %(_copyright_year_range)s"
+    " %(__author_name__)s") % vars()
 __license__ = "Choice of GPL or Python license"
-__url__ = "http://cheeseshop.python.org/pypi/enum/"
-__version__ = "0.4.3"
+
+__url__ = "http://pypi.python.org/pypi/enum/"
+__version__ = "0.4.4"
 
 
 class EnumException(Exception):
-    """ Base class for all exceptions in this module """
-    def __init__(self):
+    """ Base class for all exceptions in this module. """
+
+    def __init__(self, *args, **kwargs):
         if self.__class__ is EnumException:
-            raise NotImplementedError, \
-                "%s is an abstract class for subclassing" % self.__class__
+            class_name = self.__class__.__name__
+            raise NotImplementedError(
+                "%(class_name)s is an abstract base class" % vars())
+        super(EnumException, self).__init__(*args, **kwargs)
+
 
 class EnumEmptyError(AssertionError, EnumException):
-    """ Raised when attempting to create an empty enumeration """
+    """ Raised when attempting to create an empty enumeration. """
 
     def __str__(self):
         return "Enumerations cannot be empty"
 
+
 class EnumBadKeyError(TypeError, EnumException):
-    """ Raised when creating an Enum with non-string keys """
+    """ Raised when creating an Enum with non-string keys. """
 
     def __init__(self, key):
         self.key = key
 
     def __str__(self):
-        return "Enumeration keys must be strings: %s" % (self.key,)
+        return "Enumeration keys must be strings: %(key)r" % vars(self)
+
 
 class EnumImmutableError(TypeError, EnumException):
-    """ Raised when attempting to modify an Enum """
+    """ Raised when attempting to modify an Enum. """
 
     def __init__(self, *args):
         self.args = args
@@ -91,57 +105,80 @@ class EnumImmutableError(TypeError, EnumException):
         return "Enumeration does not allow modification"
 
 
-class EnumValue(object):
-    """ A specific value of an enumerated type """
-
-    def __init__(self, enumtype, index, key):
-        """ Set up a new instance """
-        self.__enumtype = enumtype
-        self.__index = index
-        self.__key = key
-
-    def __get_enumtype(self):
-        return self.__enumtype
-    enumtype = property(__get_enumtype)
-
-    def __get_key(self):
-        return self.__key
-    key = property(__get_key)
-
-    def __str__(self):
-        return "%s" % (self.key)
-
-    def __get_index(self):
-        return self.__index
-    index = property(__get_index)
-
-    def __repr__(self):
-        return "EnumValue(%s, %s, %s)" % (
-            repr(self.__enumtype),
-            repr(self.__index),
-            repr(self.__key),
-        )
-
-    def __hash__(self):
-        return hash(self.__index)
-
-    def __cmp__(self, other):
-        result = NotImplemented
-        self_type = self.enumtype
+def _comparator(func):
+    """ Decorator for EnumValue rich comparison methods. """
+    def comparator_wrapper(self, other):
         try:
-            assert self_type == other.enumtype
-            result = cmp(self.index, other.index)
+            assert self.enumtype == other.enumtype
+            result = func(self.index, other.index)
         except (AssertionError, AttributeError):
             result = NotImplemented
 
         return result
+    comparator_wrapper.__name__ = func.__name__
+    comparator_wrapper.__doc__ = getattr(float, func.__name__).__doc__
+    return comparator_wrapper
+
+class EnumValue(object):
+    """ A specific value of an enumerated type. """
+
+    def __init__(self, enumtype, index, key):
+        """ Set up a new instance. """
+        self._enumtype = enumtype
+        self._index = index
+        self._key = key
+
+    @property
+    def enumtype(self):
+        return self._enumtype
+
+    @property
+    def key(self):
+        return self._key
+
+    def __str__(self):
+        return str(self.key)
+
+    @property
+    def index(self):
+        return self._index
+
+    def __repr__(self):
+        return "EnumValue(%(_enumtype)r, %(_index)r, %(_key)r)" % vars(self)
+
+    def __hash__(self):
+        return hash(self._index)
+
+    @_comparator
+    def __eq__(self, other):
+        return (self == other)
+
+    @_comparator
+    def __ne__(self, other):
+        return (self != other)
+
+    @_comparator
+    def __lt__(self, other):
+        return (self < other)
+
+    @_comparator
+    def __le__(self, other):
+        return (self <= other)
+
+    @_comparator
+    def __gt__(self, other):
+        return (self > other)
+
+    @_comparator
+    def __ge__(self, other):
+        return (self >= other)
 
 
 class Enum(object):
-    """ Enumerated type """
+    """ Enumerated type. """
 
     def __init__(self, *keys, **kwargs):
-        """ Create an enumeration instance """
+        """ Create an enumeration instance. """
 
         value_type = kwargs.get('value_type', EnumValue)
 
@@ -156,11 +193,11 @@ class Enum(object):
             values[i] = value
             try:
                 super(Enum, self).__setattr__(key, value)
-            except TypeError, e:
+            except TypeError:
                 raise EnumBadKeyError(key)
 
-        super(Enum, self).__setattr__('_keys', keys)
-        super(Enum, self).__setattr__('_values', values)
+        self.__dict__['_keys'] = keys
+        self.__dict__['_values'] = values
 
     def __setattr__(self, name, value):
         raise EnumImmutableError(name)
@@ -188,8 +225,15 @@ class Enum(object):
         if isinstance(value, basestring):
             is_member = (value in self._keys)
         else:
-            try:
-                is_member = (value in self._values)
-            except EnumValueCompareError, e:
-                is_member = False
+            is_member = (value in self._values)
         return is_member
+
+
+# Local variables:
+# mode: python
+# time-stamp-format: "%:y-%02m-%02d"
+# time-stamp-start: "__date__ = \""
+# time-stamp-end: "\"$"
+# time-stamp-line-limit: 200
+# End:
+# vim: filetype=python fileencoding=utf-8 :
