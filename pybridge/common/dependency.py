@@ -51,6 +51,7 @@ def verify_pybridge_server():
     check_python()
     check_sqlobject()
     check_twisted()
+    check_configobj()
     check_zope()
 
 
