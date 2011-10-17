@@ -215,6 +215,5 @@ class CairoCanvas(gtk.DrawingArea):
         context.clip()  # Only redraw the exposed area.
         context.set_source_surface(self.backing, 0, 0)
         context.paint()
-        context.reset_clip()
         return False  # Expected to return False.
 
