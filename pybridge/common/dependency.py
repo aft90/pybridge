@@ -28,11 +28,11 @@ Note to PyBridge packagers:
 
 
 PYTHON_REQUIRED = (2, 5)
-CONFIGOBJ_REQUIRED = '4.0'
-PYCAIRO_REQUIRED = '1.4'
+CONFIGOBJ_REQUIRED = (4,0)
+PYCAIRO_REQUIRED = (1,4)
 PYGTK_REQUIRED = '2.0'
 SQLOBJECT_REQUIRED = '0.9'
-TWISTED_REQUIRED = '2.5.0'
+TWISTED_REQUIRED = (2,5)
 ZOPE_REQUIRED = '3.0'
 
 
@@ -56,6 +56,8 @@ def verify_pybridge_server():
 
 
 def dependency_check(dependency, required, installed=None):
+    if type(required) is tuple and type(installed) is str:
+	installed = tuple(map(type(required[0]), installed.split('.')))
     if installed and installed >= required:
         return  # Success condition
 
