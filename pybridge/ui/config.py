@@ -37,7 +37,7 @@ spec = StringIO("""# PyBridge configuration file
 
 [Appearance]
     CardStyle = string
-    BackgroundImage = string
+    Background = string
     SuitSymbols = boolean(default=True)
 
     [[Colours]]
