@@ -16,11 +16,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from functools import total_ordering
 from twisted.spread import pb
 
 from .symbols import Rank, Suit
 
-
+@total_ordering
 class Card(pb.Copyable, pb.RemoteCopy):
     """A card has a rank and a suit.
     
@@ -51,7 +52,7 @@ class Card(pb.Copyable, pb.RemoteCopy):
         return False
 
 
-    def __cmp__(self, other):
+    def __lt__(self, other):
         """Compare cards for hand sorting.
         
         Care must be taken when comparing cards of different suits.
@@ -61,7 +62,7 @@ class Card(pb.Copyable, pb.RemoteCopy):
 
         selfIndex = self.suit.index*13 + self.rank.index
         otherIndex = other.suit.index*13 + other.rank.index
-        return cmp(selfIndex, otherIndex)
+        return selfIndex < otherIndex
 
 
     def __hash__(self):
