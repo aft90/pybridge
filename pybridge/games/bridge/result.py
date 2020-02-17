@@ -26,7 +26,7 @@ class GameResult(object):
 
     _getScore = NotImplemented  # Expected to be implemented by subclasses.
 
-    __vulnMap = {Vulnerable.None: (),
+    __vulnMap = {Vulnerable.Nil: (),
                  Vulnerable.NorthSouth: (Direction.North, Direction.South),
                  Vulnerable.EastWest: (Direction.East, Direction.West),
                  Vulnerable.All: tuple(Direction)}
@@ -44,7 +44,7 @@ class GameResult(object):
 
         self.isVulnerable = None
         if self.contract:
-            vuln = self.board.get('vuln', Vulnerable.None)
+            vuln = self.board.get('vuln', Vulnerable.Nil)
             self.isVulnerable = self.contract.declarer in self.__vulnMap[vuln]
 
         self.score = self._getScore()

@@ -93,6 +93,6 @@ Direction = Enum('North', 'East', 'South', 'West', value_type=WeakEnumValue)
 
 # Vulnerability indicators.
 
-Vulnerable = Enum('None', 'NorthSouth', 'EastWest', 'All',
+Vulnerable = Enum('Nil', 'NorthSouth', 'EastWest', 'All',
                   value_type=WeakEnumValue)
 

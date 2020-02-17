@@ -60,7 +60,7 @@ class Board(dict):
 
         # Convention for duplicate bridge.
         board['dealer'] = Direction.North
-        board['vuln'] = Vulnerable.None
+        board['vuln'] = Vulnerable.Nil
 
         return board
 

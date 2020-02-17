@@ -97,7 +97,7 @@ class Bridge(object):
         if self.options.get('RubberScoring'):
             # Vulnerability determined by number of games won by each pair.
             if len(self.rubbers) == 0 or self.rubbers[-1].winner:
-                self.board['vuln'] = Vulnerable.None  # First round, new rubber.
+                self.board['vuln'] = Vulnerable.Nil  # First round, new rubber.
             else:
                 pairs = [pair for game, pair in self.rubbers[-1].games]
                 if pairs.count((Direction.North, Direction.South)) > 0:
@@ -109,7 +109,7 @@ class Bridge(object):
                     if pairs.count((Direction.East, Direction.West)) > 0:
                         self.board['vuln'] = Vulnerable.EastWest
                     else:
-                        self.board['vuln'] = Vulnerable.None
+                        self.board['vuln'] = Vulnerable.Nil
 
         self.auction = Auction(self.board['dealer'])  # Start auction.
         self.play = None

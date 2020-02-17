@@ -147,7 +147,7 @@ VULN_SYMBOLS = {
     Vulnerable.All: _('All'),
     Vulnerable.NorthSouth: _('N/S'),
     Vulnerable.EastWest: _('E/W'),
-    Vulnerable.None: _('None'),
+    Vulnerable.Nil: _('Nil'),
 }
 
 
