@@ -16,16 +16,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.observer import IListener
 
-
+@implementer(IListener)
 class SimpleEventHandler:
     """An implementation of IListener which redirects updates to its target."""
-
-    implements(IListener)
-
 
     def __init__(self, target, prefix='event_'):
         self.__target = target

@@ -19,16 +19,16 @@
 from twisted.cred import checkers, credentials, error
 from twisted.internet import defer
 from twisted.python import failure, log
-from zope.interface import implements
+from zope.interface import implementer
 
 from . import database as db
 from . import server
 
 
+@implementer(checkers.ICredentialsChecker)
 class Checker:
     """A database-driven implementation of ICredentialsChecker."""
 
-    implements(checkers.ICredentialsChecker)
 
     credentialInterfaces = (credentials.IUsernamePassword,
                             credentials.IUsernameHashedPassword)

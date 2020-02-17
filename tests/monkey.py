@@ -39,7 +39,7 @@ import random
 import time
 from twisted.internet import reactor
 from twisted.python import log
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.observer import IListener
 
@@ -63,9 +63,9 @@ QUOTES = ["Hello!", "Doctor? Doctor? DOCTOR!", "My brain hurts!",
 SLOTH = 0.1  # Time between game event and response.
 
 
+@implementer(IListener)
 class SimpleEventHandler:
 
-    implements(IListener)
 
     def __init__(self, target):
         self.target = target

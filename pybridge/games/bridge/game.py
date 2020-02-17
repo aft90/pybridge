@@ -17,7 +17,7 @@
 
 
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.game import ICardGame
 from pybridge.interfaces.observer import ISubject
@@ -33,6 +33,7 @@ from .card import Card
 from .symbols import Direction, Suit, Strain, Vulnerable
 
 
+@implementer(ICardGame, ISubject)
 class Bridge:
     """A bridge game sequences the auction and trick play.
     
@@ -43,8 +44,6 @@ class Bridge:
     Methods which change the game state (makeCall, playCard) require a player
     argument as "authentication".
     """
-
-    implements(ICardGame, ISubject)
 
 
     # Valid positions (for Table).

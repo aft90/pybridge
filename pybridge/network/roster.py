@@ -19,11 +19,12 @@
 from UserDict import IterableUserDict
 from twisted.internet import reactor
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.observer import ISubject
 
 
+@implementer(ISubject)
 class Roster(IterableUserDict):
     """A dictionary-like object, which combines a set of available items with
     information associated with each item.
@@ -32,7 +33,6 @@ class Roster(IterableUserDict):
     when an entry in the roster is added, removed or changed.
     """
 
-    implements(ISubject)
 
 
     def __init__(self):

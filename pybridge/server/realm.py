@@ -18,15 +18,13 @@
 
 from twisted.cred import checkers, portal
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from .user import AnonymousUser, RegisteredUser
 
 
+@implementer(portal.IRealm)
 class Realm:
-
-    implements(portal.IRealm)
-
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         if pb.IPerspective not in interfaces:

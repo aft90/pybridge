@@ -19,7 +19,7 @@
 import time
 from twisted.internet import reactor
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.observer import ISubject, IListener
 from pybridge.network.error import DeniedRequest, IllegalRequest
@@ -58,10 +58,10 @@ pb.setUnjellyableForClass(Message, Message)
 
 
 
+@implementer(ISubject)
 class Chat:  # TODO subclass observable?
     """A simple chat facility, facilitating communication between users."""
 
-    implements(ISubject)
 
 
     def __init__(self):

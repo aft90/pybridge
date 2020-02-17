@@ -17,7 +17,7 @@
 
 
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.observer import ISubject
 from pybridge.interfaces.table import ITable
@@ -26,6 +26,7 @@ from pybridge.network.error import DeniedRequest, IllegalRequest
 from pybridge.games import SUPPORTED_GAMES
 
 
+@implementer(ITable, ISubject)
 class RemoteTable(pb.RemoteCache):
     """A client-side implementation of ITable providing a "front-end" to a
     remote server-side LocalTable.
@@ -35,7 +36,6 @@ class RemoteTable(pb.RemoteCache):
     which change the table state are forwarded to the LocalTable.
     """
 
-    implements(ITable, ISubject)
 
     info = property(lambda self: {'gamename': self.game.__class__.__name__})
 

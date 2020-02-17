@@ -21,7 +21,7 @@ from twisted.cred import credentials
 from twisted.internet import reactor
 from twisted.python import log
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge import __version__ as CLIENT_VERSION
 
@@ -41,11 +41,9 @@ pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
 #   - a factory class which establishes connections with servers
 #   - a class which represents connections (and implements ISubject) 
 
+@implementer(ISubject)
 class NetworkClient:
     """Provides the glue between the client code and the server."""
-
-    implements(ISubject)
-
 
     def __init__(self):
         self.listeners = []

@@ -19,7 +19,7 @@
 import time
 from twisted.internet import reactor
 from twisted.spread import pb
-from zope.interface import implements
+from zope.interface import implementer
 
 from pybridge.interfaces.observer import ISubject, IListener
 from pybridge.interfaces.table import ITable
@@ -28,14 +28,13 @@ from pybridge.network.error import DeniedRequest, IllegalRequest
 from .chat import LocalChat
 
 
+@implementer(ITable, ISubject, IListener)
 class LocalTable(pb.Cacheable):
     """An implementation of ITable suitable for server-side table instances.
     
     A LocalTable maintains the "master" game object and provides synchronisation
     services for remote tables to mirror the game state.
     """
-
-    implements(ITable, ISubject, IListener)
 
     info = property(lambda self: {'gamename': self.game.__class__.__name__})
 
