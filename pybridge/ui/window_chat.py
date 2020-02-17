@@ -231,7 +231,7 @@ class ChatBox(gtk.VPaned):
 
 
 
-class WindowChat(object):
+class WindowChat:
     """A tabbed display of chat sessions."""
 
 

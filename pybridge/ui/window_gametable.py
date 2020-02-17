@@ -27,7 +27,7 @@ from .wrapper import ICON_PATH
 from .window_chat import WindowChat
 
 
-class WindowGameTable(object):
+class WindowGameTable:
     """A generic table display window.
     
     This exposes core table functionality to the user, and may be subclassed to

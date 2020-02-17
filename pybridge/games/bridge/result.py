@@ -21,7 +21,7 @@ from twisted.spread import pb
 from .symbols import Direction, Strain, Vulnerable
 
 
-class GameResult(object):
+class GameResult:
     """Represents the result of a completed round of bridge."""
 
     _getScore = NotImplemented  # Expected to be implemented by subclasses.

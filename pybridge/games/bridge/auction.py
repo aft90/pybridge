@@ -22,7 +22,7 @@ from .call import Bid, Pass, Double, Redouble
 from .symbols import Direction
 
 
-class Contract(object, pb.Copyable, pb.RemoteCopy):
+class Contract(pb.Copyable, pb.RemoteCopy):
     """Represents the result of an auction."""
 
 

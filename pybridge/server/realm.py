@@ -23,7 +23,7 @@ from zope.interface import implements
 from .user import AnonymousUser, RegisteredUser
 
 
-class Realm(object):
+class Realm:
 
     implements(portal.IRealm)
 

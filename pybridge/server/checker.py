@@ -25,7 +25,7 @@ from . import database as db
 from . import server
 
 
-class Checker(object):
+class Checker:
     """A database-driven implementation of ICredentialsChecker."""
 
     implements(checkers.ICredentialsChecker)

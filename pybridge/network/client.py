@@ -41,7 +41,7 @@ pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
 #   - a factory class which establishes connections with servers
 #   - a class which represents connections (and implements ISubject) 
 
-class NetworkClient(object):
+class NetworkClient:
     """Provides the glue between the client code and the server."""
 
     implements(ISubject)

@@ -113,7 +113,7 @@ class RubberScoreSheet(gtk.TreeView):
 
 
 
-class WindowScoreSheet(object):
+class WindowScoreSheet:
     """"""
 
 

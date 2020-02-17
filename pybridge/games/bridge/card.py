@@ -21,7 +21,7 @@ from twisted.spread import pb
 from .symbols import Rank, Suit
 
 
-class Card(object, pb.Copyable, pb.RemoteCopy):
+class Card(pb.Copyable, pb.RemoteCopy):
     """A card has a rank and a suit.
     
     @param rank: the rank of the card.

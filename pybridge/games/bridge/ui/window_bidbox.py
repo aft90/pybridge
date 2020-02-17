@@ -25,7 +25,7 @@ from pybridge.ui.vocabulary import *
 import pybridge.games.bridge.call as Call
 
 
-class WindowBidbox(object):
+class WindowBidbox:
     """The bidding box is presented to the playing user, during an auction.
     
     Each call (bid, pass, double or redouble) is displayed as a button.

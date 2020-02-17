@@ -30,7 +30,7 @@ else:  # All other platforms should use the PNG icon.
     ICON_PATH = env.find_pixmap("pybridge.png")
 
 
-class GladeWrapper(object):
+class GladeWrapper:
     """A superclass for Glade-based application windows.
     
     Modified from: http://www.pixelbeat.org/libs/libglade.py

@@ -33,7 +33,7 @@ from .card import Card
 from .symbols import Direction, Suit, Strain, Vulnerable
 
 
-class Bridge(object):
+class Bridge:
     """A bridge game sequences the auction and trick play.
     
     The methods of this class comprise the interface of a state machine.
