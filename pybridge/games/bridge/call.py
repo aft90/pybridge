@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+from functools import total_ordering
 from twisted.spread import pb
 
 from .symbols import Level, Strain
@@ -32,6 +33,7 @@ class Call(pb.Copyable, pb.RemoteCopy):
         return "%s()" % self.__class__.__name__
 
 
+@total_ordering
 class Bid(Call):
     """A Bid represents a statement of a level and a strain.
     
@@ -54,17 +56,22 @@ class Bid(Call):
         self.__level = level
         self.__strain = strain
 
+    def __eq__(self, other):
+        if isinstance(other, Bid):
+            return self.__level == other.__level and self.__strain == other.__strain
+        return False
 
-    def __cmp__(self, other):
+
+    def __lt__(self, other):
         if not issubclass(other.__class__, Call):
             raise TypeError("Expected Call, got %s" % type(other))
 
         if isinstance(other, Bid):  # Compare two bids.
             selfIndex = self.level.index*len(Strain) + self.strain.index
             otherIndex = other.level.index*len(Strain) + other.strain.index
-            return cmp(selfIndex, otherIndex)
-        else:  # Comparing non-bid calls returns true.
-            return 1
+            return selfIndex < otherIndex
+        # Comparing non-bid calls returns true.
+        return True
 
 
     def __hash__(self):
