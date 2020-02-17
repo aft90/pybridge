@@ -57,7 +57,7 @@ def verify_pybridge_server():
 
 def dependency_check(dependency, required, installed=None):
     if type(required) is tuple and type(installed) is str:
-	installed = tuple(map(type(required[0]), installed.split('.')))
+        installed = tuple(map(type(required[0]), installed.split('.')))
     if installed and installed >= required:
         return  # Success condition
 

@@ -39,10 +39,10 @@ if engine == 'sqlite':
                                 env.find_config_server('pybridge-server.db'))
     # SQLObject uses a special syntax to specify path on Windows systems.
     # This code block is from http://simpleweb.essienitaessien.com/example
-    if(dbpath[1] == ':'): 
+    if(dbpath[1] == ':'):
         s = re.sub('\\\\', '/', dbpath)  # Change '\' to '/'
-	s = re.sub(':', '|', s, 1)  # Special for sqlite
-	dbpath = '/' + s
+        s = re.sub(':', '|', s, 1)  # Special for sqlite
+        dbpath = '/' + s
 
     connection_string = "sqlite://" + dbpath
 
