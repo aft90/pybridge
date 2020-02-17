@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from UserDict import IterableUserDict
+from collections import UserDict
 from twisted.internet import reactor
 from twisted.spread import pb
 from zope.interface import implementer
@@ -25,7 +25,7 @@ from pybridge.interfaces.observer import ISubject
 
 
 @implementer(ISubject)
-class Roster(IterableUserDict):
+class Roster(UserDict):
     """A dictionary-like object, which combines a set of available items with
     information associated with each item.
     
@@ -36,7 +36,7 @@ class Roster(IterableUserDict):
 
 
     def __init__(self):
-        IterableUserDict.__init__(self)
+        super().__init__()
         self.listeners = []
 
 
