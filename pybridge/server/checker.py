@@ -21,8 +21,8 @@ from twisted.internet import defer
 from twisted.python import failure, log
 from zope.interface import implements
 
-import database as db
-import server
+from . import database as db
+from . import server
 
 
 class Checker(object):

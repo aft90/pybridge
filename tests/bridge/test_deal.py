@@ -46,7 +46,7 @@ class TestDeck(unittest.TestCase):
         assert set(deal.keys()) == set(Direction), "invalid set of keys"
 
         extractcards = []
-        for pos, hand in deal.items():
+        for pos, hand in list(deal.items()):
             assert len(hand) == 13, "%s hand does not contain 13 cards" % pos
             extractcards.extend(hand)
         assert self.cards == sorted(extractcards), "not a pure set of cards"
@@ -57,19 +57,19 @@ class TestDeck(unittest.TestCase):
         deal = Deal.fromRandom()
         try:
             self.validateDeal(deal)
-        except Exception, e:
+        except Exception as e:
             self.fail(e, deal)
 
 
     def test_toIndex(self):
         """Testing toIndex method over a set of known deals"""
-        for index, deal in self.samples.items():
+        for index, deal in list(self.samples.items()):
             self.assertEqual(deal.toIndex(), index)
 
 
     def test_fromIndex(self):
         """Testing Deal.fromIndex over a set of known indexes"""
-        for index, deal in self.samples.items():
+        for index, deal in list(self.samples.items()):
             self.assertEqual(Deal.fromIndex(index), deal)
 
 

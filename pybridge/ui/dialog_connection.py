@@ -17,11 +17,11 @@
 
 
 import gtk
-from wrapper import GladeWrapper
+from .wrapper import GladeWrapper
 
 from pybridge.network.client import client
-from config import config
-from manager import wm
+from .config import config
+from .manager import wm
 
 TCP_PORT = 5040
 

@@ -17,7 +17,7 @@
 
 
 from pybridge.games import SUPPORTED_GAMES
-from roster import LocalRoster, RemoteRoster
+from .roster import LocalRoster, RemoteRoster
 
 
 class LocalTableManager(LocalRoster):

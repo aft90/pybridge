@@ -18,8 +18,8 @@
 
 from twisted.spread import pb
 
-from call import Bid, Pass, Double, Redouble
-from symbols import Direction
+from .call import Bid, Pass, Double, Redouble
+from .symbols import Direction
 
 
 class Contract(object, pb.Copyable, pb.RemoteCopy):

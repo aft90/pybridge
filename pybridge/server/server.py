@@ -19,7 +19,7 @@
 import re
 from twisted.python import log
 
-import database as db
+from . import database as db
 from pybridge import __version__ as SERVER_VERSION
 from pybridge.games import SUPPORTED_GAMES
 
@@ -34,7 +34,7 @@ onlineUsers = LocalUserManager()
 
 
 # Information about this server, for relay to clients.
-publicData = { 'supportedGames': SUPPORTED_GAMES.keys()
+publicData = { 'supportedGames': list(SUPPORTED_GAMES.keys())
              , 'version': SERVER_VERSION
              }
 
@@ -47,7 +47,7 @@ def registerUser(username, password):
     """
     # Check that username has not already been registered.
     if db.UserAccount.selectBy(username=username).count() > 0:
-        raise DeniedRequest, "Username already registered"
+        raise DeniedRequest("Username already registered")
 
     # Create user account - may raise ValueError.
     db.UserAccount(username=username, password=password, allowLogin=True)
@@ -64,7 +64,7 @@ def setUserPassword(username, password):
         user = db.UserAccount.selectBy(username=username)[0]
         user.set(password=password)  # May raise ValueError.
     except IndexError:
-        raise DeniedRequest, "User account does not exist"
+        raise DeniedRequest("User account does not exist")
 
 
 def createTable(tableid, gamename, **tableOptions):
@@ -77,11 +77,11 @@ def createTable(tableid, gamename, **tableOptions):
     # TODO: convert gametype string to corresponding class.
 
     if not 0 < len(tableid) <= 20 or re.search("[^A-Za-z0-9_ ]", tableid):
-        raise IllegalRequest, "Invalid table identifier format"
+        raise IllegalRequest("Invalid table identifier format")
     if tableid in availableTables:
-        raise DeniedRequest, "Table name exists"
+        raise DeniedRequest("Table name exists")
     if gamename not in SUPPORTED_GAMES:
-        raise DeniedRequest, "Unsupported game class %s" % gamename
+        raise DeniedRequest("Unsupported game class %s" % gamename)
 
     gameclass = SUPPORTED_GAMES[gamename]
     table = LocalTable(tableid, gameclass)

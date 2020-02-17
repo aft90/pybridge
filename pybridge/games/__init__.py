@@ -17,7 +17,7 @@
 
 
 # TODO: Import all classes which implement IGame automatically.
-from bridge.game import Bridge
+from .bridge.game import Bridge
 
 # All classes which implement IGame.
 SUPPORTED_GAMES = {}

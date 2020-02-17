@@ -28,8 +28,8 @@ from pybridge.ui.manager import WindowManager
 from pybridge.ui.vocabulary import *
 
 from pybridge.ui.window_gametable import WindowGameTable
-from window_bidbox import WindowBidbox
-from window_scoresheet import WindowScoreSheet
+from .window_bidbox import WindowBidbox
+from .window_scoresheet import WindowScoreSheet
 
 
 class BiddingView(gtk.TreeView):
@@ -369,7 +369,7 @@ class WindowBridgeTable(WindowGameTable):
             hand = self.table.game.getHand(position)
             facedown = False
         except GameError:  # Unknown hand.
-            hand = range(13)
+            hand = list(range(13))
             facedown = True
 
         if all is True or self.table.game.play is None:
@@ -377,7 +377,7 @@ class WindowBridgeTable(WindowGameTable):
         else:
             played = [trick[position] for trick in self.table.game.play if trick.get(position)]
             if facedown:  # Draw cards face down for unknown hand. 
-                available = range(13 - len(played))
+                available = list(range(13 - len(played)))
             else:
                 available = [card for card in hand if card not in played]
 
@@ -435,7 +435,7 @@ class WindowBridgeTable(WindowGameTable):
         widget.set_property('sensitive', False)
 
         # If all positions occupied, disable Take Seat.
-        if len(self.table.players.values()) == len(Direction):
+        if len(list(self.table.players.values())) == len(Direction):
             self.takeseat.set_property('sensitive', False)
 
         if self.player and self.table.game.isNextGameReady():

@@ -42,7 +42,7 @@ class TestTrickPlay(unittest.TestCase):
     def testIsComplete(self):
         s = self.stepThroughTrickPlay()
         try:
-            while s.next():
+            while next(s):
                 self.assertEqual(self.trickplay.isComplete(), False)
         except StopIteration:
             self.assertEqual(self.trickplay.isComplete(), True)

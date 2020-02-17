@@ -22,9 +22,9 @@ import pango
 import pangocairo
 
 import pybridge.environment as env
-from canvas import CairoCanvas
-from config import config
-from vocabulary import *
+from .canvas import CairoCanvas
+from .config import config
+from .vocabulary import *
 
 from pybridge.games.bridge.symbols import Rank, Suit
 
@@ -137,10 +137,10 @@ class CardArea(CairoCanvas):
                         pos_x = index * self.spacing_x
                         coords[card] = (pos_x, pos_y)
                 else:  # Insert a space between each suit.
-                    spaces = len([1 for suitcards in suits.values() if len(suitcards) > 0]) - 1
+                    spaces = len([1 for suitcards in list(suits.values()) if len(suitcards) > 0]) - 1
                     for index, card in enumerate(hand):
                         # Insert a space for each suit in hand which appears before this card's suit.
-                        insert = len([1 for suit, suitcards in suits.items() if len(suitcards) > 0
+                        insert = len([1 for suit, suitcards in list(suits.items()) if len(suitcards) > 0
                                      and RED_BLACK.index(card.suit) > RED_BLACK.index(suit)])
                         pos_x = (index + insert) * self.spacing_x
                         coords[card] = (pos_x, pos_y)
@@ -152,7 +152,7 @@ class CardArea(CairoCanvas):
                         pos_y = (index / 4) * self.spacing_y
                         coords[card] = (pos_x, pos_y)
                 else:
-                    longest = max([len(cards) for cards in suits.values()])
+                    longest = max([len(cards) for cards in list(suits.values())])
                     for index, card in enumerate(hand):
                         adjust = position == self.RIGHT and longest - len(suits[card.suit])
                         pos_x = (suits[card.suit].index(card) + adjust) * self.spacing_x
@@ -180,8 +180,8 @@ class CardArea(CairoCanvas):
             coords = get_coords_for_hand()
 
         # Determine dimensions of hand.
-        width = max([x for x, y in coords.values()]) + self.card_width
-        height = max([y for x, y in coords.values()]) + self.card_height
+        width = max([x for x, y in list(coords.values())]) + self.card_width
+        height = max([y for x, y in list(coords.values())]) + self.card_height
         surface, context = self.new_surface(width, height)
 
         # Draw cards to surface.
@@ -309,7 +309,7 @@ class CardArea(CairoCanvas):
         items = self.items.copy()
         self.clear()  # Resets self.items.
 
-        for id, item in items.iteritems():
+        for id, item in items.items():
             cls, position = id
             self.items[id] = item  # Add the item back.
 

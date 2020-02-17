@@ -20,7 +20,7 @@
 Manages PyBridge client configuration file.
 """
 
-from StringIO import StringIO
+from io import StringIO
 from configobj import ConfigObj
 from validate import Validator
 

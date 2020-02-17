@@ -20,12 +20,13 @@ from copy import copy
 from operator import mul
 import random
 
-from card import Card
-from symbols import Direction, Rank, Suit
+from .card import Card
+from .symbols import Direction, Rank, Suit
+from functools import reduce
 
 
 # See http://mail.python.org/pipermail/edu-sig/2001-May/001288.html for details.
-comb = lambda n, k: reduce(mul, range(n, n-k, -1)) / reduce(mul, range(1, k+1))
+comb = lambda n, k: reduce(mul, list(range(n, n-k, -1))) / reduce(mul, list(range(1, k+1)))
 
 
 class Deal(dict):
@@ -53,7 +54,7 @@ class Deal(dict):
 
     def __init__(self, mapping):
         super(Deal, self).__init__(mapping)
-        for hand in self.values():
+        for hand in list(self.values()):
             hand.sort()
 
 
@@ -81,7 +82,7 @@ class Deal(dict):
         @param num: integer in range 1..D.
         @return: a Deal object containing the corresponding deal.
         """
-        assert isinstance(num, (int, long)), "index must be an integer"
+        assert isinstance(num, int), "index must be an integer"
         assert 1 <= num <= cls.__D, "index not in range %s..%s" % (1, cls.__D)
 
         cardSeq = copy(cls.__cards)  # Make a copy for modification.
@@ -142,11 +143,11 @@ class Deal(dict):
         indexes[Direction.East]  *= self.__Smax
 
         num = sum(indexes.values()) + 1  # Increment to fit within range 1..D.
-        return long(num)
+        return int(num)
 
 
-    __pbnDirection = dict(zip('NESW', Direction) + zip(Direction, 'NESW'))
-    __pbnRank = dict(zip('23456789TJQKA', Rank) + zip(Rank, '23456789TJQKA'))
+    __pbnDirection = dict(list(zip('NESW', Direction)) + list(zip(Direction, 'NESW')))
+    __pbnRank = dict(list(zip('23456789TJQKA', Rank)) + list(zip(Rank, '23456789TJQKA')))
 
 
     @classmethod

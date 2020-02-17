@@ -21,7 +21,7 @@ import gtk
 import cairo
 
 import pybridge.environment as env
-from config import config
+from .config import config
 
 
 class CairoCanvas(gtk.DrawingArea):
@@ -145,7 +145,7 @@ class CairoCanvas(gtk.DrawingArea):
         # Build list of sources to redraw in area, in order of z-index.
         # TODO: Find sources which intersect with area.
         area = gtk.gdk.Rectangle(x, y, width, height)
-        items = self.items.values()
+        items = list(self.items.values())
         items.sort(lambda i, j : cmp(i['z-index'], j['z-index']))
 
         for item in items:
@@ -204,7 +204,7 @@ class CairoCanvas(gtk.DrawingArea):
         self.backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
         # Recalculate position of all items.
-        for id, item in self.items.iteritems():
+        for id, item in self.items.items():
             self.items[id]['area'] = self.get_area(item['source'], item['xy'])
 
         self.redraw(0, 0, width, height)  # Full redraw required.

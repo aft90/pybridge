@@ -58,8 +58,9 @@ class WeakEnumValue(EnumValue, pb.Copyable, pb.RemoteCopy):
         return (self.index, self.key)
 
 
-    def setCopyableState(self, (index, key)):
+    def setCopyableState(self, xxx_todo_changeme):
         # self = WeakEnumValue(None, index, key)
+        (index, key) = xxx_todo_changeme
         self.__init__(None, index, key)
 
 

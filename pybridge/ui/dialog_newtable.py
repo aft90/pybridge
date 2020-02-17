@@ -17,11 +17,11 @@
 
 
 import gtk
-from wrapper import GladeWrapper
+from .wrapper import GladeWrapper
 
 from pybridge.network.client import client
 from pybridge.games import SUPPORTED_GAMES
-from manager import wm
+from .manager import wm
 
 # TODO: import all Window*Table classes automatically.
 from pybridge.games.bridge.ui.window_bridgetable import WindowBridgeTable

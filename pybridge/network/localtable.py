@@ -25,7 +25,7 @@ from pybridge.interfaces.observer import ISubject, IListener
 from pybridge.interfaces.table import ITable
 from pybridge.network.error import DeniedRequest, IllegalRequest
 
-from chat import LocalChat
+from .chat import LocalChat
 
 
 class LocalTable(pb.Cacheable):
@@ -97,9 +97,9 @@ class LocalTable(pb.Cacheable):
         state['chat'] = self.chat
         state['gamename'] = self.info['gamename']
         state['gamestate'] = self.game.getState()
-        state['observers'] = [p.name for p in self.observers.keys()]
+        state['observers'] = [p.name for p in list(self.observers.keys())]
         state['players'] = dict([(pos, p.name)
-                                 for pos, p in self.players.items()])
+                                 for pos, p in list(self.players.items())])
         state['view'] = self.view
 
         return state  # To observer.
@@ -109,7 +109,7 @@ class LocalTable(pb.Cacheable):
         del self.observers[perspective]
 
         # If user was playing, then remove their player(s) from game.
-        for position, user in self.players.items():
+        for position, user in list(self.players.items()):
             if perspective == user:
                 self.leaveGame(perspective, position)
         self.notify('removeObserver', observer=perspective.name)
@@ -134,7 +134,7 @@ class LocalTable(pb.Cacheable):
         for listener in self.listeners:
             listener.update(event, *args, **kwargs)
         # For all observers, calls event handler with provided arguments.
-        for observer in self.observers.values():
+        for observer in list(self.observers.values()):
             self.notifyObserver(observer, event, *args, **kwargs)
 
 
@@ -156,7 +156,7 @@ class LocalTable(pb.Cacheable):
 
     def update(self, event, *args, **kwargs):
         # Expected to be called only by methods of self.game.
-        for observer in self.observers.values():
+        for observer in list(self.observers.values()):
             self.notifyObserver(observer, 'gameUpdate', event, *args, **kwargs)
 
 
@@ -165,11 +165,11 @@ class LocalTable(pb.Cacheable):
 
     def joinGame(self, user, position):
         if position not in self.game.positions:
-            raise IllegalRequest, "Invalid position type"
+            raise IllegalRequest("Invalid position type")
         # Check that user is not already playing at table.
         if not self.config.get('MultiplePlayersPerUser'):
-            if user in self.players.values():
-                raise DeniedRequest, "Already playing in game"
+            if user in list(self.players.values()):
+                raise DeniedRequest("Already playing in game")
 
         player = self.game.addPlayer(position)  # May raise GameError.
         self.players[position] = user
@@ -180,10 +180,10 @@ class LocalTable(pb.Cacheable):
 
     def leaveGame(self, user, position):
         if position not in self.game.positions:
-            raise IllegalRequest, "Invalid position type"
+            raise IllegalRequest("Invalid position type")
         # Ensure that user is playing at specified position.
         if self.players.get(position) != user:
-            raise DeniedRequest, "Not playing at position"
+            raise DeniedRequest("Not playing at position")
 
         self.game.removePlayer(position)  # May raise GameError.
         del self.players[position]

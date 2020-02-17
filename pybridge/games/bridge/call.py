@@ -18,7 +18,7 @@
 
 from twisted.spread import pb
 
-from symbols import Level, Strain
+from .symbols import Level, Strain
 
 
 class Call(pb.Copyable, pb.RemoteCopy):
@@ -47,9 +47,9 @@ class Bid(Call):
 
     def __init__(self, level, strain):
         if level not in Level:
-            raise TypeError, "Expected Level, got %s" % type(level)
+            raise TypeError("Expected Level, got %s" % type(level))
         if strain not in Strain:
-            raise TypeError, "Expected Strain, got %s" % type(strain)
+            raise TypeError("Expected Strain, got %s" % type(strain))
 
         self.__level = level
         self.__strain = strain
@@ -57,7 +57,7 @@ class Bid(Call):
 
     def __cmp__(self, other):
         if not issubclass(other.__class__, Call):
-            raise TypeError, "Expected Call, got %s" % type(other)
+            raise TypeError("Expected Call, got %s" % type(other))
 
         if isinstance(other, Bid):  # Compare two bids.
             selfIndex = self.level.index*len(Strain) + self.strain.index

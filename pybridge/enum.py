@@ -222,7 +222,7 @@ class Enum(object):
 
     def __contains__(self, value):
         is_member = False
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             is_member = (value in self._keys)
         else:
             is_member = (value in self._values)

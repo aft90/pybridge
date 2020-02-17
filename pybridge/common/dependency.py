@@ -66,7 +66,7 @@ def dependency_check(dependency, required, installed=None):
     error += "\n\t%(dependency)s -- %(req)s (or newer) required, %(inst)s installed" % \
              {'dependency': dependency, 'req': required, 'inst': installed or "not"}
 
-    raise SystemExit, error
+    raise SystemExit(error)
 
 
 #
@@ -105,7 +105,7 @@ def check_pygtk():
     try:
         import pygtk
         pygtk.require(PYGTK_REQUIRED)
-    except AssertionError, ImportError:
+    except AssertionError as ImportError:
         dependency_check("PyGTK", PYGTK_REQUIRED)
 
 

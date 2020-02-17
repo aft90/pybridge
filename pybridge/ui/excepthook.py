@@ -25,7 +25,7 @@ Source: http://faq.pygtk.org/index.py?req=show&file=faq20.010.htp
 
 import gtk
 import traceback
-from StringIO import StringIO
+from io import StringIO
 
 
 def exceptdialog(errormessage):

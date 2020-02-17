@@ -22,8 +22,8 @@ from twisted.spread import pb
 
 from pybridge.network.error import DeniedRequest, IllegalRequest, IncompatibleVersion
 
-import database as db
-import server
+from . import database as db
+from . import server
 
 
 OLD_VERSION_ERROR = """You need to update your PyBridge client to version 0.4 to use this server.
@@ -86,7 +86,7 @@ class RegisteredUser(pb.Avatar):
         elif name == 'users':
             return server.onlineUsers
         else:
-            raise DeniedRequest, "Unknown roster name \'%s\'" % name
+            raise DeniedRequest("Unknown roster name \'%s\'" % name)
 
 
     def perspective_getServerData(self):
@@ -105,7 +105,7 @@ class RegisteredUser(pb.Avatar):
         try:
             user = db.UserAccount.selectBy(username=username)[0]
         except IndexError:
-            raise DeniedRequest, "Specified user does not exist"
+            raise DeniedRequest("Specified user does not exist")
 
         info = {}
         for field in 'realname', 'email', 'country', 'profile':
@@ -124,12 +124,12 @@ class RegisteredUser(pb.Avatar):
     def perspective_changePassword(self, password):
         """Sets avatar's user account password to that specified."""
         if not isinstance(password, str):
-            raise IllegalRequest, "Invalid parameter for password"
+            raise IllegalRequest("Invalid parameter for password")
 
         try:  # Validate password before it is changed.
             server.setUserPassword(self.name, password)
-        except ValueError, err:  # Password validation failed.
-            raise DeniedRequest, err
+        except ValueError as err:  # Password validation failed.
+            raise DeniedRequest(err)
 
 
     def perspective_joinTable(self, tableid, host=False, **hostParams):
@@ -137,9 +137,9 @@ class RegisteredUser(pb.Avatar):
         self.oldVersionCheck()  # TODO: remove after 0.4
 
         if not isinstance(tableid, str):
-            raise IllegalRequest, "Invalid parameter for table identifier"
+            raise IllegalRequest("Invalid parameter for table identifier")
         elif tableid in self.joinedTables:
-            raise DeniedRequest, "Already joined table"
+            raise DeniedRequest("Already joined table")
 
         if host:
             table = server.createTable(tableid, **hostParams)
@@ -147,7 +147,7 @@ class RegisteredUser(pb.Avatar):
             try:
                 table = server.availableTables[tableid]
             except KeyError:
-                raise DeniedRequest, "No such table"
+                raise DeniedRequest("No such table")
 
         self.joinedTables[tableid] = table
         return table
@@ -158,9 +158,9 @@ class RegisteredUser(pb.Avatar):
         self.oldVersionCheck()  # TODO: remove after 0.4
 
         if not isinstance(tableid, str):
-            raise IllegalRequest, "Invalid parameter for table identifier"
+            raise IllegalRequest("Invalid parameter for table identifier")
         elif tableid not in self.joinedTables:
-            raise DeniedRequest, "Not joined to table"
+            raise DeniedRequest("Not joined to table")
         
         del self.joinedTables[tableid]  # Implicitly removes user from table.
 
@@ -176,7 +176,7 @@ class RegisteredUser(pb.Avatar):
             log.msg("User %s may be running old client" % self.name)
             #self.mind.broker.transport.loseConnection()  # Drop connection
             # Provide client with a warning that they are incompatible with this server.
-            raise IncompatibleVersion, OLD_VERSION_ERROR
+            raise IncompatibleVersion(OLD_VERSION_ERROR)
 
 
 class AnonymousUser(pb.Avatar):
@@ -187,6 +187,6 @@ class AnonymousUser(pb.Avatar):
         # TODO: consider defer.succeed, defer.fail, failure.Failure
         try:
             server.registerUser(username, password)
-        except ValueError, err:  # Username/password validation failed.
-            raise DeniedRequest, err
+        except ValueError as err:  # Username/password validation failed.
+            raise DeniedRequest(err)
 

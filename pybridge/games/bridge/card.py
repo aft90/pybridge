@@ -18,7 +18,7 @@
 
 from twisted.spread import pb
 
-from symbols import Rank, Suit
+from .symbols import Rank, Suit
 
 
 class Card(object, pb.Copyable, pb.RemoteCopy):
@@ -36,9 +36,9 @@ class Card(object, pb.Copyable, pb.RemoteCopy):
 
     def __init__(self, rank, suit):
         if rank not in Rank:
-            raise TypeError, "Expected Rank, got %s" % type(rank)
+            raise TypeError("Expected Rank, got %s" % type(rank))
         if suit not in Suit:
-            raise TypeError, "Expected Suit, got %s" % type(suit)
+            raise TypeError("Expected Suit, got %s" % type(suit))
 
         self.__rank = rank
         self.__suit = suit
@@ -57,7 +57,7 @@ class Card(object, pb.Copyable, pb.RemoteCopy):
         Care must be taken when comparing cards of different suits.
         """
         if not isinstance(other, Card):
-            raise TypeError, "Expected Card, got %s" % type(other)
+            raise TypeError("Expected Card, got %s" % type(other))
 
         selfIndex = self.suit.index*13 + self.rank.index
         otherIndex = other.suit.index*13 + other.rank.index

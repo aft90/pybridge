@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # PyBridge -- online contract bridge made easy.
 # Copyright (C) 2004-2009 PyBridge Project.
@@ -41,7 +41,7 @@ def main():
         try:
             import pybridge
         except ImportError:
-            raise SystemExit, "Fatal error: could not locate PyBridge installation."
+            raise SystemExit("Fatal error: could not locate PyBridge installation.")
 
     parser = OptionParser(version="PyBridge %s" % pybridge.__version__)
     options, args = parser.parse_args()

@@ -20,11 +20,11 @@ import gtk
 
 from pybridge.network.client import client
 
-from eventhandler import SimpleEventHandler
-from manager import WindowManager, wm
-from wrapper import ICON_PATH
+from .eventhandler import SimpleEventHandler
+from .manager import WindowManager, wm
+from .wrapper import ICON_PATH
 
-from window_chat import WindowChat
+from .window_chat import WindowChat
 
 
 class WindowGameTable(object):
@@ -103,7 +103,7 @@ class WindowGameTable(object):
 
     def tearDown(self):
         # Close all child windows.
-        for window in self.children.values():
+        for window in list(self.children.values()):
             self.children.close(window)
 
         # If table has chat session, remove it from chat window.
@@ -117,8 +117,8 @@ class WindowGameTable(object):
 
     def errback(self, failure):
         # TODO: display error in window.
-        print "Error: %s" % failure.getErrorMessage()
-        print failure.getBriefTraceback()
+        print("Error: %s" % failure.getErrorMessage())
+        print(failure.getBriefTraceback())
 
 
     def setTable(self, table):

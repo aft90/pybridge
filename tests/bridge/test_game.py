@@ -12,7 +12,7 @@ from pybridge.network.error import GameError
 #from pybridge.bridge.deck import Deck
 #d = Deck()
 #hands = d.randomDeal()
-hands = dict(zip(Direction, [[Card(r, s) for r in Rank] for s in Suit]))
+hands = dict(list(zip(Direction, [[Card(r, s) for r in Rank] for s in Suit])))
 board = Board(deal=hands, dealer=Direction.North, vuln=Vulnerable.All)
 
 

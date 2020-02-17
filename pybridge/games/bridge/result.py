@@ -18,7 +18,7 @@
 
 from twisted.spread import pb
 
-from symbols import Direction, Strain, Vulnerable
+from .symbols import Direction, Strain, Vulnerable
 
 
 class GameResult(object):
@@ -202,7 +202,7 @@ class DuplicateResult(GameResult, pb.Copyable, pb.RemoteCopy):
         """
         score = 0
         if self.contract and self.tricksMade:
-            for key, value in self._getScoreComponents().items():
+            for key, value in list(self._getScoreComponents().items()):
                 if key in ('odd', 'over', 'under', 'slambonus', 'gamebonus',
                            'partscore', 'insultbonus'):
                     score += value
@@ -226,7 +226,7 @@ class RubberResult(GameResult, pb.Copyable, pb.RemoteCopy):
         """
         above, below = 0, 0
         if self.contract and self.tricksMade:
-            for key, value in self._getScoreComponents().items():
+            for key, value in list(self._getScoreComponents().items()):
                 # Note: gamebonus/partscore are not assigned in rubber bridge.
                 if key in ('over', 'under', 'slambonus', 'insultbonus'):
                     above += value

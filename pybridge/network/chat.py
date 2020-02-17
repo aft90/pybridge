@@ -108,7 +108,7 @@ class LocalChat(Chat, pb.Cacheable):
             will recieve the 'shouted' message.
             """
             if type(text) is not str:
-                raise IllegalRequest, "Expected str, got %s" % type(text)
+                raise IllegalRequest("Expected str, got %s" % type(text))
             # The user cannot be trusted to provide a valid Message object.
             message = Message(text, user, recipients)
             return self.__chat.send(message)
@@ -135,17 +135,17 @@ class LocalChat(Chat, pb.Cacheable):
     def send(self, message):
         # Validate message.
         if message.text == '':
-            raise DeniedRequest, "Message must contain text"
+            raise DeniedRequest("Message must contain text")
         if len(message.text) > self.messageMaxLength:
-            raise DeniedRequest, "Message text longer than character limit"
+            raise DeniedRequest("Message text longer than character limit")
         # TODO: filter message for spam, obscenity, ...
 
         if message.recipients:  # Specified recipients.
             sendTo = [p for p in self.observers if p.name in message.recipients]  # O(n^2)
             if sendTo == []:
-                raise DeniedRequest, "No named recipient present at table."
+                raise DeniedRequest("No named recipient present at table.")
         else:
-            sendTo = self.observers.keys()
+            sendTo = list(self.observers.keys())
 
         self.messages.append(message)
         self.notify('gotMessage', message=message)
@@ -155,7 +155,7 @@ class LocalChat(Chat, pb.Cacheable):
     def notify(self, event, *args, **kwargs):
         Chat.notify(self, event, *args, **kwargs)
         # For all observers, calls event handler with provided arguments.
-        for obs in self.observers.values():
+        for obs in list(self.observers.values()):
             # Event handlers are called on the next iteration of the reactor,
             # to allow the caller of this method to return a result.
             reactor.callLater(0, obs.callRemote, event, *args, **kwargs)

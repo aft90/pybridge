@@ -71,7 +71,7 @@ class LocalRoster(Roster, pb.Cacheable):
     def getStateToCacheAndObserveFor(self, perspective, observer):
         self.observers.append(observer)
         # Assumes that each item has an 'info' attribute.
-        return dict([(id, item.info) for id, item in self.items()])
+        return dict([(id, item.info) for id, item in list(self.items())])
 
 
     def stoppedObserving(self, perspective, observer):

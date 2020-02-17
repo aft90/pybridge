@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from roster import LocalRoster, RemoteRoster
+from .roster import LocalRoster, RemoteRoster
 
 
 class LocalUserManager(LocalRoster):

@@ -16,8 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from card import Card
-from symbols import Direction
+from .card import Card
+from .symbols import Direction
 
 
 class Trick(dict):
@@ -64,7 +64,7 @@ class Trick(dict):
         @param playedcard: a card played in the trick.
         @return: the position of the card.
         """
-        for position, card in self.iteritems():
+        for position, card in self.items():
             if card == playedcard:
                 return position
 
@@ -82,14 +82,14 @@ class Trick(dict):
 
         if self.trumpSuit:  # Suit contract.
             # The highest ranked trump card wins.
-            trumpcards = [c for c in self.values() if c.suit == self.trumpSuit]
+            trumpcards = [c for c in list(self.values()) if c.suit == self.trumpSuit]
             if trumpcards:
                 return max(trumpcards)
 
         # No trump cards played, or No Trump contract.
         # The highest ranked card in the lead card's suit wins.
         leadsuit = self[self.leader].suit
-        followers = [c for c in self.values() if c.suit == leadsuit]
+        followers = [c for c in list(self.values()) if c.suit == leadsuit]
         return max(followers)
 
 

@@ -42,7 +42,7 @@ class TestCard(unittest.TestCase):
             ace = Card(Rank.Ace, suit)
             king = Card(Rank.King, suit)
             two = Card(Rank.Two, suit)
-            self.assert_(ace > king and ace > two and king > two)
+            self.assertTrue(ace > king and ace > two and king > two)
 
         # Test comparisons between all cards, by sorting.
         cards = [Card(r, s) for r in Rank for s in Suit]  # Not sorted order!

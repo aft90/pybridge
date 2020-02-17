@@ -107,7 +107,7 @@ class RubberScoreSheet(gtk.TreeView):
 
 
     def _row_separator(self, model, iter, data):
-        print model, iter, data
+        print(model, iter, data)
         return True
 
 

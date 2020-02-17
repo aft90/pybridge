@@ -18,12 +18,12 @@
 
 import gtk
 import os
-from wrapper import GladeWrapper
+from .wrapper import GladeWrapper
 
 import pybridge.environment as env
-from config import config
-from manager import wm
-from vocabulary import *
+from .config import config
+from .manager import wm
+from .vocabulary import *
 
 from pybridge.games.bridge.symbols import Suit
 
@@ -121,7 +121,7 @@ class DialogPreferences(GladeWrapper):
     def on_okbutton_clicked(self, widget, *args):
         # Save preferences to config file.
 
-        for suit, colour in self.suit_colours.items():
+        for suit, colour in list(self.suit_colours.items()):
             rgb = (colour.red, colour.green, colour.blue)
             config['Appearance']['Colours'][suit.key] = rgb
 

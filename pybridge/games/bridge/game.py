@@ -23,14 +23,14 @@ from pybridge.interfaces.game import ICardGame
 from pybridge.interfaces.observer import ISubject
 from pybridge.network.error import GameError
 
-from auction import Auction
-from board import Board
-from play import TrickPlay
-from result import DuplicateResult, Rubber, RubberResult
+from .auction import Auction
+from .board import Board
+from .play import TrickPlay
+from .result import DuplicateResult, Rubber, RubberResult
 
-from call import Bid, Pass, Double, Redouble
-from card import Card
-from symbols import Direction, Suit, Strain, Vulnerable
+from .call import Bid, Pass, Double, Redouble
+from .card import Card
+from .symbols import Direction, Suit, Strain, Vulnerable
 
 
 class Bridge(object):
@@ -83,14 +83,14 @@ class Bridge(object):
 
     def start(self, board=None):
         if self.inProgress():
-            raise GameError, "Game in progress"
+            raise GameError("Game in progress")
 
         if board:  # Use specified board.
             self.board = board
         elif self.boardQueue:  # Use pre-specified board.
             self.board = self.boardQueue.pop(0)
         elif self.board:  # Advance to next round.
-            self.board = self.board.next()
+            self.board = next(self.board)
         else:  # Create an initial board.
             self.board = Board.first()
 
@@ -188,15 +188,15 @@ class Bridge(object):
             try:
                 handler = getattr(self, event)
                 handler(*args, **kwargs)
-            except GameError, e:
-                print "Unexpected error when updating game state:", e
+            except GameError as e:
+                print("Unexpected error when updating game state:", e)
 
 
     def addPlayer(self, position):
         if position not in Direction:
-            raise TypeError, "Expected Direction, got %s" % type(position)
-        if position in self.players.values():
-            raise GameError, "Position %s is taken" % position
+            raise TypeError("Expected Direction, got %s" % type(position))
+        if position in list(self.players.values()):
+            raise GameError("Position %s is taken" % position)
 
         player = BridgePlayer(self)
         self.players[player] = position
@@ -207,11 +207,11 @@ class Bridge(object):
 
     def removePlayer(self, position):
         if position not in Direction:
-            raise TypeError, "Expected Direction, got %s" % type(position)
-        if position not in self.players.values():
-            raise GameError, "Position %s is vacant" % position
+            raise TypeError("Expected Direction, got %s" % type(position))
+        if position not in list(self.players.values()):
+            raise GameError("Position %s is vacant" % position)
 
-        for player, pos in self.players.items():
+        for player, pos in list(self.players.items()):
             if pos == position:
                 del self.players[player]
                 break
@@ -252,21 +252,21 @@ class Bridge(object):
         @type position: Direction or None
         """
         if not isinstance(call, (Bid, Pass, Double, Redouble)):
-            raise TypeError, "Expected Call, got %s" % type(call)
+            raise TypeError("Expected Call, got %s" % type(call))
         if player:
             if player not in self.players:
-                raise GameError, "Player unknown to this game"
+                raise GameError("Player unknown to this game")
             position = self.players[player]
         if position not in Direction:
-            raise TypeError, "Expected Direction, got %s" % type(position)
+            raise TypeError("Expected Direction, got %s" % type(position))
 
         # Validate call according to game state.
         if self.auction is None or self.auction.isComplete():
-            raise GameError, "No game in progress, or auction complete"
+            raise GameError("No game in progress, or auction complete")
         if self.getTurn() != position:
-            raise GameError, "Call made out of turn"
+            raise GameError("Call made out of turn")
         if not self.auction.isValidCall(call, position):
-            raise GameError, "Call cannot be made"
+            raise GameError("Call cannot be made")
 
         self.auction.makeCall(call)
 
@@ -310,16 +310,16 @@ class Bridge(object):
         @type position: Direction or None
         """
         if not isinstance(card, Card):
-            raise TypeError, "Expected Card, got %s" % type(card)
+            raise TypeError("Expected Card, got %s" % type(card))
         if player:
             if player not in self.players:
-                raise GameError, "Invalid player reference"
+                raise GameError("Invalid player reference")
             position = self.players[player]
         if position not in Direction:
-            raise TypeError, "Expected Direction, got %s" % type(position)
+            raise TypeError("Expected Direction, got %s" % type(position))
 
         if self.play is None or self.play.isComplete():
-            raise GameError, "No game in progress, or play complete"
+            raise GameError("No game in progress, or play complete")
 
         playfrom = position
 
@@ -328,15 +328,15 @@ class Bridge(object):
             if position == self.play.declarer:
                 playfrom = self.play.dummy  # Declarer can play from dummy.
             elif position == self.play.dummy:
-                raise GameError, "Dummy cannot play hand"
+                raise GameError("Dummy cannot play hand")
 
         if self.getTurn() != playfrom:
-            raise GameError, "Card played out of turn"
+            raise GameError("Card played out of turn")
 
         # If complete deal known, validate card play.
         if len(self.board['deal']) == len(Direction):
             if not self.play.isValidCardPlay(card, self.board['deal']):
-                raise GameError, "Card cannot be played from hand"
+                raise GameError("Card cannot be played from hand")
 
         self.play.playCard(card, playfrom)
 
@@ -384,7 +384,7 @@ class Bridge(object):
         @type position: Direction
         """
         if position not in Direction:
-            raise TypeError, "Expected Direction, got %s" % type(position)
+            raise TypeError("Expected Direction, got %s" % type(position))
 
         self.visibleHands[position] = hand
         # Add hand to board only if it was previously unknown.
@@ -402,12 +402,12 @@ class Bridge(object):
         @return: the hand of player at position.
         """
         if position not in Direction:
-            raise TypeError, "Expected Direction, got %s" % type(position)
+            raise TypeError("Expected Direction, got %s" % type(position))
 
         if self.board and self.board['deal'].get(position):
             return self.board['deal'][position]
         else:
-            raise GameError, "Hand unknown"
+            raise GameError("Hand unknown")
 
 
     def getTurn(self):
@@ -417,7 +417,7 @@ class Bridge(object):
             else:  # Currently in the auction.
                 return self.auction.whoseTurn()
         else:  # Not in game.
-            raise GameError, "No game in progress"
+            raise GameError("No game in progress")
 
 
 
@@ -438,20 +438,20 @@ class BridgePlayer(pb.Referenceable):
     def makeCall(self, call):
         try:
             return self.__game.makeCall(call, player=self)
-        except TypeError, e:
-            raise GameError, e
+        except TypeError as e:
+            raise GameError(e)
 
 
     def playCard(self, card):
         try:
             return self.__game.playCard(card, player=self)
-        except TypeError, e:
-            raise GameError, e
+        except TypeError as e:
+            raise GameError(e)
 
 
     def startNextGame(self):
         if not self.__game.isNextGameReady():
-            raise GameError, "Not ready to start game"
+            raise GameError("Not ready to start game")
         self.__game.start()  # Raises GameError if game in progress.
 
 

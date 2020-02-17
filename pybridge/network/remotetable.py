@@ -53,7 +53,7 @@ class RemoteTable(pb.RemoteCache):
             # propagated back to server, and client drops table gracefully.
             self.game.setState(state['gamestate'])
         else:
-            raise NameError, "Unsupported game class %s" % state['gamename']
+            raise NameError("Unsupported game class %s" % state['gamename'])
 
         self.chat = state['chat']
         self.observers = state['observers']

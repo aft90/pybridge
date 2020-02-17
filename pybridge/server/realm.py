@@ -20,7 +20,7 @@ from twisted.cred import checkers, portal
 from twisted.spread import pb
 from zope.interface import implements
 
-from user import AnonymousUser, RegisteredUser
+from .user import AnonymousUser, RegisteredUser
 
 
 class Realm(object):

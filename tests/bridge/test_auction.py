@@ -35,7 +35,7 @@ class TestAuction(unittest.TestCase):
         s = self.stepThroughAuction()
         self.assertEqual(self.auction.isComplete(), False)
         try:
-            while s.next():
+            while next(s):
                 self.assertEqual(self.auction.isComplete(), False)
         except StopIteration:
             self.assertEqual(self.auction.isComplete(), True)
@@ -81,7 +81,7 @@ class TestAuction(unittest.TestCase):
         s = self.stepThroughAuction()
         try:
             turn = self.dealer
-            while s.next():
+            while next(s):
                 self.assertEqual(self.auction.whoseTurn(), turn)
                 turn = Direction[(turn.index + 1) % 4]  # Turn moves clockwise.
         except StopIteration:
@@ -93,8 +93,8 @@ class TestAuction(unittest.TestCase):
         s = self.stepThroughAuction()
         try:
             while True:
-                candidate = s.next()
-                self.assert_(self.auction.isValidCall(candidate))
+                candidate = next(s)
+                self.assertTrue(self.auction.isValidCall(candidate))
                 if self.auction.currentBid:
                     pass
                     #self.assert_(self.auction.isValidCall

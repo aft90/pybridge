@@ -25,7 +25,7 @@ import gtk
 from pybridge.games.bridge.symbols import *
 import pybridge.games.bridge.call as Call
 
-from config import config
+from .config import config
 
 
 CALLTYPE_NAMES = {
@@ -105,10 +105,10 @@ SUIT_NAMES = {
 
 if config['Appearance'].get('SuitSymbols'):
     SUIT_SYMBOLS = {
-        Suit.Club: u'\N{BLACK CLUB SUIT}',
-        Suit.Diamond: u'\N{BLACK DIAMOND SUIT}',
-        Suit.Heart: u'\N{BLACK HEART SUIT}',
-        Suit.Spade: u'\N{BLACK SPADE SUIT}',
+        Suit.Club: '\N{BLACK CLUB SUIT}',
+        Suit.Diamond: '\N{BLACK DIAMOND SUIT}',
+        Suit.Heart: '\N{BLACK HEART SUIT}',
+        Suit.Spade: '\N{BLACK SPADE SUIT}',
     }
 else:
     SUIT_SYMBOLS = {
@@ -128,10 +128,10 @@ STRAIN_NAMES = {
 
 if config['Appearance'].get('SuitSymbols'):
     STRAIN_SYMBOLS = {
-        Strain.Club: u'\N{BLACK CLUB SUIT}',
-        Strain.Diamond: u'\N{BLACK DIAMOND SUIT}',
-        Strain.Heart: u'\N{BLACK HEART SUIT}',
-        Strain.Spade: u'\N{BLACK SPADE SUIT}',
+        Strain.Club: '\N{BLACK CLUB SUIT}',
+        Strain.Diamond: '\N{BLACK DIAMOND SUIT}',
+        Strain.Heart: '\N{BLACK HEART SUIT}',
+        Strain.Spade: '\N{BLACK SPADE SUIT}',
         Strain.NoTrump: 'NT',
     }
 else:

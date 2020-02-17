@@ -133,7 +133,7 @@ class WindowBidbox(object):
         """Enables buttons representing the calls available to player."""
         if self.position == self.table.game.getTurn():
             self.window.set_property('sensitive', True)
-            for call, button in self.callButtons.items():
+            for call, button in list(self.callButtons.items()):
                 isvalid = self.table.game.auction.isValidCall(call)
                 button.set_property('sensitive', isvalid)
         else:

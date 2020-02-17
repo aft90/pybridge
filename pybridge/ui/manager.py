@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from wrapper import GladeWrapper
+from .wrapper import GladeWrapper
 
 
 class WindowManager(dict):
@@ -37,7 +37,7 @@ class WindowManager(dict):
         """
         id = id or windowclass
         if self.get(id):
-            raise KeyError, "Identifier \'%s\' already registered" % id
+            raise KeyError("Identifier \'%s\' already registered" % id)
 
         instance = windowclass(parent)
         self[id] = instance
@@ -50,11 +50,11 @@ class WindowManager(dict):
         @param id: the window instance.
         @type id: instance
         """
-        if instance not in self.values():
-            raise ValueError, "Window instance not registered"
+        if instance not in list(self.values()):
+            raise ValueError("Window instance not registered")
 
         # Identify the window instance.
-        for id, inst in self.items():
+        for id, inst in list(self.items()):
             if inst == instance:
                 break
 

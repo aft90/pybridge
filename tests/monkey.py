@@ -104,16 +104,16 @@ class Monkey:
             pass  # Suppress GameErrors.
             # TODO: command-line option
         else:
-            print "ERROR:", failure.getErrorMessage()
+            print("ERROR:", failure.getErrorMessage())
 
 
     def connected(self, r):
-        print "Logged in to server"
+        print("Logged in to server")
         reactor.callLater(0.2, self.joinTable)
 
 
     def joinTable(self):
-        print "Looking for a table to join..."
+        print("Looking for a table to join...")
         if self.client.tableRoster.get('Monkey'):
             d = self.client.joinTable('Monkey')
         else:
@@ -128,7 +128,7 @@ class Monkey:
         self.table.game.attach(SimpleEventHandler(self))
         self.table.chat.attach(SimpleEventHandler(self))
 
-        print "I joined table %s" % table.id
+        print("I joined table %s" % table.id)
         table.chat.send(random.choice(QUOTES))
 
         # Find a vacant place at the table, if any.
@@ -175,19 +175,19 @@ class Monkey:
 
 
     def tableOpened(self, table):
-        print "Table %s opened" % table
+        print("Table %s opened" % table)
 
 
     def tableClosed(self, table):
-        print "Table %s closed" % table
+        print("Table %s closed" % table)
 
 
     def userLoggedIn(self, user):
-        print "User %s logged in" % user
+        print("User %s logged in" % user)
 
 
     def userLoggedOut(self, user):
-        print "User %s logged out" % user
+        print("User %s logged out" % user)
 
 
 # Table events.
@@ -195,20 +195,20 @@ class Monkey:
 
     def event_joinGame(self, player, position):
         if player == self.client.username:
-            print "I take seat %s" % position
+            print("I take seat %s" % position)
         else:
-            print "Player %s takes seat %s" % (player, position)
+            print("Player %s takes seat %s" % (player, position))
 
 
     def event_leaveGame(self, player, position):
-        print "Player %s leaves seat %s" % (player, position)
+        print("Player %s leaves seat %s" % (player, position))
 
 
     def event_gotMessage(self, message):
         if message.sender == self.client.username:
-            print "I say: %s" % message.text
+            print("I say: %s" % message.text)
         else:
-            print "%s says: %s" % (message.sender, message.text)
+            print("%s says: %s" % (message.sender, message.text))
 
 
 # Game events.
@@ -217,7 +217,7 @@ class Monkey:
     def event_start(self, board):
 
         def gotHand(hand):
-            print "My hand is", [str(c) for c in hand]
+            print("My hand is", [str(c) for c in hand])
             self.table.game.revealHand(hand, self.position)
 
         def loop():
@@ -228,9 +228,9 @@ class Monkey:
                     self.chooseCard()
                 reactor.callLater(SLOTH, loop)
             else:
-                print "Game terminated"
+                print("Game terminated")
 
-        print "Game started: dealer is %s" % board['dealer']
+        print("Game started: dealer is %s" % board['dealer'])
         if self.player:
             d = self.player.callRemote('getHand')
             d.addCallbacks(gotHand, self.errback)
@@ -238,27 +238,27 @@ class Monkey:
 
 
     def event_makeCall(self, call, position):
-        print "%s made by %s" % (call, position)
+        print("%s made by %s" % (call, position))
 
 
     def event_playCard(self, card, position):
-        print "%s played by %s" % (card, position)
+        print("%s played by %s" % (card, position))
 
 
     def event_revealHand(self, hand, position):
-        print "Hand of %s revealed" % position
+        print("Hand of %s revealed" % position)
 
 
 client = NetworkClient()
 
 
 def loginFailed(reason):
-    print "Login failed: %s" % reason.getErrorMessage()
+    print("Login failed: %s" % reason.getErrorMessage())
     client.disconnect()
 
 
 def lostConnection(connector, reason):
-    print "Connection lost: %s" % reason.getErrorMessage()
+    print("Connection lost: %s" % reason.getErrorMessage())
     reactor.stop()
 
 

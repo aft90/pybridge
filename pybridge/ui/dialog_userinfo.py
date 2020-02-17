@@ -18,8 +18,8 @@
 
 import gtk, pango
 
-from manager import wm
-from wrapper import GladeWrapper
+from .manager import wm
+from .wrapper import GladeWrapper
 
 
 class DialogUserInfo(GladeWrapper):
@@ -42,9 +42,9 @@ class DialogUserInfo(GladeWrapper):
 
         # Populate information textview with text tags.
         tagtable = self.userinfo.get_buffer().get_tag_table()
-        for tagname, tagattrs in self.texttags.items():
+        for tagname, tagattrs in list(self.texttags.items()):
             tag = gtk.TextTag(tagname)
-            for attrname, attrvalue in tagattrs.items():
+            for attrname, attrvalue in list(tagattrs.items()):
                 tag.set_property(attrname, attrvalue)
             tagtable.add(tag)
 

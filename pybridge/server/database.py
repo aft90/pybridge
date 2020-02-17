@@ -22,7 +22,7 @@ from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 from twisted.python import log
 
-from config import config
+from .config import config
 from pybridge import environment as env
 
 
@@ -69,7 +69,7 @@ else:
 try:
     connection = connectionForURI(connection_string)
     log.msg("Connection to %s database succeeded" % engine)
-except Exception, e:
+except Exception as e:
     log.err(e)
     log.msg("Could not connect to %s database with URI: %s"
             % (engine, connection_string))
@@ -106,20 +106,20 @@ class UserAccount(SQLObject):
 
     def _set_username(self, value):
         if not isinstance(value, str) or not(1 <= len(value) <= 20):
-            raise ValueError, "Invalid specification of username"
+            raise ValueError("Invalid specification of username")
         if re.search("[^A-z0-9_]", value):
-            raise ValueError, "Username may only be alphanumeric characters"
+            raise ValueError("Username may only be alphanumeric characters")
         self._SO_set_username(value)
 
     def _set_password(self, value):
         if not isinstance(value, str) or not(1 <= len(value) <= 40):
-            raise ValueError, "Invalid specification of password"
+            raise ValueError("Invalid specification of password")
         self._SO_set_password(value)
 
     def _set_email(self, value):
         # This regexp matches virtually all well-formatted email addresses.
         if value and not email_re.search(value):
-            raise ValueError, "Invalid or ill-formatted email address"
+            raise ValueError("Invalid or ill-formatted email address")
         self._SO_set_email(value)
 
 

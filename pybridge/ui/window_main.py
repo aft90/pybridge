@@ -17,7 +17,7 @@
 
 
 import gtk
-from wrapper import GladeWrapper
+from .wrapper import GladeWrapper
 
 from twisted.internet import reactor
 import webbrowser
@@ -27,15 +27,15 @@ from pybridge.games import SUPPORTED_GAMES
 import pybridge.environment as env
 from pybridge.network.client import client
 
-from eventhandler import SimpleEventHandler
-from excepthook import exceptdialog
-from manager import wm
+from .eventhandler import SimpleEventHandler
+from .excepthook import exceptdialog
+from .manager import wm
 
-from dialog_connection import DialogConnection
-from dialog_newtable import DialogNewtable
-from dialog_preferences import DialogPreferences
-from dialog_userinfo import DialogUserInfo
-from window_gametable import WindowGameTable
+from .dialog_connection import DialogConnection
+from .dialog_newtable import DialogNewtable
+from .dialog_preferences import DialogPreferences
+from .dialog_userinfo import DialogUserInfo
+from .window_gametable import WindowGameTable
 
 # TODO: import all Window*Table classes automatically.
 from pybridge.games.bridge.ui.window_bridgetable import WindowBridgeTable
@@ -106,7 +106,7 @@ class WindowMain(GladeWrapper):
 
 
     def event_loggedOut(self):
-        for window in wm.values():
+        for window in list(wm.values()):
             if isinstance(window, WindowGameTable):
                 wm.close(window)
 
@@ -144,7 +144,7 @@ class WindowMain(GladeWrapper):
                   'users' : (self.userview.get_model(), self.user_icon, self.userview_iters)}
         try:
             model, icon, view_iters = lookup[name]
-            for id, info in roster.items():
+            for id, info in list(roster.items()):
                 iter = model.append([id, icon])
                 view_iters[id] = iter
             roster.attach(self.eventHandler)
@@ -265,7 +265,7 @@ class WindowMain(GladeWrapper):
         do_disconnect = True
 
         # TODO: avoid introspection of table windows.
-        if len([True for w in wm.values() if isinstance(w, WindowGameTable) and w.player]) > 0:
+        if len([True for w in list(wm.values()) if isinstance(w, WindowGameTable) and w.player]) > 0:
             dialog = gtk.MessageDialog(parent=self.window,
                                        flags=gtk.DIALOG_MODAL,
                                        type=gtk.MESSAGE_QUESTION)

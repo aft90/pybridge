@@ -19,9 +19,9 @@
 import random
 import time
 
-from deal import Deal
-from result import DuplicateResult, RubberResult
-from symbols import Direction, Vulnerable
+from .deal import Deal
+from .result import DuplicateResult, RubberResult
+from .symbols import Direction, Vulnerable
 
 
 class Board(dict):

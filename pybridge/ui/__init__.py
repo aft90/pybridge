@@ -35,7 +35,7 @@ for module in gettext, glade:
 gettext.install('pybridge', env.get_localedir())
 
 
-import config
+from . import config
 config.load()
 
 
@@ -44,11 +44,11 @@ def run():
 
     # Set exception hook to display error dialog.
     import sys
-    from excepthook import excepthook
+    from .excepthook import excepthook
     sys.excepthook = excepthook
 
-    from manager import wm
-    from window_main import WindowMain
+    from .manager import wm
+    from .window_main import WindowMain
     wm.open(WindowMain)
 
     from twisted.python import log
