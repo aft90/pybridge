@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
+import codecs
 import gtk
 from .wrapper import GladeWrapper
 
@@ -39,7 +40,7 @@ class DialogConnection(GladeWrapper):
             self.entry_hostname.set_text(connection.get('HostAddress', 'localhost'))
             self.entry_portnum.set_text(str(connection.get('PortNumber', TCP_PORT)))
             self.entry_username.set_text(connection.get('Username', ''))
-            password = connection.get('Password', '').decode('rot13')
+            password = codecs.decode(connection.get('Password', ''), 'rot13')
             self.entry_password.set_text(password)
             self.check_savepassword.set_active(bool(password))
         else:
@@ -57,7 +58,7 @@ class DialogConnection(GladeWrapper):
         if self.check_savepassword.get_active():
             # Encode password, to confuse password sniffer software.
             # ROT13 encoding does *not* provide security!
-            password = self.entry_password.get_text().encode('rot13')
+            password = codecs.encode(self.entry_password.get_text(), 'rot13')
         else:
             password = ''  # Flush password.
         connection['Password'] = password
