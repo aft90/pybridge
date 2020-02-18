@@ -1,14 +1,14 @@
 import unittest
 
 from pybridge.games.bridge.card import Card
-from pybridge.games.bridge.deck import Deck
+from pybridge.games.bridge.deal import Deal
 from pybridge.games.bridge.play import TrickPlay
 from pybridge.games.bridge.symbols import Direction, Rank, Suit
 
 
 class TestTrickPlay(unittest.TestCase):
 
-    deal = Deck().indexToDeal(31415926535897932384626433832)  # Pi!
+    deal = Deal.fromIndex(31415926535897932384626433832)  # Pi!
     declarer = Direction.North
     trumpSuit = Suit.Spade
 
