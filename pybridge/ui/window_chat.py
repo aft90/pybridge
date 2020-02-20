@@ -16,7 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk, pango
+import gi
+from gi.repository import Gtk, Pango
 import time
 
 from .eventhandler import SimpleEventHandler

@@ -72,7 +72,10 @@ class WindowBidbox:
                 xy = (x, x+1, y, y+1)
                 bidtable.attach(buildButtonFromCall(bid, markup), *xy)
 
-        vbox.pack_start(Gtk.HSeparator(, True, True, 0))
+        hsep = Gtk.Separator()
+        hsep.set_property("orientation", Gtk.Orientation.HORIZONTAL)
+
+        vbox.pack_start(hsep)
 
         otherbox = Gtk.HBox()
         vbox.pack_start(otherbox, True, True, 0)

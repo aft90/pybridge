@@ -35,7 +35,7 @@ class CairoCanvas(Gtk.DrawingArea):
 
     background_path = config['Appearance'].get('Background')
     if background_path is None or not os.path.exists(background_path):
-	background_path = env.find_pixmap('baize.png')
+        background_path = env.find_pixmap('baize.png')
     background = cairo.ImageSurface.create_from_png(background_path)
     pattern = cairo.SurfacePattern(background)
     pattern.set_extend(cairo.EXTEND_REPEAT)

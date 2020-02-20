@@ -16,10 +16,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from gi.repository import Gtk
+import gi
+gi.require_version('PangoCairo', '1.0')
+from gi.repository import Gtk, Pango, PangoCairo
 import cairo
-from gi.repository import Pango
-import pangocairo
+
 
 import pybridge.environment as env
 from .canvas import CairoCanvas
@@ -228,7 +229,7 @@ class CardArea(CairoCanvas):
         width, height = layout.get_pixel_size()
         width += 8; height += 4
         surface, context = self.new_surface(width, height)
-        context = pangocairo.CairoContext(context)
+        context = PangoCairo.CairoContext(context)
 
         # Draw background box, text to ImageSurface.
         context.set_line_width(4)
