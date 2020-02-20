@@ -30,7 +30,7 @@ Note to PyBridge packagers:
 PYTHON_REQUIRED = (2, 5)
 CONFIGOBJ_REQUIRED = (4,0)
 PYCAIRO_REQUIRED = (1,4)
-PYGTK_REQUIRED = '2.0'
+GTK_REQUIRED = '3.0'
 SQLOBJECT_REQUIRED = '0.9'
 TWISTED_REQUIRED = (2,5)
 ZOPE_REQUIRED = '3.0'
@@ -39,7 +39,8 @@ ZOPE_REQUIRED = '3.0'
 """Verifies that all libraries required by PyBridge client are available."""
 def verify_pybridge():
     check_python()
-    check_pygtk()
+    check_pygobject()
+    check_gtk()
     check_pycairo()
     check_twisted()
     check_configobj()
@@ -101,12 +102,18 @@ def check_configobj():
         dependency_check("ConfigObj", CONFIGOBJ_REQUIRED, CONFIGOBJ_INSTALLED)
 
 
-def check_pygtk():
+def check_pygobject():
     try:
         import gi
-        pyGtk.require(PYGTK_REQUIRED)
-    except AssertionError as ImportError:
-        dependency_check("PyGTK", PYGTK_REQUIRED)
+    except ImportError:
+        dependency_check("PyGObject")
+
+def check_gtk():
+    try:
+        import gi
+        gi.require_version('Gtk', GTK_REQUIRED)
+    except ValueError:
+        dependency_check('GTK', GTK_REQUIRED)
 
 
 def check_sqlobject():
