@@ -16,8 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from twisted.internet import gtk2reactor
-gtk2reactor.install()
+from twisted.internet import gtk3reactor
+gtk3reactor.install()
 
 
 # Default settings based on the user's environment.
