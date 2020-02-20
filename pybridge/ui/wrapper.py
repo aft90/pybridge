@@ -18,7 +18,6 @@
 
 import gettext
 from gi.repository import Gtk
-import Gtk.glade
 import sys
 
 import pybridge.environment as env
@@ -41,25 +40,26 @@ class GladeWrapper:
         
         @param parent: pointer to parent Gtk.Window, or None.
         """
-        self.widgets = Gtk.glade.XML(GLADE_PATH, self.glade_name,
-                                     gettext.textdomain())
-        self.window = self.widgets.get_widget(self.glade_name)
+        self.builder = Gtk.Builder()
+        self.builder.set_translation_domain('pybridge')
+        self.builder.add_objects_from_file(GLADE_PATH, [self.glade_name])
+        self.window = self.builder.get_object(self.glade_name)
 
         instance_attributes = {}
         for attribute in dir(self.__class__):
             instance_attributes[attribute] = getattr(self, attribute)
-        self.widgets.signal_autoconnect(instance_attributes)
+        self.builder.connect_signals(instance_attributes)
 
         self.window.set_icon_from_file(ICON_PATH)
         if parent is not None:
-            self.set_transient_for(parent.window)
+            self.window.set_transient_for(parent.window)
 
         self.setUp()
 
 
     def __getattr__(self, attribute):
         """Allows referencing of Glade widgets as window attributes."""
-        widget = self.widgets.get_widget(attribute)
+        widget = self.builder.get_object(attribute)
         if widget is None:
             raise AttributeError("No widget named %s" % attribute)
         self.__dict__[attribute] = widget  # Cache reference for later.
