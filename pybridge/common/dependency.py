@@ -30,6 +30,7 @@ Note to PyBridge packagers:
 PYTHON_REQUIRED = (2, 5)
 CONFIGOBJ_REQUIRED = (4,0)
 PYCAIRO_REQUIRED = (1,4)
+PYGOBJECT_REQUIRED = '2.12.0'
 GTK_REQUIRED = '3.0'
 SQLOBJECT_REQUIRED = '0.9'
 TWISTED_REQUIRED = (2,5)
@@ -104,9 +105,9 @@ def check_configobj():
 
 def check_pygobject():
     try:
-        import gi
+        from gi import __version__ as PYGOBJECT_INSTALLED
     except ImportError:
-        dependency_check("PyGObject")
+        dependency_check("PyGObject", PYGOBJECT_REQUIRED, PYGOBJECT_REQUIRED)
 
 def check_gtk():
     try:
