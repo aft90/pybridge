@@ -24,12 +24,11 @@ gtk3reactor.install()
 import locale
 locale.setlocale(locale.LC_ALL, '')
 
-import gettext, Gtk.glade as glade
+import gettext
 import pybridge.environment as env
 
-for module in gettext, glade:
-    module.bindtextdomain('pybridge', env.get_localedir())
-    module.textdomain('pybridge')
+gettext.bindtextdomain('pybridge', env.get_localedir())
+gettext.textdomain('pybridge')
 
 # Register the gettext function for the whole interpreter as "_"
 gettext.install('pybridge', env.get_localedir())
