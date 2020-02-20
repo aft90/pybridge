@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 from .wrapper import GladeWrapper
 
 from twisted.internet import reactor
@@ -48,8 +48,8 @@ class WindowMain(GladeWrapper):
 
     glade_name = 'window_main'
 
-    table_icon = gtk.gdk.pixbuf_new_from_file_at_size(TABLE_ICON, 48, 48)
-    user_icon = gtk.gdk.pixbuf_new_from_file_at_size(USER_ICON, 48, 48)
+    table_icon = GdkPixbuf.Pixbuf.new_from_file_at_size(TABLE_ICON, 48, 48)
+    user_icon = GdkPixbuf.Pixbuf.new_from_file_at_size(USER_ICON, 48, 48)
 
 
     def setUp(self):
@@ -59,8 +59,8 @@ class WindowMain(GladeWrapper):
         for view in self.tableview, self.userview:
             view.set_text_column(0)
             view.set_pixbuf_column(1)
-            model = gtk.ListStore(str, gtk.gdk.Pixbuf)
-            model.set_sort_column_id(0, gtk.SORT_ASCENDING)
+            model = Gtk.ListStore(str, GdkPixbuf.Pixbuf)
+            model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
             view.set_model(model)
 
         # Attach event handler to listen for events.
@@ -76,7 +76,7 @@ class WindowMain(GladeWrapper):
         client.detach(self.eventHandler)
         # Terminate.
         reactor.stop()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def quit(self):
@@ -120,8 +120,8 @@ class WindowMain(GladeWrapper):
 
 
     def event_connectionLost(self, host, port):
-        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                   type=gtk.MESSAGE_ERROR)
+        dialog = Gtk.MessageDialog(parent=self.window, flags=Gtk.DialogFlags.MODAL,
+                                   type=Gtk.MessageType.ERROR)
         dialog.set_title(_('Connection to server lost'))
         dialog.set_markup(_('The connection to %s was lost unexpectedly.' % host))
         dialog.format_secondary_text(_('Please check your computer\'s network connection status before reconnecting. If you cannot reconnect, the server may be offline.'))
@@ -129,11 +129,11 @@ class WindowMain(GladeWrapper):
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
-            if response_id == gtk.RESPONSE_OK:
+            if response_id == Gtk.ResponseType.OK:
                 wm.open(DialogConnection, parent=self)
 
-        dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-        dialog.add_button(gtk.STOCK_CONNECT, gtk.RESPONSE_OK)
+        dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        dialog.add_button(Gtk.STOCK_CONNECT, Gtk.ResponseType.OK)
 
         dialog.connect('response', dialog_response_cb)
         dialog.show()
@@ -266,16 +266,16 @@ class WindowMain(GladeWrapper):
 
         # TODO: avoid introspection of table windows.
         if len([True for w in list(wm.values()) if isinstance(w, WindowGameTable) and w.player]) > 0:
-            dialog = gtk.MessageDialog(parent=self.window,
-                                       flags=gtk.DIALOG_MODAL,
-                                       type=gtk.MESSAGE_QUESTION)
+            dialog = Gtk.MessageDialog(parent=self.window,
+                                       flags=Gtk.DialogFlags.MODAL,
+                                       type=Gtk.MessageType.QUESTION)
             dialog.set_title(_('Disconnect from server'))
-            dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-            dialog.add_button(gtk.STOCK_DISCONNECT, gtk.RESPONSE_OK)
+            dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+            dialog.add_button(Gtk.STOCK_DISCONNECT, Gtk.ResponseType.OK)
             dialog.set_markup(_('Are you sure you wish to disconnect?'))
             dialog.format_secondary_text(_('You are playing at a table. Disconnecting may forfeit the game, or incur penalties.'))
 
-            do_disconnect = (dialog.run() == gtk.RESPONSE_OK)
+            do_disconnect = (dialog.run() == Gtk.ResponseType.OK)
             dialog.destroy()
 
         if do_disconnect:
@@ -298,7 +298,7 @@ class WindowMain(GladeWrapper):
 
 
     def on_about_activate(self, widget, *args):
-        about = gtk.AboutDialog()
+        about = Gtk.AboutDialog()
         about.set_name('PyBridge')
         about.set_version(PYBRIDGE_VERSION)
         about.set_copyright('Copyright (C) 2004-2007 Michael Banks')
@@ -310,7 +310,7 @@ class WindowMain(GladeWrapper):
         authors = [author.strip() for author in authorsfile]
         about.set_authors(authors)
         logo_path = env.find_pixmap('pybridge.png')
-        logo = gtk.gdk.pixbuf_new_from_file(logo_path)
+        logo = GdkPixbuf.Pixbuf.new_from_file(logo_path)
         about.set_logo(logo)
 
         def dialog_response_cb(dialog, response_id):

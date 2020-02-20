@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 
 from pybridge.games.bridge.result import DuplicateResult, RubberResult
 from pybridge.games.bridge.symbols import Direction
@@ -25,22 +25,22 @@ from pybridge.ui.eventhandler import SimpleEventHandler
 import pybridge.ui.vocabulary as voc
 
 
-class ScoreSheet(gtk.TreeView):
+class ScoreSheet(Gtk.TreeView):
     """A score sheet widget, which presents GameResult information."""
 
     # TODO: display total scores for N/S and E/W.
 
 
     def __init__(self):
-        gtk.TreeView.__init__(self)
+        GObject.GObject.__init__(self)
         self.set_rules_hint(True)
 
-        self.store = gtk.ListStore(int, str, str, str, str)
+        self.store = Gtk.ListStore(int, str, str, str, str)
         self.set_model(self.store)
 
-        renderer = gtk.CellRendererText()
+        renderer = Gtk.CellRendererText()
         for index, title in enumerate([_('Board'), _('Contract'), _('Made'), _('N/S'), _('E/W')]):
-            column = gtk.TreeViewColumn(title, renderer, markup=index)
+            column = Gtk.TreeViewColumn(title, renderer, markup=index)
             self.append_column(column)
 
 
@@ -70,22 +70,22 @@ class ScoreSheet(gtk.TreeView):
 
 
 
-class RubberScoreSheet(gtk.TreeView):
+class RubberScoreSheet(Gtk.TreeView):
     """A score sheet widget, which presents a Rubber object."""
 
 
     def __init__(self):
-        gtk.TreeView.__init__(self)
+        GObject.GObject.__init__(self)
         self.set_rules_hint(True)
         self.set_row_separator_func(self._row_separator)
 
         # Set bool field in a row to display as separator.
-        self.store = gtk.ListStore(str, str, bool)
+        self.store = Gtk.ListStore(str, str, bool)
         self.set_model(self.store)
 
-        renderer = gtk.CellRendererText()
+        renderer = Gtk.CellRendererText()
         for index, title in enumerate([_('N/S'), _('E/W')]):
-            column = gtk.TreeViewColumn(title, renderer, markup=index)
+            column = Gtk.TreeViewColumn(title, renderer, markup=index)
             self.append_column(column)
 
 
@@ -118,14 +118,14 @@ class WindowScoreSheet:
 
 
     def __init__(self, parent=None):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         if parent:
-            self.window.set_transient_for(parent.window)
+            self.set_transient_for(parent.window)
         self.window.set_title(_('Score Sheet'))
         #self.window.connect('delete_event', self.on_delete_event)
 
-        self.sw = gtk.ScrolledWindow()
-        self.sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
+        self.sw = Gtk.ScrolledWindow()
+        self.sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         self.sw.set_size_request(-1, 150)
         self.window.add(self.sw)
 

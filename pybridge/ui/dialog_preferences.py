@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 import os
 from .wrapper import GladeWrapper
 
@@ -37,7 +37,7 @@ class DialogPreferences(GladeWrapper):
 
     def setUp(self):
         # Allow user to select only PNG images for background.
-        filter_pixbufs = gtk.FileFilter()
+        filter_pixbufs = Gtk.FileFilter()
         #filter_pixbufs.add_pixbuf_formats()
         filter_pixbufs.add_pattern('*.png')
         filter_pixbufs.set_name(_('PNG images'))
@@ -46,9 +46,9 @@ class DialogPreferences(GladeWrapper):
         # Build a list of card decks from which the user may choose.
         # (The user is prevented from selecting an arbitary image.)
         activedeck = config['Appearance'].get('CardStyle', 'bonded.png')
-        model = gtk.ListStore(str)
+        model = Gtk.ListStore(str)
         self.cardstyle.set_model(model)
-        cell = gtk.CellRendererText()
+        cell = Gtk.CellRendererText()
         self.cardstyle.pack_start(cell, True)
         self.cardstyle.add_attribute(cell, 'text', 0)
         # Populate list of card decks.
@@ -69,10 +69,10 @@ class DialogPreferences(GladeWrapper):
         self.suit_colours = {}
         for suit in Suit:
             rgb = config['Appearance']['Colours'].get(suit.key, (0, 0, 0))
-            colour = gtk.gdk.Color(*rgb)
+            colour = Gdk.Color(*rgb)
             self.suit_colours[suit] = colour
             # Set button label colour from self.suit_colours.
-            hexrep = gtk.color_selection_palette_to_string([colour])
+            hexrep = Gtk.color_selection_palette_to_string([colour])
             label = getattr(self, 'label_%scolour' % suit.key.lower())
             label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 
@@ -96,15 +96,15 @@ class DialogPreferences(GladeWrapper):
         suit = [s for s in Suit if s.key.lower() in widget.get_name()][0]
 
         title = _("Select colour for %s symbol" % SUIT_NAMES[suit])
-        dialog = gtk.ColorSelectionDialog(title)
+        dialog = Gtk.ColorSelectionDialog(title)
         dialog.colorsel.set_current_color(self.suit_colours[suit])
 
         def dialog_response_cb(dialog, response_id):
-            if response_id == gtk.RESPONSE_OK:
+            if response_id == Gtk.ResponseType.OK:
                 colour = dialog.colorsel.get_current_color()
                 self.suit_colours[suit] = colour
                 # Set button label to colour selected by user.
-                hexrep = gtk.color_selection_palette_to_string([colour])
+                hexrep = Gtk.color_selection_palette_to_string([colour])
                 label = getattr(self, 'label_%scolour' % suit.key.lower())
                 label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 

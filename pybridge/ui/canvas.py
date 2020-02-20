@@ -17,14 +17,14 @@
 
 
 import os
-import gtk
+from gi.repository import Gtk
 import cairo
 
 import pybridge.environment as env
 from .config import config
 
 
-class CairoCanvas(gtk.DrawingArea):
+class CairoCanvas(Gtk.DrawingArea):
     """A simple canvas layer for the display of graphics.
     
     This may be useful for other projects which require a cross-platform
@@ -45,7 +45,7 @@ class CairoCanvas(gtk.DrawingArea):
         super(CairoCanvas, self).__init__()  # Initialise parent.
         self.items = {}
 
-        # Set up gtk.DrawingArea signals.
+        # Set up Gtk.DrawingArea signals.
         self.connect('configure_event', self._configure)
         self.connect('expose_event', self._expose)
 
@@ -144,7 +144,7 @@ class CairoCanvas(gtk.DrawingArea):
 
         # Build list of sources to redraw in area, in order of z-index.
         # TODO: Find sources which intersect with area.
-        area = gtk.gdk.Rectangle(x, y, width, height)
+        area = (x, y, width, height)
         items = list(self.items.values())
         items.sort(lambda i, j : cmp(i['z-index'], j['z-index']))
 

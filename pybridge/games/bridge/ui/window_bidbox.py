@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 
 from pybridge.ui.config import config
 from pybridge.ui.eventhandler import SimpleEventHandler
@@ -35,9 +35,9 @@ class WindowBidbox:
 
 
     def __init__(self, parent=None):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         if parent:
-            self.window.set_transient_for(parent.window)
+            self.set_transient_for(parent.window)
         self.window.set_title(_('Bidding Box'))
         self.window.connect('delete_event', self.on_delete_event)
         self.window.set_resizable(False)
@@ -49,21 +49,21 @@ class WindowBidbox:
         self.position = None
 
         def buildButtonFromCall(call, markup):
-            button = gtk.Button()
-            button.set_relief(gtk.RELIEF_NONE)
+            button = Gtk.Button()
+            button.set_relief(Gtk.ReliefStyle.NONE)
             button.connect('clicked', self.on_call_clicked, call)
             # A separate label is required for marked-up text.
-            label = gtk.Label()
+            label = Gtk.Label()
             label.set_markup(markup)
             label.set_use_markup(True)
             button.add(label)
             self.callButtons[call] = button
             return button
 
-        vbox = gtk.VBox()
+        vbox = Gtk.VBox()
 
-        bidtable = gtk.Table(rows=7, columns=5, homogeneous=True)
-        vbox.pack_start(bidtable)
+        bidtable = Gtk.Table(rows=7, columns=5, homogeneous=True)
+        vbox.pack_start(bidtable, True, True, 0)
         # Build buttons for all bids.
         for y, level in enumerate(Call.Level):
             for x, strain in enumerate(Call.Strain):
@@ -72,10 +72,10 @@ class WindowBidbox:
                 xy = (x, x+1, y, y+1)
                 bidtable.attach(buildButtonFromCall(bid, markup), *xy)
 
-        vbox.pack_start(gtk.HSeparator())
+        vbox.pack_start(Gtk.HSeparator(, True, True, 0))
 
-        otherbox = gtk.HBox()
-        vbox.pack_start(otherbox)
+        otherbox = Gtk.HBox()
+        vbox.pack_start(otherbox, True, True, 0)
         # Build buttons for other calls.
         othercalls = [(Call.Pass(), render_call_name, True),
                       (Call.Double(), render_call, False),

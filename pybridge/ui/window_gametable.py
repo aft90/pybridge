@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 
 from pybridge.network.client import client
 
@@ -38,9 +38,9 @@ class WindowGameTable:
 
 
     def __init__(self, parent=None):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         if parent:
-            self.window.set_transient_for(parent.window)
+            self.set_transient_for(parent.window)
         self.window.connect('delete_event', self.on_window_delete_event)
         self.window.set_icon_from_file(ICON_PATH)
         self.window.set_title(_('Table'))
@@ -58,47 +58,47 @@ class WindowGameTable:
         self.table = None  # Table currently displayed in window.
 
         # Set up widget layout.
-        vbox = gtk.VBox()
-        self.toolbar = gtk.Toolbar()
-        self.toolbar.set_style(gtk.TOOLBAR_BOTH_HORIZ)
-        vbox.pack_start(self.toolbar, expand=False)
-        hbox = gtk.HBox()
-        self.gamearea = gtk.Viewport()  # Use self.gamearea.add(...)
-        hbox.pack_start(self.gamearea)
-        self.sidebar = gtk.VBox(spacing=6)  # Use self.sidebar.pack_start(...)
+        vbox = Gtk.VBox()
+        self.toolbar = Gtk.Toolbar()
+        self.toolbar.set_style(Gtk.ToolbarStyle.BOTH_HORIZ)
+        vbox.pack_start(self.toolbar, False, True, 0)
+        hbox = Gtk.HBox()
+        self.gamearea = Gtk.Viewport()  # Use self.gamearea.add(...)
+        hbox.pack_start(self.gamearea, True, True, 0)
+        self.sidebar = Gtk.VBox(spacing=6)  # Use self.sidebar.pack_start(..., True, True, 0)
         self.sidebar.set_border_width(6)
-        hbox.pack_start(self.sidebar, expand=False)
-        vbox.pack_start(hbox)
-        self.statusbar = gtk.Statusbar()
-        vbox.pack_start(self.statusbar, expand=False)
+        hbox.pack_start(self.sidebar, False, True, 0)
+        vbox.pack_start(hbox, True, True, 0)
+        self.statusbar = Gtk.Statusbar()
+        vbox.pack_start(self.statusbar, False, True, 0)
         self.window.add(vbox)
 
         # Set up toolbar buttons.
-        self.takeseat = gtk.MenuToolButton(gtk.STOCK_MEDIA_PLAY)
+        self.takeseat = Gtk.MenuToolButton(Gtk.STOCK_MEDIA_PLAY)
         self.takeseat.set_label(_('Take Seat'))
         self.takeseat.set_is_important(True)
         self.takeseat.connect('clicked', self.on_takeseat_clicked)
         self.toolbar.insert(self.takeseat, -1)
 
-        self.leaveseat = gtk.ToolButton(gtk.STOCK_MEDIA_STOP)
+        self.leaveseat = Gtk.ToolButton(Gtk.STOCK_MEDIA_STOP)
         self.leaveseat.set_label(_('Leave Seat'))
         self.leaveseat.connect('clicked', self.on_leaveseat_clicked)
         self.leaveseat.set_property('sensitive', False)
         self.toolbar.insert(self.leaveseat, -1)
 
-        self.toolbar.insert(gtk.SeparatorToolItem(), -1)
+        self.toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
-        self.fullscreen = gtk.ToggleToolButton(gtk.STOCK_FULLSCREEN)
+        self.fullscreen = Gtk.ToggleToolButton(Gtk.STOCK_FULLSCREEN)
         self.fullscreen.set_label(_('Full Screen'))
         self.fullscreen.connect('clicked', self.on_fullscreen_clicked)
         self.toolbar.insert(self.fullscreen, -1)
 
-        self.leavetable = gtk.ToolButton(gtk.STOCK_QUIT)
+        self.leavetable = Gtk.ToolButton(Gtk.STOCK_QUIT)
         self.leavetable.set_label(_('Leave Table'))
         self.leavetable.connect('clicked', self.on_leavetable_clicked)
         self.toolbar.insert(self.leavetable, -1)
 
-        self.toolbar.insert(gtk.SeparatorToolItem(), -1)
+        self.toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
 
     def tearDown(self):
@@ -185,18 +185,18 @@ class WindowGameTable:
     def on_leavetable_clicked(self, widget, *args):
         # If user is currently playing a game, request confirmation.
         if self.player and self.table.game.inProgress():
-            dialog = gtk.MessageDialog(parent=self.window,
-                                       flags=gtk.DIALOG_MODAL,
-                                       type=gtk.MESSAGE_QUESTION)
+            dialog = Gtk.MessageDialog(parent=self.window,
+                                       flags=Gtk.DialogFlags.MODAL,
+                                       type=Gtk.MessageType.QUESTION)
             dialog.set_title(_('Leave table?'))
-            dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-            dialog.add_button(_('Leave Table'), gtk.RESPONSE_OK)
+            dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+            dialog.add_button(_('Leave Table'), Gtk.ResponseType.OK)
             dialog.set_markup(_('Are you sure you wish to leave this table?'))
             dialog.format_secondary_text(_('You are currently playing a game. Leaving may forfeit the game, or incur penalties.'))
 
             def dialog_response_cb(dialog, response_id):
                 dialog.destroy()
-                if response_id == gtk.RESPONSE_OK:
+                if response_id == Gtk.ResponseType.OK:
                     d = client.leaveTable(self.table.id)
                     d.addCallbacks(lambda _: wm.close(self), self.errback)
 

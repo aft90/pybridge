@@ -24,34 +24,34 @@ from .manager import wm
 from .wrapper import ICON_PATH
 
 
-class PeopleBox(gtk.VBox):
+class PeopleBox(Gtk.VBox):
     """An embeddable list of people."""
 
     __gtype_name__ = 'PeopleBox'
 
 
     def __init__(self):
-        gtk.VBox.__init__(self)
+        GObject.GObject.__init__(self)
 
-        self.people_count_label = gtk.Label()
-        self.pack_start(self.people_count_label, expand=False)
+        self.people_count_label = Gtk.Label()
+        self.pack_start(self.people_count_label, False, True, 0)
 
         self.people = {}  # Maps TreeIter objects to people.
-        self.people_store = gtk.ListStore(str)
-        self.people_list = gtk.TreeView()
+        self.people_store = Gtk.ListStore(str)
+        self.people_list = Gtk.TreeView()
         self.people_list.set_model(self.people_store)
         self.people_list.set_headers_visible(False)
-        column = gtk.TreeViewColumn(None, gtk.CellRendererText(), text=0)
-        self.people_store.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        column = Gtk.TreeViewColumn(None, Gtk.CellRendererText(), text=0)
+        self.people_store.set_sort_column_id(0, Gtk.SortType.ASCENDING)
         self.people_list.append_column(column)
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         sw.add(self.people_list)
-        frame = gtk.Frame()
-        frame.set_shadow_type(gtk.SHADOW_IN)
+        frame = Gtk.Frame()
+        frame.set_shadow_type(Gtk.ShadowType.IN)
         frame.add(sw)
         frame.set_border_width(6)
-        self.pack_start(frame)
+        self.pack_start(frame, True, True, 0)
 
 
     def add(self, person):
@@ -78,7 +78,7 @@ class PeopleBox(gtk.VBox):
 
 
 
-class ChatBox(gtk.VPaned):
+class ChatBox(Gtk.VPaned):
     """An embeddable chat box widget, compatible with Chat objects.
     
     The design of this widget is modelled on Pidgin (http://pidgin.im/).
@@ -86,29 +86,29 @@ class ChatBox(gtk.VPaned):
 
     __gtype_name__ = 'ChatBox'
 
-    texttags = {'username': {'weight': pango.WEIGHT_BOLD},
+    texttags = {'username': {'weight': Pango.Weight.BOLD},
                 'status': {'foreground': '#0000ff',
-                           'style': pango.STYLE_ITALIC},
+                           'style': Pango.Style.ITALIC},
                }
 
 
     def __init__(self):
-        gtk.VPaned.__init__(self)
+        GObject.GObject.__init__(self)
 
         self.chat = None  # A Chat object to monitor.
         self.eventHandler = SimpleEventHandler(self)
 
-        hpaned = gtk.HPaned()
+        hpaned = Gtk.HPaned()
         # Conversation display.
-        self.conversation = gtk.TextView()
+        self.conversation = Gtk.TextView()
         self.conversation.set_editable(False)
         self.conversation.set_cursor_visible(False)
-        self.conversation.set_wrap_mode(gtk.WRAP_WORD)
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)  # Vertical scroll.
+        self.conversation.set_wrap_mode(Gtk.WrapMode.WORD)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)  # Vertical scroll.
         sw.add(self.conversation)
-        frame = gtk.Frame()
-        frame.set_shadow_type(gtk.SHADOW_IN)
+        frame = Gtk.Frame()
+        frame.set_shadow_type(Gtk.ShadowType.IN)
         frame.add(sw)
         frame.set_border_width(6)
         hpaned.pack1(frame, resize=True, shrink=False)
@@ -117,17 +117,17 @@ class ChatBox(gtk.VPaned):
         hpaned.pack2(self.people, resize=False, shrink=True)
         self.pack1(hpaned, resize=True, shrink=True)
 
-        self.textentry = gtk.TextView()
+        self.textentry = Gtk.TextView()
         self.textentry.set_editable(True)
         self.textentry.set_property('sensitive', False)
-        self.textentry.set_wrap_mode(gtk.WRAP_WORD)
+        self.textentry.set_wrap_mode(Gtk.WrapMode.WORD)
         #self.textentry.set_size_request(30, 30)
         self.textentry.connect('key_press_event', self.on_textentry_key_pressed)
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         sw.add(self.textentry)
-        frame = gtk.Frame()
-        frame.set_shadow_type(gtk.SHADOW_IN)
+        frame = Gtk.Frame()
+        frame.set_shadow_type(Gtk.ShadowType.IN)
         frame.add(sw)
         frame.set_border_width(6)
         self.pack2(frame, resize=True, shrink=True)
@@ -135,7 +135,7 @@ class ChatBox(gtk.VPaned):
         # Populate conversation textview with text tags.
         tagtable = self.conversation.get_buffer().get_tag_table()
         for tagname, tagattrs in list(self.texttags.items()):
-            tag = gtk.TextTag(tagname)
+            tag = Gtk.TextTag(tagname)
             for attrname, attrvalue in list(tagattrs.items()):
                 tag.set_property(attrname, attrvalue)
             tagtable.add(tag)
@@ -219,7 +219,7 @@ class ChatBox(gtk.VPaned):
 
 
     def on_textentry_key_pressed(self, widget, event):
-        if event.keyval == gtk.keysyms.Return:
+        if event.keyval == Gdk.KEY_Return:
             buffer = self.textentry.get_buffer()
             start, end = buffer.get_bounds()
             text = buffer.get_text(start, end)
@@ -236,9 +236,9 @@ class WindowChat:
 
 
     def __init__(self, parent=None):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         if parent:
-            self.window.set_transient_for(parent.window)
+            self.set_transient_for(parent.window)
         self.window.connect('delete_event', self.on_window_delete_event)
         self.window.set_icon_from_file(ICON_PATH)
         self.window.set_size_request(320, 240)  # A reasonable minimum?
@@ -251,7 +251,7 @@ class WindowChat:
         self.eventHandler = SimpleEventHandler(self)
         self.chatboxes = {}  # Maps Chat objects to their ChatBox instances.
 
-        self.notebook = gtk.Notebook()
+        self.notebook = Gtk.Notebook()
         self.notebook.set_scrollable(True)
         self.notebook.connect('switch-page', self.on_switch_page)
         self.window.add(self.notebook)
@@ -268,7 +268,7 @@ class WindowChat:
     def addChat(self, chat, title):
         chatbox = ChatBox()
         chatbox.setChat(chat)
-        self.notebook.insert_page(chatbox, gtk.Label(title))
+        self.notebook.insert_page(chatbox, Gtk.Label(label=title))
         self.chatboxes[chat] = chatbox
 
 

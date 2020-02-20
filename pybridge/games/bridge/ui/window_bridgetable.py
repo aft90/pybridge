@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 
 from pybridge.network.client import client
 from pybridge.network.error import GameError
@@ -32,25 +32,25 @@ from .window_bidbox import WindowBidbox
 from .window_scoresheet import WindowScoreSheet
 
 
-class BiddingView(gtk.TreeView):
+class BiddingView(Gtk.TreeView):
     """A view of all calls made in an auction."""
 
 
     def __init__(self):
-        gtk.TreeView.__init__(self)
+        GObject.GObject.__init__(self)
         self.set_rules_hint(True)
 
-        self.store = gtk.ListStore(str, str, str, str)
+        self.store = Gtk.ListStore(str, str, str, str)
         self.set_model(self.store)
         self.clear = self.store.clear
-        renderer = gtk.CellRendererText()
+        renderer = Gtk.CellRendererText()
         renderer.set_property('size-points', 12)
         renderer.set_property('xalign', 0.5)
 
         # Set up columns, each corresponding to a position.
         for index, position in enumerate(Direction):
             title = DIRECTION_NAMES[position]
-            column = gtk.TreeViewColumn(title, renderer, markup=index)
+            column = Gtk.TreeViewColumn(title, renderer, markup=index)
             self.append_column(column)
 
 
@@ -84,45 +84,45 @@ class TrickArea(CardArea):
 
 
 
-class BridgeDashboard(gtk.VBox): 
+class BridgeDashboard(Gtk.VBox): 
     """An at-a-glance display of the state of a bridge game."""
 
 
     def __init__(self):
-        gtk.VBox.__init__(self)
+        GObject.GObject.__init__(self)
         self.set_spacing(4)
 
-        self.contract = gtk.Label()
-        self.pack_start(self.contract)
+        self.contract = Gtk.Label()
+        self.pack_start(self.contract, True, True, 0)
 
-        hbox = gtk.HBox()
+        hbox = Gtk.HBox()
         hbox.set_homogeneous(True)
         hbox.set_spacing(6)
-        self.declarer_tricks = gtk.Label()
-        frame = gtk.Frame()
+        self.declarer_tricks = Gtk.Label()
+        frame = Gtk.Frame()
         frame.set_label(_('Declarer'))
         frame.set_label_align(0.5, 0.5)
         frame.add(self.declarer_tricks)
-        hbox.pack_start(frame)
-        self.defence_tricks = gtk.Label()
-        frame = gtk.Frame()
+        hbox.pack_start(frame, True, True, 0)
+        self.defence_tricks = Gtk.Label()
+        frame = Gtk.Frame()
         frame.set_label(_('Defence'))
         frame.set_label_align(0.5, 0.5)
         frame.add(self.defence_tricks)
-        hbox.pack_start(frame)
-        self.pack_start(hbox)
+        hbox.pack_start(frame, True, True, 0)
+        self.pack_start(hbox, True, True, 0)
 
-        hbox = gtk.HBox()
+        hbox = Gtk.HBox()
         hbox.set_homogeneous(True)
         hbox.set_spacing(6)
         # TODO: display board number?
-        self.dealer = gtk.Label()
+        self.dealer = Gtk.Label()
         self.dealer.set_alignment(0, 0.5)
-        hbox.pack_start(self.dealer)
-        self.vulnerability = gtk.Label()
+        hbox.pack_start(self.dealer, True, True, 0)
+        self.vulnerability = Gtk.Label()
         self.vulnerability.set_alignment(0, 0.5)
-        hbox.pack_start(self.vulnerability)
-        self.pack_start(hbox)
+        hbox.pack_start(self.vulnerability, True, True, 0)
+        self.pack_start(hbox, True, True, 0)
 
 
     def set_contract(self, game):
@@ -168,8 +168,8 @@ class WindowBridgeTable(WindowGameTable):
 
     gametype = _('Contract Bridge')
 
-    stockdirections = [gtk.STOCK_GO_UP, gtk.STOCK_GO_FORWARD,
-                       gtk.STOCK_GO_DOWN, gtk.STOCK_GO_BACK]
+    stockdirections = [Gtk.STOCK_GO_UP, Gtk.STOCK_GO_FORWARD,
+                       Gtk.STOCK_GO_DOWN, Gtk.STOCK_GO_BACK]
 
 
     def setUp(self):
@@ -177,10 +177,10 @@ class WindowBridgeTable(WindowGameTable):
 
         # Set up menu attached to 'Take Seat' toolbar button.
         self.takeseat_menuitems = {}
-        menu = gtk.Menu()
+        menu = Gtk.Menu()
         for position, stock in zip(Direction, self.stockdirections):
-            item = gtk.ImageMenuItem(DIRECTION_NAMES[position], True)
-            item.set_image(gtk.image_new_from_stock(stock, gtk.ICON_SIZE_MENU))
+            item = Gtk.ImageMenuItem(DIRECTION_NAMES[position], True)
+            item.set_image(Gtk.Image.new_from_stock(stock, Gtk.IconSize.MENU))
             item.connect('activate', self.on_takeseat_clicked, position)
             item.show()
             menu.append(item)
@@ -188,7 +188,7 @@ class WindowBridgeTable(WindowGameTable):
         self.takeseat.set_menu(menu)
 
         # Set up bridge-specific toolbar buttons.
-        self.showscores = gtk.ToggleToolButton(gtk.STOCK_EDIT)
+        self.showscores = Gtk.ToggleToolButton(Gtk.STOCK_EDIT)
         self.showscores.set_label(_('Show Scoresheet'))
         self.showscores.connect('clicked', self.on_showscores_clicked)
         self.toolbar.insert(self.showscores, -1)
@@ -203,35 +203,35 @@ class WindowBridgeTable(WindowGameTable):
 
         # Set up sidebar.
         self.dashboard = BridgeDashboard()
-        self.sidebar.pack_start(self.dashboard, expand=False)
+        self.sidebar.pack_start(self.dashboard, False, True, 0)
 
         self.biddingview = BiddingView()
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         sw.add(self.biddingview)
-        frame = gtk.Frame()
+        frame = Gtk.Frame()
         frame.add(sw)
-        self.sidebar.pack_start(frame, expand=True)
+        self.sidebar.pack_start(frame, True, True, 0)
 
         self.trickarea = TrickArea(positions=Direction)
         self.trickarea.set_size_request(-1, 180)
-        frame = gtk.Frame()
+        frame = Gtk.Frame()
         frame.add(self.trickarea)
-        exp = gtk.Expander(_('Previous Trick'))
+        exp = Gtk.Expander(_('Previous Trick'))
         exp.set_expanded(True)
         exp.add(frame)
-        self.sidebar.pack_start(exp, expand=False)
+        self.sidebar.pack_start(exp, False, True, 0)
 
 #        self.scoresheet = ScoreSheet()
-#        sw = gtk.ScrolledWindow()
-#        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+#        sw = Gtk.ScrolledWindow()
+#        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
 #        sw.add(self.scoresheet)
-#        frame = gtk.Frame()
+#        frame = Gtk.Frame()
 #        frame.add(sw)
-#        exp = gtk.Expander(_('Score Sheet'))
+#        exp = Gtk.Expander(_('Score Sheet'))
 #        exp.set_expanded(False)
 #        exp.add(frame)
-#        self.sidebar.pack_start(exp, expand=False)
+#        self.sidebar.pack_start(exp, False, True, 0)
 
 
     def setTable(self, table):
@@ -295,7 +295,7 @@ class WindowBridgeTable(WindowGameTable):
 
         self.setTurnIndicator()
 
-        dialog = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_INFO)
+        dialog = Gtk.MessageDialog(parent=self.window, type=Gtk.MessageType.INFO)
         dialog.set_title(_('Game result'))
 
         # Determine and display score in dialog box and score sheet.
@@ -335,10 +335,10 @@ class WindowBridgeTable(WindowGameTable):
             dialog.format_secondary_text(_('No score.'))
 
         if self.player:
-            dialog.add_button(_('Leave Seat'), gtk.RESPONSE_CANCEL)
+            dialog.add_button(_('Leave Seat'), Gtk.ResponseType.CANCEL)
             dialog.format_secondary_text(_('Click OK to start next game.'))
-        dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
-        dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        dialog.set_default_response(Gtk.ResponseType.OK)
         # If user leaves table (ie. closes window), close dialog as well.
         dialog.set_transient_for(self.window)
         dialog.set_destroy_with_parent(True)
@@ -346,10 +346,10 @@ class WindowBridgeTable(WindowGameTable):
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
             if self.player:
-                if response_id == gtk.RESPONSE_OK and self.table.game.isNextGameReady():
+                if response_id == Gtk.ResponseType.OK and self.table.game.isNextGameReady():
                     d = self.player.callRemote('startNextGame')
                     d.addErrback(self.errback)
-                elif response_id == gtk.RESPONSE_CANCEL:
+                elif response_id == Gtk.ResponseType.CANCEL:
                     self.on_leaveseat_clicked(dialog)
 
         dialog.connect('response', dialog_response_cb)

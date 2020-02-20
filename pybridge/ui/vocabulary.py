@@ -20,7 +20,7 @@
 A repository for translatable symbols and names.
 """
 
-import gtk
+from gi.repository import Gtk
 
 from pybridge.games.bridge.symbols import *
 import pybridge.games.bridge.call as Call
@@ -157,7 +157,7 @@ def render_call(call):
             return LEVEL_SYMBOLS[call.level] + STRAIN_SYMBOLS[Strain.NoTrump]
         else:
             rgb = config['Appearance']['Colours'].get(call.strain.key, (0, 0, 0))
-            hexrep = gtk.color_selection_palette_to_string([gtk.gdk.Color(*rgb)])
+            hexrep = Gtk.color_selection_palette_to_string([Gdk.Color(*rgb)])
             return "%s<span color=\'%s\'>%s</span>" % \
                    (LEVEL_SYMBOLS[call.level], hexrep, STRAIN_SYMBOLS[call.strain])
     else:
@@ -174,7 +174,7 @@ def render_call_name(call):
 
 def render_card(card):
     rgb = config['Appearance']['Colours'].get(card.suit.key, (0, 0, 0))
-    hexrep = gtk.color_selection_palette_to_string([gtk.gdk.Color(*rgb)])
+    hexrep = Gtk.color_selection_palette_to_string([Gdk.Color(*rgb)])
     return "%s<span color=\'%s\'>%s</span>" % \
            (RANK_SYMBOLS[card.rank], hexrep, SUIT_SYMBOLS[card.suit])
 

@@ -20,29 +20,29 @@
 Captures exceptions and displays them to user in a GTK dialog,
 instead of the console which may not be visible.
 
-Source: http://faq.pygtk.org/index.py?req=show&file=faq20.010.htp
+Source: http://faq.pyGtk.org/index.py?req=show&file=faq20.010.htp
 """
 
-import gtk
+from gi.repository import Gtk
 import traceback
 from io import StringIO
 
 
 def exceptdialog(errormessage):
-    dialog = gtk.MessageDialog(parent=None, flags=gtk.DIALOG_MODAL,
-                           buttons=gtk.BUTTONS_CLOSE, type=gtk.MESSAGE_WARNING)
+    dialog = Gtk.MessageDialog(parent=None, flags=Gtk.DialogFlags.MODAL,
+                           buttons=Gtk.ButtonsType.CLOSE, type=Gtk.MessageType.WARNING)
     dialog.set_title(_('Program error'))
     dialog.set_markup(_('PyBridge detected an unexpected program error. You should close and restart PyBridge.'))
     dialog.format_secondary_markup(_('If you continue to experience this error, please submit a bug report, attaching the following error trace.'))
 
     # Set up display of traceback.
-    textview = gtk.TextView(); textview.show()
+    textview = Gtk.TextView(); textview.show()
     textview.set_editable(False)
-    sw = gtk.ScrolledWindow(); sw.show()
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw = Gtk.ScrolledWindow(); sw.show()
+    sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
     sw.add(textview)
-    frame = gtk.Frame();
-    frame.set_shadow_type(gtk.SHADOW_IN)
+    frame = Gtk.Frame();
+    frame.set_shadow_type(Gtk.ShadowType.IN)
     frame.add(sw)
     frame.set_border_width(6)
     dialog.vbox.add(frame)

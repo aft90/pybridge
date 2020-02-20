@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 from .wrapper import GladeWrapper
 
 from pybridge.network.client import client
@@ -34,9 +34,9 @@ class DialogNewtable(GladeWrapper):
 
     def setUp(self):
         # Build and populate list of supported games.
-        model = gtk.ListStore(str)
+        model = Gtk.ListStore(str)
         self.gamelist.set_model(model)
-        cell = gtk.CellRendererText()
+        cell = Gtk.CellRendererText()
         self.gamelist.pack_start(cell, True)
         self.gamelist.add_attribute(cell, 'text', 0)
 
@@ -55,8 +55,8 @@ class DialogNewtable(GladeWrapper):
 
     def createFailure(self, reason):
         error = reason.getErrorMessage()
-        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                                type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
+        dialog = Gtk.MessageDialog(parent=self.window, flags=Gtk.DialogFlags.MODAL,
+                                type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK)
         dialog.set_title(_('Could not create table'))
         dialog.set_markup(_('The table was not created by the server.'))
         dialog.format_secondary_text(_('Reason: %s') % error)

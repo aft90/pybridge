@@ -103,8 +103,8 @@ def check_configobj():
 
 def check_pygtk():
     try:
-        import pygtk
-        pygtk.require(PYGTK_REQUIRED)
+        import gi
+        pyGtk.require(PYGTK_REQUIRED)
     except AssertionError as ImportError:
         dependency_check("PyGTK", PYGTK_REQUIRED)
 

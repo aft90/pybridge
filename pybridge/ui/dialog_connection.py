@@ -17,7 +17,7 @@
 
 
 import codecs
-import gtk
+from gi.repository import Gtk
 from .wrapper import GladeWrapper
 
 from pybridge.network.client import client
@@ -70,8 +70,8 @@ class DialogConnection(GladeWrapper):
         """Actions to perform when connecting fails."""
         client.disconnect()
 
-        dialog = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL,
-                               type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
+        dialog = Gtk.MessageDialog(parent=self.window, flags=Gtk.DialogFlags.MODAL,
+                               type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK)
         dialog.set_title(_('Connection failed'))
         dialog.set_markup(_('Could not connect to server.'))
         dialog.format_secondary_text(_('Reason: %s') % failure.getErrorMessage())

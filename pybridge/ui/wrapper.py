@@ -17,8 +17,8 @@
 
 
 import gettext
-import gtk
-import gtk.glade
+from gi.repository import Gtk
+import Gtk.glade
 import sys
 
 import pybridge.environment as env
@@ -39,9 +39,9 @@ class GladeWrapper:
     def __init__(self, parent=None):
         """Initialise window from Glade definition.
         
-        @param parent: pointer to parent gtk.Window, or None.
+        @param parent: pointer to parent Gtk.Window, or None.
         """
-        self.widgets = gtk.glade.XML(GLADE_PATH, self.glade_name,
+        self.widgets = Gtk.glade.XML(GLADE_PATH, self.glade_name,
                                      gettext.textdomain())
         self.window = self.widgets.get_widget(self.glade_name)
 
@@ -52,7 +52,7 @@ class GladeWrapper:
 
         self.window.set_icon_from_file(ICON_PATH)
         if parent is not None:
-            self.window.set_transient_for(parent.window)
+            self.set_transient_for(parent.window)
 
         self.setUp()
 

@@ -16,9 +16,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-import gtk
+from gi.repository import Gtk
 import cairo
-import pango
+from gi.repository import Pango
 import pangocairo
 
 import pybridge.environment as env
@@ -50,7 +50,7 @@ class CardArea(CairoCanvas):
     card_mask_path =  env.find_pixmap(card_mask_file)
     card_mask = cairo.ImageSurface.create_from_png(card_mask_path)
 
-    font_description = pango.FontDescription('Sans Bold 10')
+    font_description = Pango.FontDescription('Sans Bold 10')
 
     border_x = border_y = 10
     card_width = card_mask.get_width() / 13
@@ -89,9 +89,9 @@ class CardArea(CairoCanvas):
         self.trick = None
         self.playernames = {}
 
-        # Set up gtk.DrawingArea signals.
+        # Set up Gtk.DrawingArea signals.
         self.connect('button_press_event', self._button_press)
-        self.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
 
 
     def draw_card(self, context, pos_x, pos_y, card):
@@ -217,7 +217,7 @@ class CardArea(CairoCanvas):
             opacity = (name and 1) or 0.5
             self.update_item(handid, opacity=opacity)
 
-        layout = pango.Layout(self.create_pango_context())
+        layout = Pango.Layout(self.create_pango_context())
         layout.set_font_description(self.font_description)
         if name is None:
             layout.set_text(DIRECTION_NAMES[position])
@@ -342,7 +342,7 @@ class CardArea(CairoCanvas):
 
     def _button_press(self, widget, event):
         """Determines if a card was clicked: if so, calls on_card_selected."""
-        if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+        if event.button == 1 and event.type == Gdk._2BUTTON_PRESS:
             found_hand = False
     
             # Determine the hand which was clicked.

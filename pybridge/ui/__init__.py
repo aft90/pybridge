@@ -24,7 +24,7 @@ gtk2reactor.install()
 import locale
 locale.setlocale(locale.LC_ALL, '')
 
-import gettext, gtk.glade as glade
+import gettext, Gtk.glade as glade
 import pybridge.environment as env
 
 for module in gettext, glade:
@@ -57,8 +57,8 @@ def run():
     # Start the event loop.
     from twisted.internet import reactor
     reactor.run()
-    import gtk
-    gtk.main()
+    from gi.repository import Gtk
+    Gtk.main()
 
     config.save()  # Save config at exit.
 

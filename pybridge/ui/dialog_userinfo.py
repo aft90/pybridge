@@ -31,7 +31,7 @@ class DialogUserInfo(GladeWrapper):
               ('country', ('Country')),
               ('profile', _('Profile'))]
 
-    texttags = {'heading': {'weight': pango.WEIGHT_BOLD},
+    texttags = {'heading': {'weight': Pango.Weight.BOLD},
                 'value': {},
                 'value-unknown': {'foreground': 'gray'},
                }
@@ -43,7 +43,7 @@ class DialogUserInfo(GladeWrapper):
         # Populate information textview with text tags.
         tagtable = self.userinfo.get_buffer().get_tag_table()
         for tagname, tagattrs in list(self.texttags.items()):
-            tag = gtk.TextTag(tagname)
+            tag = Gtk.TextTag(tagname)
             for attrname, attrvalue in list(tagattrs.items()):
                 tag.set_property(attrname, attrvalue)
             tagtable.add(tag)
