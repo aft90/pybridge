@@ -304,14 +304,12 @@ class WindowMain(GladeWrapper):
         about.set_copyright('Copyright (C) 2004-2007 Michael Banks')
         about.set_comments(_('A free online bridge game.'))
         about.set_website('http://pybridge.sourceforge.net/')
-        license = file(env.find_doc('COPYING')).read()
-        about.set_license(license)
-        authorsfile = file(env.find_doc('AUTHORS'))
-        authors = [author.strip() for author in authorsfile]
-        about.set_authors(authors)
-        logo_path = env.find_pixmap('pybridge.png')
-        logo = GdkPixbuf.Pixbuf.new_from_file(logo_path)
-        about.set_logo(logo)
+        with open(env.find_doc('COPYING'), 'r') as f:
+            about.set_license(f.read())
+        with open(env.find_doc('AUTHORS'), 'r') as f:
+            about.set_authors([author.strip() for author in f])
+        about.set_logo(GdkPixbuf.Pixbuf.new_from_file(env.find_pixmap('pybridge.png')))
+
 
         def dialog_response_cb(dialog, response_id):
             dialog.destroy()
