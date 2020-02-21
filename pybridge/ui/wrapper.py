@@ -22,7 +22,7 @@ import sys
 
 import pybridge.environment as env
 
-GLADE_PATH = env.find_glade("pybridge.glade")
+GLADE_PATH = env.find_glade("pybridge.ui")
 if sys.platform == 'win32':  # Win32 should use the ICO icon.
     ICON_PATH = env.find_pixmap("pybridge.ico")
 else:  # All other platforms should use the PNG icon.
