@@ -177,7 +177,7 @@ class NetworkClient:
             # TODO: after registration, need to disconnect from server?
             return d
 
-        anon = credentials.Anonymous()  # UsernamePassword('', '')
+        anon = credentials.UsernamePassword('', '')
         d = self.factory.login(anon, client=None)
         d.addCallbacks(connectedAsAnonymousUser, self.errback)
 
