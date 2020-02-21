@@ -91,9 +91,24 @@ class DialogPreferences(GladeWrapper):
         pass
 
 
-    def on_suitcolour_clicked(self, widget, *args):
+    def on_clubcolour_clicked(self, widget, *args):
+        self.on_suitcolour_clicked(Suit.Club)
+
+
+    def on_diamondcolour_clicked(self, widget, *args):
+        self.on_suitcolour_clicked(Suit.Diamond)
+
+
+    def on_heartcolour_clicked(self, widget, *args):
+        self.on_suitcolour_clicked(Suit.Heart)
+
+
+    def on_spadecolour_clicked(self, widget, *args):
+        self.on_suitcolour_clicked(Suit.Spade)
+
+
+    def on_suitcolour_clicked(self, suit):
         # Get symbol in Suit corresponding to button clicked.
-        suit = [s for s in Suit if s.key.lower() in widget.get_name()][0]
 
         title = _("Select colour for %s symbol" % SUIT_NAMES[suit])
         dialog = Gtk.ColorSelectionDialog(title)

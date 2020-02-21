@@ -644,7 +644,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                            <signal name="clicked" handler="on_suitcolour_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_clubcolour_clicked" swapped="no"/>
                             <child>
                               <object class="GtkLabel" id="label_clubcolour">
                                 <property name="visible">True</property>
@@ -667,7 +667,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                            <signal name="clicked" handler="on_suitcolour_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_diamondcolour_clicked" swapped="no"/>
                             <child>
                               <object class="GtkLabel" id="label_diamondcolour">
                                 <property name="visible">True</property>
@@ -690,7 +690,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                            <signal name="clicked" handler="on_suitcolour_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_heartcolour_clicked" swapped="no"/>
                             <child>
                               <object class="GtkLabel" id="label_heartcolour">
                                 <property name="visible">True</property>
@@ -713,7 +713,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                            <signal name="clicked" handler="on_suitcolour_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_spadecolour_clicked" swapped="no"/>
                             <child>
                               <object class="GtkLabel" id="label_spadecolour">
                                 <property name="visible">True</property>
