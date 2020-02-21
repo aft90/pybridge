@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 import os
 from .wrapper import GladeWrapper
 
@@ -72,7 +72,7 @@ class DialogPreferences(GladeWrapper):
             colour = Gdk.Color(*rgb)
             self.suit_colours[suit] = colour
             # Set button label colour from self.suit_colours.
-            hexrep = Gtk.color_selection_palette_to_string([colour])
+            hexrep = colour.to_string()
             label = getattr(self, 'label_%scolour' % suit.key.lower())
             label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 
@@ -97,14 +97,14 @@ class DialogPreferences(GladeWrapper):
 
         title = _("Select colour for %s symbol" % SUIT_NAMES[suit])
         dialog = Gtk.ColorSelectionDialog(title)
-        dialog.colorsel.set_current_color(self.suit_colours[suit])
+        dialog.get_color_selection().set_current_color(self.suit_colours[suit])
 
         def dialog_response_cb(dialog, response_id):
             if response_id == Gtk.ResponseType.OK:
-                colour = dialog.colorsel.get_current_color()
+                colour = dialog.get_color_selection().get_current_color()
                 self.suit_colours[suit] = colour
                 # Set button label to colour selected by user.
-                hexrep = Gtk.color_selection_palette_to_string([colour])
+                hexrep = colour.to_string()
                 label = getattr(self, 'label_%scolour' % suit.key.lower())
                 label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 
