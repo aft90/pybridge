@@ -102,7 +102,7 @@ class WindowMain(GladeWrapper):
 
         self.newtable.set_property('sensitive', True)
         self.jointable.set_property('sensitive', False)
-        self.userinfo.set_property('sensitive', False)
+        self.userinfo_button.set_property('sensitive', False)
 
 
     def event_loggedOut(self):
@@ -238,7 +238,7 @@ class WindowMain(GladeWrapper):
     def on_userview_selection_changed(self, iconview, *args):
         cursor = self.userview.get_cursor()
         # If cursor contains a path, enable User Info button.
-        self.userinfo.set_property('sensitive', bool(cursor))
+        self.userinfo_button.set_property('sensitive', bool(cursor))
 
 
     def on_newtable_clicked(self, widget, *args):
