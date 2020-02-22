@@ -207,9 +207,9 @@ class WindowMain(GladeWrapper):
 
     def on_tableview_selection_changed(self, iconview, *args):
         cursor = self.tableview.get_cursor()
-        if cursor:  # Ensure cursor contains a path, not None.
+        if cursor[0]:  # Ensure cursor contains a path, not None.
             model = self.tableview.get_model()
-            iter = model.get_iter(cursor[0])  # Path.
+            iter = model.get_iter(cursor[1])  # Path.
             tableid = model.get_value(iter, 0)
             # If client not joined to table, enable Join Table button.
             sensitive = tableid not in client.tables
@@ -238,7 +238,7 @@ class WindowMain(GladeWrapper):
     def on_userview_selection_changed(self, iconview, *args):
         cursor = self.userview.get_cursor()
         # If cursor contains a path, enable User Info button.
-        self.userinfo_button.set_property('sensitive', bool(cursor))
+        self.userinfo_button.set_property('sensitive', cursor[0])
 
 
     def on_newtable_clicked(self, widget, *args):
@@ -247,7 +247,7 @@ class WindowMain(GladeWrapper):
 
 
     def on_jointable_clicked(self, widget, *args):
-        path = self.tableview.get_cursor()[0]
+        path = self.tableview.get_cursor()[1]
         self.on_tableview_item_activated(self.tableview, path)
 
 
