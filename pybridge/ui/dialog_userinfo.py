@@ -44,7 +44,7 @@ class DialogUserInfo(GladeWrapper):
         # Populate information textview with text tags.
         tagtable = self.userinfo.get_buffer().get_tag_table()
         for tagname, tagattrs in list(self.texttags.items()):
-            tag = Gtk.TextTag(tagname)
+            tag = Gtk.TextTag(name=tagname)
             for attrname, attrvalue in list(tagattrs.items()):
                 tag.set_property(attrname, attrvalue)
             tagtable.add(tag)

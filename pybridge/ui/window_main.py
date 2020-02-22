@@ -252,7 +252,7 @@ class WindowMain(GladeWrapper):
 
 
     def on_userinfo_clicked(self, widget, *args):
-        path = self.userview.get_cursor()[0]
+        path = self.userview.get_cursor()[1]
         self.on_userview_item_activated(self.userview, path)
 
 
