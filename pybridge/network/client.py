@@ -159,8 +159,8 @@ class NetworkClient:
                 d.addCallbacks(gotRoster, self.errback, callbackArgs=[rostername])
 
         # Generate a SHA-1 hash of password
-        hash = self.__hashPass(password)
-        creds = credentials.UsernamePassword(username, hash)
+        pw_hash = self.__hashPass(password)
+        creds = credentials.UsernamePassword(username, pw_hash)
         d = self.factory.login(creds, client=None)
         d.addCallbacks(connectedAsRegisteredUser, self.errback)
 
@@ -172,8 +172,8 @@ class NetworkClient:
 
         def connectedAsAnonymousUser(avatar):
             """Register user account on server."""
-            hash = self.__hashPass(password)
-            d = avatar.callRemote('register', username, hash)
+            pw_hash = self.__hashPass(password)
+            d = avatar.callRemote('register', username, pw_hash)
             # TODO: after registration, need to disconnect from server?
             return d
 
@@ -192,8 +192,8 @@ class NetworkClient:
         
         @param password: the new password.
         """
-        hash = self.__hashPass(password)
-        d = self.avatar.callRemote('changePassword', hash)
+        pw_hash = self.__hashPass(password)
+        d = self.avatar.callRemote('changePassword', pw_hash)
         return d
 
 
@@ -233,10 +233,7 @@ class NetworkClient:
     def __hashPass(self, password):
         """Generates a SHA-1 hash of supplied password."""
         # TODO: may want to salt the hash with username, but this breaks backward compatibility.
-        m = hashlib.sha1()
-        m.update(password)
-        hash = m.hexdigest()
-        return hash
+        return hashlib.sha1(password.encode('utf-8')).hexdigest()
 
 
 client = NetworkClient()
