@@ -160,7 +160,7 @@ class NetworkClient:
 
         # Generate a SHA-1 hash of password
         pw_hash = self.__hashPass(password)
-        creds = credentials.UsernamePassword(username, pw_hash)
+        creds = credentials.UsernamePassword(username.encode('utf-8'), pw_hash.encode('utf-8'))
         d = self.factory.login(creds, client=None)
         d.addCallbacks(connectedAsRegisteredUser, self.errback)
 
@@ -177,7 +177,7 @@ class NetworkClient:
             # TODO: after registration, need to disconnect from server?
             return d
 
-        anon = credentials.UsernamePassword('', '')
+        anon = credentials.UsernamePassword(b'', b'')
         d = self.factory.login(anon, client=None)
         d.addCallbacks(connectedAsAnonymousUser, self.errback)
 
