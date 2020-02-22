@@ -89,7 +89,7 @@ class DialogNewtable(GladeWrapper):
     def on_tablename_changed(self, widget, *args):
         # Disable the OK button if the table name field is empty.
         sensitive = self.tablename.get_text() != ""
-        self.okbutton.set_property('sensitive', sensitive)
+        self.newtable_okbutton.set_property('sensitive', sensitive)
 
 
     def on_window_delete_event(self, widget, *args):
