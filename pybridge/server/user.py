@@ -38,7 +38,7 @@ class RegisteredUser(pb.Avatar):
 
 
     def __init__(self, name):
-        self.name = name  # User name.
+        self.name = name.decode('utf-8')  # User name.
 
         self.clientVersion = None
         self.accountRecord = db.UserAccount.byUsername(self.name)

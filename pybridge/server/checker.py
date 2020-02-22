@@ -37,7 +37,7 @@ class Checker:
     def requestAvatarId(self, credentials):
 
         def unauthorized(reason):
-            log.msg("Login failed for %s: %s" % (credentials.username, reason))
+            log.msg("Login failed for %s: %s" % (credentials.username.decode('utf-8'), reason))
             return failure.Failure(error.UnauthorizedLogin(reason))
 
         def passwordMatch(matched):
@@ -46,10 +46,10 @@ class Checker:
             else:
                 return unauthorized("Incorrect password for user")
 
-        if credentials.username == '':
+        if not credentials.username:
             return checkers.ANONYMOUS  # TODO: if allowAnonymousRegistration.
 
-        userQuery = db.UserAccount.selectBy(username=credentials.username)
+        userQuery = db.UserAccount.selectBy(username=credentials.username.decode('utf-8'))
         if userQuery.count() == 0:
             return unauthorized("User account does not exist on server")
         elif userQuery[0].allowLogin is False:  # TODO: list index breaks on MySQL.
@@ -58,7 +58,7 @@ class Checker:
             # TODO: delete old session and use this one instead?
             return unauthorized("User is already logged in")
 
-        d = defer.maybeDeferred(credentials.checkPassword, userQuery[0].password)
+        d = defer.maybeDeferred(credentials.checkPassword, userQuery[0].password.encode('utf-8'))
         d.addCallback(passwordMatch)
         return d
  
