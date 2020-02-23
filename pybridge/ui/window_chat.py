@@ -17,7 +17,7 @@
 
 
 import gi
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango, Gdk
 import time
 
 from .eventhandler import SimpleEventHandler
@@ -32,7 +32,7 @@ class PeopleBox(Gtk.VBox):
 
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
 
         self.people_count_label = Gtk.Label()
         self.pack_start(self.people_count_label, False, True, 0)
@@ -94,7 +94,7 @@ class ChatBox(Gtk.VPaned):
 
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
 
         self.chat = None  # A Chat object to monitor.
         self.eventHandler = SimpleEventHandler(self)
@@ -136,7 +136,7 @@ class ChatBox(Gtk.VPaned):
         # Populate conversation textview with text tags.
         tagtable = self.conversation.get_buffer().get_tag_table()
         for tagname, tagattrs in list(self.texttags.items()):
-            tag = Gtk.TextTag(tagname)
+            tag = Gtk.TextTag(name=tagname)
             for attrname, attrvalue in list(tagattrs.items()):
                 tag.set_property(attrname, attrvalue)
             tagtable.add(tag)
@@ -183,7 +183,7 @@ class ChatBox(Gtk.VPaned):
                                         ' ' + message.text)
 
         if scroll:  # Ensure message is visible in conversation view.
-            self.conversation.scroll_to_mark(buffer.get_insert(), 0)
+            self.conversation.scroll_to_mark(buffer.get_insert(), 0, False, 0.5, 0.5)
 
 
     def display_status(self, user, userjoins=True):
@@ -223,8 +223,8 @@ class ChatBox(Gtk.VPaned):
         if event.keyval == Gdk.KEY_Return:
             buffer = self.textentry.get_buffer()
             start, end = buffer.get_bounds()
-            text = buffer.get_text(start, end)
-            if text != '':  # Don't send a blank message.
+            text = buffer.get_text(start, end, True)
+            if text:  # Don't send a blank message.
                 buffer.delete(start, end)  # Clear buffer.
                 self.chat.send(text)
             return True  # Inhibit self.textentry from displaying newline.
@@ -269,7 +269,7 @@ class WindowChat:
     def addChat(self, chat, title):
         chatbox = ChatBox()
         chatbox.setChat(chat)
-        self.notebook.insert_page(chatbox, Gtk.Label(label=title))
+        self.notebook.insert_page(chatbox, Gtk.Label(label=title), -1)
         self.chatboxes[chat] = chatbox
 
 
