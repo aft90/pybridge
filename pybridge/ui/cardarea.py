@@ -229,7 +229,6 @@ class CardArea(CairoCanvas):
         width, height = layout.get_pixel_size()
         width += 8; height += 4
         surface, context = self.new_surface(width, height)
-        context = PangoCairo.CairoContext(context)
 
         # Draw background box, text to ImageSurface.
         context.set_line_width(4)
@@ -240,7 +239,7 @@ class CardArea(CairoCanvas):
         context.stroke()
         context.move_to(4, 2)
         context.set_source_rgb(1, 1, 1)
-        context.show_layout(layout)
+        PangoCairo.show_layout(context, layout)
 
         if id in self.items:
             self.update_item(id, source=surface)

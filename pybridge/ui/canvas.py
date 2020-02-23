@@ -17,7 +17,7 @@
 
 
 import os
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 import cairo
 
 import pybridge.environment as env
@@ -42,12 +42,12 @@ class CairoCanvas(Gtk.DrawingArea):
 
 
     def __init__(self):
-        super(CairoCanvas, self).__init__()  # Initialise parent.
+        super().__init__()  # Initialise parent.
         self.items = {}
 
         # Set up Gtk.DrawingArea signals.
         self.connect('configure_event', self._configure)
-        self.connect('expose_event', self._expose)
+        self.connect('draw', self._expose)
 
 
     def clear(self):
@@ -55,13 +55,18 @@ class CairoCanvas(Gtk.DrawingArea):
         self.items = {}  # Remove all item references.
 
         # Redraw background pattern on backing.
-        width, height = self.window.get_size()
+        width, height = self.get_window().get_width(), self.get_window().get_height()
         context = cairo.Context(self.backing)
         context.rectangle(0, 0, width, height)
         context.set_source(self.pattern)
         context.paint()
         # Trigger a call to self._expose().
-        self.window.invalidate_rect((0, 0, width, height), False)
+        rect = Gdk.Rectangle()
+        rect.x = 0
+        rect.y = 0
+        rect.width = width
+        rect.height = height
+        self.get_window().invalidate_rect(rect, False)
 
 
     def add_item(self, id, source, xy, z_index, opacity=1):
@@ -146,7 +151,7 @@ class CairoCanvas(Gtk.DrawingArea):
         # TODO: Find sources which intersect with area.
         area = (x, y, width, height)
         items = list(self.items.values())
-        items.sort(lambda i, j : cmp(i['z-index'], j['z-index']))
+        items.sort(key = (lambda i : i['z-index']))
 
         for item in items:
             pos_x, pos_y = item['area'][0:2]
@@ -154,7 +159,12 @@ class CairoCanvas(Gtk.DrawingArea):
             context.paint_with_alpha(item['opacity'])
 
         context.reset_clip()
-        self.window.invalidate_rect((x, y, width, height), False)  # Expose.
+        rect = Gdk.Rectangle()
+        rect.x = x
+        rect.y = y
+        rect.width = width
+        rect.height = height
+        self.get_window().invalidate_rect(rect, False)  # Expose.
 
 
     def get_area(self, source, xy):
@@ -164,7 +174,7 @@ class CairoCanvas(Gtk.DrawingArea):
         @param xy: tuple providing (x, y) coords for source.
         @return: a tuple (x, y, width, height)
         """
-        win_w, win_h = self.window.get_size()  # Window width and height.
+        win_w, win_h = self.get_window().get_width(), self.get_window().get_height()  # Window width and height.
         width, height = source.get_width(), source.get_height()
         x = int((xy[0] * win_w) - width/2)  # Round to integer.
         y = int((xy[1] * win_h) - height/2)
@@ -189,7 +199,7 @@ class CairoCanvas(Gtk.DrawingArea):
         @return: tuple (surface, context)
         """
         # Create new ImageSurface for hand.
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(width), int(height))
         context = cairo.Context(surface)
         # Clear ImageSurface - in Cairo 1.2+, this is done automatically.
         if cairo.version_info < (1, 2):
@@ -200,7 +210,7 @@ class CairoCanvas(Gtk.DrawingArea):
 
 
     def _configure(self, widget, event):
-        width, height = self.window.get_size()
+        width, height = event.width, event.height
         self.backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 
         # Recalculate position of all items.
@@ -211,10 +221,7 @@ class CairoCanvas(Gtk.DrawingArea):
         return True  # Expected to return True.
 
 
-    def _expose(self, widget, event):
-        context = widget.window.cairo_create()
-        context.rectangle(*event.area)
-        context.clip()  # Only redraw the exposed area.
+    def _expose(self, widget, context):
         context.set_source_surface(self.backing, 0, 0)
         context.paint()
         return False  # Expected to return False.
