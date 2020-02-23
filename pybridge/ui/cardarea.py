@@ -18,7 +18,7 @@
 
 import gi
 gi.require_version('PangoCairo', '1.0')
-from gi.repository import Gtk, Pango, PangoCairo
+from gi.repository import Gtk, Pango, PangoCairo, Gdk
 import cairo
 
 

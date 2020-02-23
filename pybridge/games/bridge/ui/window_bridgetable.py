@@ -37,7 +37,7 @@ class BiddingView(Gtk.TreeView):
 
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.set_rules_hint(True)
 
         self.store = Gtk.ListStore(str, str, str, str)
@@ -89,7 +89,7 @@ class BridgeDashboard(Gtk.VBox):
 
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.set_spacing(4)
 
         self.contract = Gtk.Label()
@@ -217,7 +217,7 @@ class WindowBridgeTable(WindowGameTable):
         self.trickarea.set_size_request(-1, 180)
         frame = Gtk.Frame()
         frame.add(self.trickarea)
-        exp = Gtk.Expander(_('Previous Trick'))
+        exp = Gtk.Expander(label=_('Previous Trick'))
         exp.set_expanded(True)
         exp.add(frame)
         self.sidebar.pack_start(exp, False, True, 0)
