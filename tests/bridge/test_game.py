@@ -116,10 +116,3 @@ class TestGameRuns(unittest.TestCase):
         self.assertEqual(self.game.inProgress(), False)  # Game complete.
         #self.game.getState()
 
-
-
-suite = unittest.TestLoader().loadTestsFromTestCase(TestGame)
-unittest.TextTestRunner(verbosity=2).run(suite)
-suite = unittest.TestLoader().loadTestsFromTestCase(TestGameRuns)
-unittest.TextTestRunner(verbosity=2).run(suite)
-

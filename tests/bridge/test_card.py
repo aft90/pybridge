@@ -49,6 +49,3 @@ class TestCard(unittest.TestCase):
         cards.sort()  # Smallest to largest.
         self.assertEqual(cards, [Card(r, s) for s in Suit for r in Rank])
 
-
-suite = unittest.TestLoader().loadTestsFromTestCase(TestCard)
-unittest.TextTestRunner(verbosity=2).run(suite)

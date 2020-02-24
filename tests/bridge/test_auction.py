@@ -101,13 +101,3 @@ class TestAuction(unittest.TestCase):
         except StopIteration:
             pass
 
-
-
-def main():
-    suite = unittest.makeSuite(TestAuction)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-
-if __name__ == '__main__':
-    main()
-

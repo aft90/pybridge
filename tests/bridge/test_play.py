@@ -80,12 +80,3 @@ class TestTrickPlay(unittest.TestCase):
             self.playing.playCard(card, turn, hand)
 '''
 
-
-def main():
-    suite = unittest.makeSuite(TestTrickPlay)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-
-if __name__ == '__main__':
-    main()
-

@@ -78,12 +78,3 @@ class TestDeck(unittest.TestCase):
 #        for deal in self.samples.values():
 #            self.assertEqual(Deal.fromString(deal.toString()))
 
-
-def main():
-    suite = unittest.makeSuite(TestDeck)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-
-if __name__ == '__main__':
-    main()
-
