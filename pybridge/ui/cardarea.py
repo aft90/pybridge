@@ -80,7 +80,7 @@ class CardArea(CairoCanvas):
         @param positions: a 4-tuple containing position identifiers,
                           starting from top and rotating clockwise.
         """
-        super(CardArea, self).__init__()  # Initialise parent.
+        super().__init__()  # Initialise parent.
 
         self.positions = positions
         self.TOP, self.RIGHT, self.BOTTOM, self.LEFT = positions

@@ -53,7 +53,7 @@ class Deal(dict):
 
 
     def __init__(self, mapping):
-        super(Deal, self).__init__(mapping)
+        super().__init__(mapping)
         for hand in list(self.values()):
             hand.sort()
 

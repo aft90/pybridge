@@ -173,7 +173,7 @@ class WindowBridgeTable(WindowGameTable):
 
 
     def setUp(self):
-        super(WindowBridgeTable, self).setUp()
+        super().setUp()
 
         # Set up menu attached to 'Take Seat' toolbar button.
         self.takeseat_menuitems = {}
@@ -239,7 +239,7 @@ class WindowBridgeTable(WindowGameTable):
         
         @param table: the (now) focal table.
         """
-        super(WindowBridgeTable, self).setTable(table)
+        super().setTable(table)
 
         self.table.game.attach(self.eventHandler)
         self.resetGame()
@@ -554,7 +554,7 @@ class WindowBridgeTable(WindowGameTable):
         if position is None:
             # No position specified by user: choose an arbitary position.
             position = [p for p in Direction if p not in self.table.players][0]
-        d = super(WindowBridgeTable, self).on_takeseat_clicked(widget, position)
+        d = super().on_takeseat_clicked(widget, position)
         d.addCallback(success)
 
 
@@ -564,7 +564,7 @@ class WindowBridgeTable(WindowGameTable):
             if self.children.get(WindowBidbox):
                 self.children.close(self.children[WindowBidbox])
 
-        d = super(WindowBridgeTable, self).on_leaveseat_clicked(widget, *args)
+        d = super().on_leaveseat_clicked(widget, *args)
         d.addCallback(success)
 
 
