@@ -342,7 +342,7 @@ class CardArea(CairoCanvas):
 
     def _button_press(self, widget, event):
         """Determines if a card was clicked: if so, calls on_card_selected."""
-        if event.button == 1 and event.type == Gdk._2BUTTON_PRESS:
+        if event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
             found_hand = False
     
             # Determine the hand which was clicked.

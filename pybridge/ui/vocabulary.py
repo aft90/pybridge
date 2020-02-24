@@ -173,7 +173,7 @@ def render_call_name(call):
 
 def render_card(card):
     rgb = config['Appearance']['Colours'].get(card.suit.key, (0, 0, 0))
-    hexrep = Gtk.color_selection_palette_to_string([Gdk.Color(*rgb)])
+    hexrep = Gdk.Color(*rgb).to_string()
     return "%s<span color=\'%s\'>%s</span>" % \
            (RANK_SYMBOLS[card.rank], hexrep, SUIT_SYMBOLS[card.suit])
 
