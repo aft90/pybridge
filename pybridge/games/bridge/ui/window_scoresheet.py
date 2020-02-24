@@ -32,7 +32,7 @@ class ScoreSheet(Gtk.TreeView):
 
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.set_rules_hint(True)
 
         self.store = Gtk.ListStore(int, str, str, str, str)
@@ -75,7 +75,7 @@ class RubberScoreSheet(Gtk.TreeView):
 
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.set_rules_hint(True)
         self.set_row_separator_func(self._row_separator)
 
