@@ -65,7 +65,7 @@ class Board(dict):
         return board
 
 
-    def next(self, deal=None):
+    def __next__(self, deal=None):
         """Builds and returns a successor board to this board.
         
         The dealer and vulnerability of the successor board are determined from
@@ -85,7 +85,7 @@ class Board(dict):
         # Map from duplicate board index range 1..16 to vulnerability.
         # See http://www.d21acbl.com/References/Laws/node5.html#law2
         i = (board['num'] - 1) % 16
-        board['vuln'] = Vulnerable[(i%4 + i/4)%4]
+        board['vuln'] = Vulnerable[(i%4 + i//4)%4]
 
         return board
 
