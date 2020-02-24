@@ -37,7 +37,7 @@ class WindowBidbox:
     def __init__(self, parent=None):
         self.window = Gtk.Window()
         if parent:
-            self.set_transient_for(parent.window)
+            self.window.set_transient_for(parent.window)
         self.window.set_title(_('Bidding Box'))
         self.window.connect('delete_event', self.on_delete_event)
         self.window.set_resizable(False)
@@ -75,7 +75,7 @@ class WindowBidbox:
         hsep = Gtk.Separator()
         hsep.set_property("orientation", Gtk.Orientation.HORIZONTAL)
 
-        vbox.pack_start(hsep)
+        vbox.pack_start(hsep, True, True, 0)
 
         otherbox = Gtk.HBox()
         vbox.pack_start(otherbox, True, True, 0)
@@ -85,7 +85,7 @@ class WindowBidbox:
                       (Call.Redouble(), render_call, False)]
         for call, renderer, expand in othercalls:
             markup = renderer(call)
-            otherbox.pack_start(buildButtonFromCall(call, markup), expand)
+            otherbox.pack_start(buildButtonFromCall(call, markup), expand, True, 0)
 
         self.window.add(vbox)
         self.window.show_all()

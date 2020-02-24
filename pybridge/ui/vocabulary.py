@@ -20,13 +20,12 @@
 A repository for translatable symbols and names.
 """
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 from pybridge.games.bridge.symbols import *
 import pybridge.games.bridge.call as Call
 
 from .config import config
-
 
 CALLTYPE_NAMES = {
     Call.Pass: _('Pass'),
@@ -157,7 +156,7 @@ def render_call(call):
             return LEVEL_SYMBOLS[call.level] + STRAIN_SYMBOLS[Strain.NoTrump]
         else:
             rgb = config['Appearance']['Colours'].get(call.strain.key, (0, 0, 0))
-            hexrep = Gtk.color_selection_palette_to_string([Gdk.Color(*rgb)])
+            hexrep = Gdk.Color(*rgb).to_string()
             return "%s<span color=\'%s\'>%s</span>" % \
                    (LEVEL_SYMBOLS[call.level], hexrep, STRAIN_SYMBOLS[call.strain])
     else:
