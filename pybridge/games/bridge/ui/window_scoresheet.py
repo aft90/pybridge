@@ -91,24 +91,23 @@ class RubberScoreSheet(Gtk.TreeView):
 
     def set_rubber(self, rubber):
         self.store.clear()
-        self.store.append(('', '', True))  # The initial dividing line.
+        self.store.append(['', '', True])  # The initial dividing line.
 
         for game, pair in rubber.games:
             #aboveiters, belowiters = [], []
             for result in rubber:
                 above, below = result.score
                 if result.contract.declarer in (Direction.North, Direction.South) and below > 0 \
-                or result.contract.declarer in (Direction.East, Direction.West) and score < 0:
-                    self.store.prepend((str(above), '', False))
-                    self.store.append((str(below), '', False))
+                or result.contract.declarer in (Direction.East, Direction.West) and above < 0:
+                    self.store.prepend([str(above), '', False])
+                    self.store.append([str(below), '', False])
                 else:
-                    self.store.prepend(('', str(above), False))
-                    self.store.append(('', str(below), False))
+                    self.store.prepend(['', str(above), False])
+                    self.store.append(['', str(below), False])
 
 
-    def _row_separator(self, model, iter, data):
-        print(model, iter, data)
-        return True
+    def _row_separator(self, model, iter):
+        return model.get_value(iter, 2)
 
 
 
