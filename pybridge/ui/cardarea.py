@@ -18,7 +18,7 @@
 
 import gi
 gi.require_version('PangoCairo', '1.0')
-from gi.repository import Gtk, Pango, PangoCairo, Gdk
+from gi.repository import Pango, PangoCairo, Gdk
 import cairo
 
 
@@ -138,7 +138,6 @@ class CardArea(CairoCanvas):
                         pos_x = index * self.spacing_x
                         coords[card] = (pos_x, pos_y)
                 else:  # Insert a space between each suit.
-                    spaces = len([1 for suitcards in list(suits.values()) if len(suitcards) > 0]) - 1
                     for index, card in enumerate(hand):
                         # Insert a space for each suit in hand which appears before this card's suit.
                         insert = len([1 for suit, suitcards in list(suits.items()) if len(suitcards) > 0

@@ -113,7 +113,7 @@ class NetworkClient:
         @param port: the port number on which the server is listening.
         @type port: int
         """
-        connector = reactor.connectTCP(host, port, self.factory)
+        reactor.connectTCP(host, port, self.factory)
         self.expectLoseConnection = False
 
 

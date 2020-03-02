@@ -21,7 +21,7 @@ from twisted.internet import reactor
 from twisted.spread import pb
 from zope.interface import implementer
 
-from pybridge.interfaces.observer import ISubject, IListener
+from pybridge.interfaces.observer import ISubject
 from pybridge.network.error import DeniedRequest, IllegalRequest
 
 

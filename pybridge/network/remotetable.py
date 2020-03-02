@@ -21,7 +21,6 @@ from zope.interface import implementer
 
 from pybridge.interfaces.observer import ISubject
 from pybridge.interfaces.table import ITable
-from pybridge.network.error import DeniedRequest, IllegalRequest
 
 from pybridge.games import SUPPORTED_GAMES
 

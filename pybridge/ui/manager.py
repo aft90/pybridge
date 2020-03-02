@@ -16,8 +16,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
-from .wrapper import GladeWrapper
-
 
 class WindowManager(dict):
     """A dictionary with features for managing GladeWrapper window instances."""

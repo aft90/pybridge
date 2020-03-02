@@ -20,7 +20,7 @@
 A repository for translatable symbols and names.
 """
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk
 
 from pybridge.games.bridge.symbols import *
 import pybridge.games.bridge.call as Call

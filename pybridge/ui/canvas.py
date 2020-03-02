@@ -149,7 +149,6 @@ class CairoCanvas(Gtk.DrawingArea):
 
         # Build list of sources to redraw in area, in order of z-index.
         # TODO: Find sources which intersect with area.
-        area = (x, y, width, height)
         items = list(self.items.values())
         items.sort(key = (lambda i : i['z-index']))
 

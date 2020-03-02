@@ -16,11 +16,9 @@
 # Foundation Inc. 51 Franklin Street Fifth Floor Boston MA 02110-1301 USA.
 
 
-import random
 import time
 
 from .deal import Deal
-from .result import DuplicateResult, RubberResult
 from .symbols import Direction, Vulnerable
 
 
