@@ -26,73 +26,76 @@ PyBridge, so it is vital that the order is not changed.
 
 from twisted.spread import pb
 
-from pybridge.enum import Enum, EnumValue
-
-
-class WeakEnumValue(EnumValue, pb.Copyable, pb.RemoteCopy):
-    """A variant of EnumValue which may be copied across the network.
-    
-    Since the enumtype reference (an Enum object) cannot be maintained when this
-    object is copied, it is discarded. An undesirable side-effect is that
-    comparisons between WeakEnumValue objects with identical indexes and keys
-    (but belonging to different Enum types) will result in True.
-    """
-
-    enumtype = property(lambda self: None)
-
-
-    def __repr__(self):
-        return "WeakEnumValue(%s, %s)" % (self.index, self.key)
-
-
-    def __cmp__(self, other):
-        try:
-            assert self.key == other.key
-            result = cmp(self.index, other.index)
-        except (AssertionError, AttributeError):
-            result = NotImplemented
-        return result
-
-
-    def getStateToCopy(self):
-        return (self.index, self.key)
-
-
-    def setCopyableState(self, xxx_todo_changeme):
-        # self = WeakEnumValue(None, index, key)
-        (index, key) = xxx_todo_changeme
-        self.__init__(None, index, key)
-
-
-pb.setUnjellyableForClass(WeakEnumValue, WeakEnumValue)
-
-
-
+from enum import Enum
 
 # Bid levels and strains (denominations).
 
-Level = Enum('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
-             value_type=WeakEnumValue)
+class Level(pb.Copyable, pb.RemoteCopy, Enum):
+    One = 0
+    Two = 1
+    Three = 2
+    Four = 3
+    Five = 4
+    Six = 5
+    Seven = 6
 
-Strain = Enum('Club', 'Diamond', 'Heart', 'Spade', 'NoTrump',
-              value_type=WeakEnumValue)
+pb.setUnjellyableForClass(Level, Level)
+
+class Strain(pb.Copyable, pb.RemoteCopy, Enum):
+    Club = 0
+    Diamond = 1
+    Heart = 2
+    Spade = 3
+    NoTrump = 4
+
+pb.setUnjellyableForClass(Strain, Strain)
 
 
 # Card ranks and suits.
 
-Rank = Enum('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-            'Ten', 'Jack', 'Queen', 'King', 'Ace', value_type=WeakEnumValue)
 
-Suit = Enum('Club', 'Diamond', 'Heart', 'Spade', value_type=WeakEnumValue)
+class Rank(pb.Copyable, pb.RemoteCopy, Enum):
+    Two = 0
+    Three = 1
+    Four = 2
+    Five = 3
+    Six = 4
+    Seven = 5
+    Eight = 6
+    Nine = 7
+    Ten = 8
+    Jack = 9
+    Queen = 10
+    King = 11
+    Ace = 12
+
+pb.setUnjellyableForClass(Rank, Rank)
+
+class Suit(pb.Copyable, pb.RemoteCopy, Enum):
+    Club = 0
+    Diamond = 1
+    Heart = 2
+    Spade = 3
+
+pb.setUnjellyableForClass(Suit, Suit)
 
 
 # Player compass positions, in clockwise order.
 
-Direction = Enum('North', 'East', 'South', 'West', value_type=WeakEnumValue)
+class Direction(pb.Copyable, pb.RemoteCopy, Enum):
+    North = 0
+    East = 1
+    South = 2
+    West = 3
 
+pb.setUnjellyableForClass(Direction, Direction)
 
 # Vulnerability indicators.
 
-Vulnerable = Enum('Nil', 'NorthSouth', 'EastWest', 'All',
-                  value_type=WeakEnumValue)
+class Vulnerable(pb.Copyable, pb.RemoteCopy, Enum):
+    Nil = 0
+    NorthSouth = 1
+    EastWest = 2
+    All = 3
 
+pb.setUnjellyableForClass(Vulnerable, Vulnerable)
