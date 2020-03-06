@@ -56,7 +56,7 @@ class BiddingView(Gtk.TreeView):
 
     def add_call(self, call, position):
         """Adds call from specified position."""
-        column = position.index
+        column = position.value
         if column == 0 or self.store.get_iter_first() == None:
             iter = self.store.append()
         else:  # Get bottom row. There must be a better way than this...
@@ -136,7 +136,7 @@ class BridgeDashboard(Gtk.VBox):
     def set_trickcount(self, game):
         if game.play:
             declarerWon, defenceWon = game.play.wonTrickCount()
-            required = game.contract.bid.level.index + 7
+            required = game.contract.bid.level.value + 7
             declarerNeeds = max(0, required - declarerWon)
             defenceNeeds = max(0, 13 + 1 - required - defenceWon)
         else:
@@ -194,7 +194,7 @@ class WindowBridgeTable(WindowGameTable):
         self.toolbar.insert(self.showscores, -1)
 
         # Set up CardArea widget.
-        self.cardarea = CardArea(positions=Direction)
+        self.cardarea = CardArea(positions=list(Direction))
 
         self.cardarea.on_card_clicked = self.on_card_clicked
         self.cardarea.on_hand_clicked = self.on_hand_clicked
@@ -213,7 +213,7 @@ class WindowBridgeTable(WindowGameTable):
         frame.add(sw)
         self.sidebar.pack_start(frame, True, True, 0)
 
-        self.trickarea = TrickArea(positions=Direction)
+        self.trickarea = TrickArea(positions=list(Direction))
         self.trickarea.set_size_request(-1, 180)
         frame = Gtk.Frame()
         frame.add(self.trickarea)
@@ -303,7 +303,7 @@ class WindowBridgeTable(WindowGameTable):
             #self.scoresheet.add_result(self.table.game.result)
 
             tricksMade = self.table.game.result.tricksMade
-            tricksRequired = self.table.game.contract.bid.level.index + 7
+            tricksRequired = self.table.game.contract.bid.level.value + 7
             offset = tricksMade - tricksRequired
 
             fields = {'contract': render_contract(self.table.game.contract),

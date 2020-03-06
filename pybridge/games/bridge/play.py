@@ -54,7 +54,7 @@ class Trick(dict):
             return
 
         numCardsPlayed = len(self)
-        return Direction[(self.leader.index + numCardsPlayed) % 4]
+        return Direction((self.leader.value + numCardsPlayed) % 4)
 
 
     def whoPlayed(self, playedcard):
@@ -113,9 +113,9 @@ class TrickPlay(list):
         self.trumpSuit = trumpSuit
 
     # Other positions, respective to declarer.
-    dummy = property(lambda self: Direction[(self.declarer.index + 2) % 4])
-    lho = property(lambda self: Direction[(self.declarer.index + 1) % 4])
-    rho = property(lambda self: Direction[(self.declarer.index + 3) % 4])
+    dummy = property(lambda self: Direction((self.declarer.value + 2) % 4))
+    lho = property(lambda self: Direction((self.declarer.value + 1) % 4))
+    rho = property(lambda self: Direction((self.declarer.value + 3) % 4))
 
 
     def isComplete(self):

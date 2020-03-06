@@ -68,12 +68,12 @@ class DialogPreferences(GladeWrapper):
         # Retrieve suit colours.
         self.suit_colours = {}
         for suit in Suit:
-            rgb = config['Appearance']['Colours'].get(suit.key, (0, 0, 0))
+            rgb = config['Appearance']['Colours'].get(suit.name, (0, 0, 0))
             colour = Gdk.Color(*rgb)
             self.suit_colours[suit] = colour
             # Set button label colour from self.suit_colours.
             hexrep = colour.to_string()
-            label = getattr(self, 'label_%scolour' % suit.key.lower())
+            label = getattr(self, 'label_%scolour' % suit.name.lower())
             label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 
         use_suitsymbols = config['Appearance'].get('SuitSymbols')
@@ -120,7 +120,7 @@ class DialogPreferences(GladeWrapper):
                 self.suit_colours[suit] = colour
                 # Set button label to colour selected by user.
                 hexrep = colour.to_string()
-                label = getattr(self, 'label_%scolour' % suit.key.lower())
+                label = getattr(self, 'label_%scolour' % suit.name.lower())
                 label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 
             dialog.destroy()
@@ -138,7 +138,7 @@ class DialogPreferences(GladeWrapper):
 
         for suit, colour in list(self.suit_colours.items()):
             rgb = (colour.red, colour.green, colour.blue)
-            config['Appearance']['Colours'][suit.key] = rgb
+            config['Appearance']['Colours'][suit.name] = rgb
 
         config['Appearance']['Background'] = self.background.get_filename()
 

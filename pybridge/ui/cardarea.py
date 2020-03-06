@@ -254,7 +254,7 @@ class CardArea(CairoCanvas):
         """
         if trick:
             # The order of play is the leader, then clockwise around Direction.
-            order = Direction[trick.leader.index:] + Direction[:trick.leader.index]
+            order = list(Direction)[trick.leader.value:] + list(Direction)[:trick.leader.value]
             for i, position in enumerate(order):
                 id = ('trick', position)
                 old_card = self.trick and self.trick.get(position)
@@ -295,7 +295,7 @@ class CardArea(CairoCanvas):
 
         # Remap position symbols, with self.BOTTOM assigned focus.
         order = self.positions
-        neworder = order[focus.index:] + order[:focus.index]
+        neworder = order[focus.value:] + order[:focus.value]
         self.BOTTOM, self.LEFT, self.TOP, self.RIGHT = neworder
 
         # Disclaimer:

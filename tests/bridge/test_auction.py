@@ -83,7 +83,7 @@ class TestAuction(unittest.TestCase):
             turn = self.dealer
             while next(s):
                 self.assertEqual(self.auction.whoseTurn(), turn)
-                turn = Direction[(turn.index + 1) % 4]  # Turn moves clockwise.
+                turn = Direction((turn.value + 1) % 4)  # Turn moves clockwise.
         except StopIteration:
             self.assertEqual(self.auction.whoseTurn(), None)
 

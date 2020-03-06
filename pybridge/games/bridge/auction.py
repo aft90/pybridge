@@ -38,7 +38,7 @@ class Contract(pb.Copyable, pb.RemoteCopy):
 
         # The declarer is the first partner to bid the contract denomination.
         caller = auction.whoCalled(self.bid)
-        partnership = (caller, Direction[(caller.index + 2) % 4])
+        partnership = (caller, Direction((caller.value + 2) % 4))
         # Determine which partner is declarer.
         for call in auction:
             if isinstance(call, Bid) and call.strain == self.bid.strain:
@@ -154,15 +154,15 @@ class Auction(list):
             # A double must be made on the current bid from opponents,
             # with has not been already doubled by partnership.
             if isinstance(call, Double):
-                opposition = (Direction[(self.whoseTurn().index + 1) % 4],
-                              Direction[(self.whoseTurn().index + 3) % 4])
+                opposition = (Direction((self.whoseTurn().value + 1) % 4),
+                              Direction((self.whoseTurn().value + 3) % 4))
                 return bidder in opposition and not self.currentDouble
 
             # A redouble must be made on the current bid from partnership,
             # which has been doubled by an opponent.
             elif isinstance(call, Redouble):
                 partnership = (self.whoseTurn(),
-                               Direction[(self.whoseTurn().index + 2) % 4])
+                               Direction((self.whoseTurn().value + 2) % 4))
                 return bidder in partnership and self.currentDouble \
                                          and not self.currentRedouble
 
@@ -176,7 +176,7 @@ class Auction(list):
         @return: the position of the player who made call, or None.
         """
         if call in self:
-            return Direction[(self.dealer.index + self.index(call)) % 4]
+            return Direction((self.dealer.value + self.index(call)) % 4)
         return None  # Call not made by any player.
 
 
@@ -187,7 +187,7 @@ class Auction(list):
         """
         if self.isComplete():
             return
-        return Direction[(self.dealer.index + len(self)) % 4]
+        return Direction((self.dealer.value + len(self)) % 4)
 
 
     def _getCurrentCall(self, callclass):

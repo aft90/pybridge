@@ -78,12 +78,12 @@ class Board(dict):
         board['time'] = tuple(time.localtime())
 
         # Dealer rotates clockwise.
-        board['dealer'] = Direction[(board['dealer'].index + 1) % 4]
+        board['dealer'] = Direction((board['dealer'].value + 1) % 4)
 
         # Map from duplicate board index range 1..16 to vulnerability.
         # See http://www.d21acbl.com/References/Laws/node5.html#law2
         i = (board['num'] - 1) % 16
-        board['vuln'] = Vulnerable[(i%4 + i//4)%4]
+        board['vuln'] = Vulnerable((i%4 + i//4)%4)
 
         return board
 

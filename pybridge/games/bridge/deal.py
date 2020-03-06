@@ -162,8 +162,8 @@ class Deal(dict):
         """
         # Reconstruct deal.
         first, hands = dealstr.split(":")
-        firstindex = cls.__pbnDirection[first.strip()].index
-        order = Direction[firstindex:] + Direction[:firstindex]
+        firstindex = cls.__pbnDirection[first.strip()].value
+        order = list(Direction)[firstindex:] + list(Direction)[:firstindex]
 
         deal = dict((pos, []) for pos in Direction)
 
@@ -185,7 +185,7 @@ class Deal(dict):
         @param dealer: if specified, the dealer of this deal.
         @return: a PBN deal string.
         """
-        order = Direction[dealer.index:] + Direction[:dealer.index]
+        order = list(Direction)[dealer.value:] + list(Direction)[:dealer.value]
         hs = {}
 
         for position in order:

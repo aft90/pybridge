@@ -155,7 +155,7 @@ def render_call(call):
         if call.strain == Strain.NoTrump:  # No associated colour.
             return LEVEL_SYMBOLS[call.level] + STRAIN_SYMBOLS[Strain.NoTrump]
         else:
-            rgb = config['Appearance']['Colours'].get(call.strain.key, (0, 0, 0))
+            rgb = config['Appearance']['Colours'].get(call.strain.name, (0, 0, 0))
             hexrep = Gdk.Color(*rgb).to_string()
             return "%s<span color=\'%s\'>%s</span>" % \
                    (LEVEL_SYMBOLS[call.level], hexrep, STRAIN_SYMBOLS[call.strain])
@@ -172,7 +172,7 @@ def render_call_name(call):
 
 
 def render_card(card):
-    rgb = config['Appearance']['Colours'].get(card.suit.key, (0, 0, 0))
+    rgb = config['Appearance']['Colours'].get(card.suit.name, (0, 0, 0))
     hexrep = Gdk.Color(*rgb).to_string()
     return "%s<span color=\'%s\'>%s</span>" % \
            (RANK_SYMBOLS[card.rank], hexrep, SUIT_SYMBOLS[card.suit])

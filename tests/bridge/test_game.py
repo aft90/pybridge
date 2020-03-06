@@ -81,7 +81,7 @@ class TestGameRuns(unittest.TestCase):
         turn = board['dealer']  # Avoid calling getTurn.
         for i in range(len(Direction)):  # Iterate for each player.
             self.players[turn].makeCall( Pass() )  # Each player passes.
-            turn = Direction[(turn.index + 1) % len(Direction)]
+            turn = Direction((turn.value + 1) % len(Direction))
         self.assertEqual(turn, board['dealer'])  # Sanity check.
 
         # Bidding is passed out - game is over.

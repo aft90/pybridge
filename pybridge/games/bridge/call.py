@@ -67,8 +67,8 @@ class Bid(Call):
             raise TypeError("Expected Call, got %s" % type(other))
 
         if isinstance(other, Bid):  # Compare two bids.
-            selfIndex = self.level.index*len(Strain) + self.strain.index
-            otherIndex = other.level.index*len(Strain) + other.strain.index
+            selfIndex = self.level.value*len(Strain) + self.strain.value
+            otherIndex = other.level.value*len(Strain) + other.strain.value
             return selfIndex < otherIndex
         # Comparing non-bid calls returns true.
         return True

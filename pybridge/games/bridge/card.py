@@ -60,8 +60,8 @@ class Card(pb.Copyable, pb.RemoteCopy):
         if not isinstance(other, Card):
             raise TypeError("Expected Card, got %s" % type(other))
 
-        selfIndex = self.suit.index*13 + self.rank.index
-        otherIndex = other.suit.index*13 + other.rank.index
+        selfIndex = self.suit.value*13 + self.rank.value
+        otherIndex = other.suit.value*13 + other.rank.value
         return selfIndex < otherIndex
 
 

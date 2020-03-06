@@ -47,7 +47,7 @@ class Bridge:
 
 
     # Valid positions (for Table).
-    positions = Direction
+    positions = list(Direction)
 
     # Mapping from Strain symbols (in auction) to Suit symbols (in play).
     __trumpMap = {Strain.Club: Suit.Club, Strain.Diamond: Suit.Diamond,
@@ -170,7 +170,7 @@ class Bridge:
             for trick in state.get('play', []):
                 # TODO: clean this up.
                 leader = self.getTurn()
-                for turn in Direction[leader.index:] + Direction[:leader.index]:
+                for turn in list(Direction)[leader.value:] + list(Direction)[:leader.value]:
                     if turn in trick:
                         card = trick[turn]
                         if turn == self.play.dummy:

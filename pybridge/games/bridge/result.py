@@ -74,7 +74,7 @@ class GameResult:
         isDoubled      = bool(self.contract.doubleBy)
         isRedoubled    = bool(self.contract.redoubleBy)
         isVulnerable   = self.isVulnerable
-        contractLevel  = self.contract.bid.level.index + 1
+        contractLevel  = self.contract.bid.level.value + 1
         tricksMade     = self.tricksMade
         tricksRequired = contractLevel + 6
         trumpSuit      = self.contract.bid.strain
