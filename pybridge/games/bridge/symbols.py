@@ -28,9 +28,13 @@ from twisted.spread import pb
 
 from enum import Enum
 
+class CopyableSymbol(pb.Copyable, pb.RemoteCopy, Enum):
+    def getStateToCopy(self):
+        return (self.__class__.__name__, self.value)
+
 # Bid levels and strains (denominations).
 
-class Level(pb.Copyable, pb.RemoteCopy, Enum):
+class Level(CopyableSymbol):
     One = 0
     Two = 1
     Three = 2
@@ -39,22 +43,17 @@ class Level(pb.Copyable, pb.RemoteCopy, Enum):
     Six = 5
     Seven = 6
 
-pb.setUnjellyableForClass(Level, Level)
-
-class Strain(pb.Copyable, pb.RemoteCopy, Enum):
+class Strain(CopyableSymbol):
     Club = 0
     Diamond = 1
     Heart = 2
     Spade = 3
     NoTrump = 4
 
-pb.setUnjellyableForClass(Strain, Strain)
-
 
 # Card ranks and suits.
 
-
-class Rank(pb.Copyable, pb.RemoteCopy, Enum):
+class Rank(CopyableSymbol):
     Two = 0
     Three = 1
     Four = 2
@@ -69,33 +68,35 @@ class Rank(pb.Copyable, pb.RemoteCopy, Enum):
     King = 11
     Ace = 12
 
-pb.setUnjellyableForClass(Rank, Rank)
-
-class Suit(pb.Copyable, pb.RemoteCopy, Enum):
+class Suit(CopyableSymbol):
     Club = 0
     Diamond = 1
     Heart = 2
     Spade = 3
 
-pb.setUnjellyableForClass(Suit, Suit)
-
 
 # Player compass positions, in clockwise order.
 
-class Direction(pb.Copyable, pb.RemoteCopy, Enum):
+class Direction(CopyableSymbol):
     North = 0
     East = 1
     South = 2
     West = 3
 
-pb.setUnjellyableForClass(Direction, Direction)
 
 # Vulnerability indicators.
 
-class Vulnerable(pb.Copyable, pb.RemoteCopy, Enum):
+class Vulnerable(CopyableSymbol):
     Nil = 0
     NorthSouth = 1
     EastWest = 2
     All = 3
 
-pb.setUnjellyableForClass(Vulnerable, Vulnerable)
+SymbolRegistry = { cls.__name__ : cls for cls in [ Level, Strain, Rank, Suit, Direction, Vulnerable ] }
+
+def symbolFactory(state):
+    return SymbolRegistry[state[0]](state[1])
+
+for (cname, cls) in SymbolRegistry.items():
+    pb.setUnjellyableFactoryForClass(cls, symbolFactory)
+
