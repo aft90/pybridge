@@ -43,8 +43,7 @@ class Checker:
         def passwordMatch(matched):
             if matched:
                 return credentials.username
-            else:
-                return unauthorized("Incorrect password for user")
+            return unauthorized("Incorrect password for user")
 
         if not credentials.username:
             return checkers.ANONYMOUS  # TODO: if allowAnonymousRegistration.
@@ -52,9 +51,9 @@ class Checker:
         userQuery = db.UserAccount.selectBy(username=credentials.username.decode('utf-8'))
         if userQuery.count() == 0:
             return unauthorized("User account does not exist on server")
-        elif userQuery[0].allowLogin is False:  # TODO: list index breaks on MySQL.
+        if userQuery[0].allowLogin is False:  # TODO: list index breaks on MySQL.
             return unauthorized("User account is disabled")
-        elif credentials.username.decode('utf-8') in server.onlineUsers:
+        if credentials.username.decode('utf-8') in server.onlineUsers:
             # TODO: delete old session and use this one instead?
             return unauthorized("User is already logged in")
 

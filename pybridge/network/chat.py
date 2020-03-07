@@ -107,7 +107,7 @@ class LocalChat(Chat, pb.Cacheable):
             receive the message as a 'whisper'. Otherwise, all users in the chat
             will recieve the 'shouted' message.
             """
-            if type(text) is not str:
+            if not isinstance(text, str):
                 raise IllegalRequest("Expected str, got %s" % type(text))
             # The user cannot be trusted to provide a valid Message object.
             message = Message(text, user, recipients)

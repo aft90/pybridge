@@ -228,6 +228,7 @@ class ChatBox(Gtk.VPaned):
                 buffer.delete(start, end)  # Clear buffer.
                 self.chat.send(text)
             return True  # Inhibit self.textentry from displaying newline.
+        return False
 
 
 

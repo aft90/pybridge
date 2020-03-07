@@ -160,7 +160,7 @@ class Auction(list):
 
             # A redouble must be made on the current bid from partnership,
             # which has been doubled by an opponent.
-            elif isinstance(call, Redouble):
+            if isinstance(call, Redouble):
                 partnership = (self.whoseTurn(),
                                Direction((self.whoseTurn().value + 2) % 4))
                 return bidder in partnership and self.currentDouble \
@@ -186,7 +186,7 @@ class Auction(list):
         @return: the next position to make a call, or None.
         """
         if self.isComplete():
-            return
+            return None
         return Direction((self.dealer.value + len(self)) % 4)
 
 
@@ -201,7 +201,7 @@ class Auction(list):
         for call in reversed(self):
             if isinstance(call, callclass):
                 return call
-            elif isinstance(call, Bid):
+            if isinstance(call, Bid):
                 break  # Bids cancel all preceding calls.
         return None
 

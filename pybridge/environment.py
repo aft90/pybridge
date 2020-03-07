@@ -80,8 +80,7 @@ def find_doc(name):
     """
     if sharedir == basedir:
         return os.path.join(basedir, name)
-    else:
-        return os.path.join(sharedir, 'doc', 'pybridge', name)
+    return os.path.join(sharedir, 'doc', 'pybridge', name)
 
 
 def find_glade(name):
@@ -92,8 +91,7 @@ def find_glade(name):
     """
     if sharedir == basedir:
         return os.path.join(basedir, 'glade', name)
-    else:
-        return os.path.join(sharedir, 'pybridge', 'glade', name)
+    return os.path.join(sharedir, 'pybridge', 'glade', name)
 
 
 def find_pixmap(name):
@@ -104,8 +102,7 @@ def find_pixmap(name):
     """
     if sharedir == basedir:
         return os.path.join(basedir, 'pixmaps', name)
-    else:
-        return os.path.join(sharedir, 'pybridge', 'pixmaps', name)
+    return os.path.join(sharedir, 'pybridge', 'pixmaps', name)
 
 
 def get_localedir():

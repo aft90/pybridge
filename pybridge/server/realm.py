@@ -33,8 +33,7 @@ class Realm:
         if avatarId == checkers.ANONYMOUS:
             avatar = AnonymousUser()
             return pb.IPerspective, avatar, lambda:None
-        else:
-            avatar = RegisteredUser(avatarId)
-            avatar.attached(mind)
-            return pb.IPerspective, avatar, lambda a=avatar:a.detached(mind)
+        avatar = RegisteredUser(avatarId)
+        avatar.attached(mind)
+        return pb.IPerspective, avatar, lambda a=avatar:a.detached(mind)
 

@@ -162,7 +162,7 @@ class CardArea(CairoCanvas):
 
         if not facedown:  # Order hand by sorted suits.
             # Split hand into suits.
-            suits = dict([(suit, []) for suit in Suit])
+            suits = { suit: [] for suit in Suit }
             for card in hand:
                 suits[card.suit].append(card)
             for suit in suits:
@@ -198,7 +198,7 @@ class CardArea(CairoCanvas):
         if id in self.items:
             self.update_item(id, source=surface)
         else:
-            opacity = (self.playernames.get(position) and 1) or 0.5
+            opacity = 1 if self.playernames.get(position) else 0.5
             self.add_item(id, surface, self.hand_xy[position], 0, opacity=opacity)
 
 
@@ -214,7 +214,7 @@ class CardArea(CairoCanvas):
         # If no name specified, show hand at position as translucent.
         handid = ('hand', position)
         if handid in self.items:
-            opacity = (name and 1) or 0.5
+            opacity = 1 if name else 0.5
             self.update_item(handid, opacity=opacity)
 
         layout = Pango.Layout(self.create_pango_context())

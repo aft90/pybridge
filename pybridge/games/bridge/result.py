@@ -289,4 +289,5 @@ class Rubber(list):
         for pair in ((Direction.North, Direction.South), (Direction.East, Direction.West)):
             if pairs.count(pair) >= 2:
                 return pair
+        return None
 

@@ -116,7 +116,7 @@ class DialogConnection(GladeWrapper):
 
         username = self.entry_username.get_text()
         password = self.entry_password.get_text()
-        register = self.check_registeruser.get_active() == True
+        register = self.check_registeruser.get_active()
 
         if register:
             # Attempt login only after registration.

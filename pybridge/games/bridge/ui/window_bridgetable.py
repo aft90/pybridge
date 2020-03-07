@@ -325,7 +325,7 @@ class WindowBridgeTable(WindowGameTable):
             if isinstance(score, tuple):  # Rubber scoring.
                 score = sum(score)  # TODO: display above, below separately.
 
-            pair = (score >= 0 and _('declarer')) or _('defence')
+            pair = _('declarer') if score >= 0 else _('defence')
             scoreText = _('Score %(points)s points for %(pair)s.') % {'points': abs(score), 'pair': pair}
 
             dialog.set_markup(resultText + '\n' + scoreText)

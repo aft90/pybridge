@@ -154,21 +154,18 @@ def render_call(call):
     if isinstance(call, Call.Bid):
         if call.strain == Strain.NoTrump:  # No associated colour.
             return LEVEL_SYMBOLS[call.level] + STRAIN_SYMBOLS[Strain.NoTrump]
-        else:
-            rgb = config['Appearance']['Colours'].get(call.strain.name, (0, 0, 0))
-            hexrep = Gdk.Color(*rgb).to_string()
-            return "%s<span color=\'%s\'>%s</span>" % \
+        rgb = config['Appearance']['Colours'].get(call.strain.name, (0, 0, 0))
+        hexrep = Gdk.Color(*rgb).to_string()
+        return "%s<span color=\'%s\'>%s</span>" % \
                    (LEVEL_SYMBOLS[call.level], hexrep, STRAIN_SYMBOLS[call.strain])
-    else:
-        return CALLTYPE_SYMBOLS[call.__class__]
+    return CALLTYPE_SYMBOLS[call.__class__]
 
 
 def render_call_name(call):
     if isinstance(call, Call.Bid):
         return _('%(level)s %(strain)s') % {'level': LEVEL_NAMES[call.level],
                                            'strain': STRAIN_NAMES[call.strain]}
-    else:
-        return CALLTYPE_NAMES[call.__class__]
+    return CALLTYPE_NAMES[call.__class__]
 
 
 def render_card(card):
@@ -184,7 +181,7 @@ def render_card_name(card):
 
 def render_contract(contract):
     """Produce a format string representing the contract.
-    
+
     @param contract: a contract object.
     @type contract: dict
     @return: a format string representing the contract.
@@ -198,6 +195,5 @@ def render_contract(contract):
 
     if doubled:
         return _('%(bid)s %(doubled)s by %(declarer)s') % fields
-    else:
-        return _('%(bid)s by %(declarer)s') % fields
+    return _('%(bid)s by %(declarer)s') % fields
 

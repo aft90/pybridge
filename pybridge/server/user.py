@@ -138,7 +138,7 @@ class RegisteredUser(pb.Avatar):
 
         if not isinstance(tableid, str):
             raise IllegalRequest("Invalid parameter for table identifier")
-        elif tableid in self.joinedTables:
+        if tableid in self.joinedTables:
             raise DeniedRequest("Already joined table")
 
         if host:
@@ -159,7 +159,7 @@ class RegisteredUser(pb.Avatar):
 
         if not isinstance(tableid, str):
             raise IllegalRequest("Invalid parameter for table identifier")
-        elif tableid not in self.joinedTables:
+        if tableid not in self.joinedTables:
             raise DeniedRequest("Not joined to table")
         
         del self.joinedTables[tableid]  # Implicitly removes user from table.
@@ -172,7 +172,7 @@ class RegisteredUser(pb.Avatar):
         self.perspective_joinTable(tableid, host=True, gamename=tabletype.capitalize())
 
     def oldVersionCheck(self):
-        if self.clientVersion == None:
+        if self.clientVersion is None:
             log.msg("User %s may be running old client" % self.name)
             #self.mind.broker.transport.loseConnection()  # Drop connection
             # Provide client with a warning that they are incompatible with this server.

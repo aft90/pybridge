@@ -97,8 +97,7 @@ class LocalTable(pb.Cacheable):
         state['gamename'] = self.info['gamename']
         state['gamestate'] = self.game.getState()
         state['observers'] = [p.name for p in list(self.observers.keys())]
-        state['players'] = dict([(pos, p.name)
-                                 for pos, p in list(self.players.items())])
+        state['players' ] = { pos : p.name for pos, p in self.players.items() }
         state['view'] = self.view
 
         return state  # To observer.

@@ -124,10 +124,9 @@ class Bridge:
     def inProgress(self):
         if self.play is not None:
             return not self.play.isComplete()
-        elif self.auction is not None:
+        if self.auction is not None:
             return not self.auction.isPassedOut()
-        else:
-            return False
+        return False
 
 
     def isNextGameReady(self):
@@ -405,18 +404,15 @@ class Bridge:
 
         if self.board and self.board['deal'].get(position):
             return self.board['deal'][position]
-        else:
-            raise GameError("Hand unknown")
+        raise GameError("Hand unknown")
 
 
     def getTurn(self):
         if self.inProgress():
             if self.auction.isComplete():  # In trick play.
                 return self.play.whoseTurn()
-            else:  # Currently in the auction.
-                return self.auction.whoseTurn()
-        else:  # Not in game.
-            raise GameError("No game in progress")
+            return self.auction.whoseTurn() # Currently in the auction.
+        raise GameError("No game in progress") # Not in game.
 
 
 
