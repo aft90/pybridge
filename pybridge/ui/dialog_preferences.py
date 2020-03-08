@@ -23,7 +23,7 @@ from .wrapper import GladeWrapper
 import pybridge.environment as env
 from .config import config
 from .manager import wm
-from .vocabulary import *
+from .vocabulary import SUIT_SYMBOLS, SUIT_NAMES
 
 from pybridge.games.bridge.symbols import Suit
 

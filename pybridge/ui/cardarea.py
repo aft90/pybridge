@@ -25,9 +25,9 @@ import cairo
 import pybridge.environment as env
 from .canvas import CairoCanvas
 from .config import config
-from .vocabulary import *
+from .vocabulary import DIRECTION_NAMES
 
-from pybridge.games.bridge.symbols import Rank, Suit
+from pybridge.games.bridge.symbols import Rank, Suit, Direction
 
 # The order in which card graphics are expected in card mask.
 CARD_MASK_RANKS = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five,

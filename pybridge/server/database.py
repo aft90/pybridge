@@ -18,8 +18,7 @@
 
 import re
 from datetime import datetime
-from sqlobject import *
-from sqlobject.inheritance import InheritableSQLObject
+from sqlobject import sqlhub, SQLObject, StringCol, BoolCol, UnicodeCol, DateTimeCol, connectionForURI
 from twisted.python import log
 
 from .config import config

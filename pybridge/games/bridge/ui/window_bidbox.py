@@ -20,7 +20,7 @@ from gi.repository import Gtk
 
 from pybridge.ui.config import config
 from pybridge.ui.eventhandler import SimpleEventHandler
-from pybridge.ui.vocabulary import *
+from pybridge.ui.vocabulary import render_call, render_call_name
 
 import pybridge.games.bridge.call as Call
 

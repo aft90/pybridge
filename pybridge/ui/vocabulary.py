@@ -22,7 +22,7 @@ A repository for translatable symbols and names.
 
 from gi.repository import Gdk
 
-from pybridge.games.bridge.symbols import *
+from pybridge.games.bridge.symbols import Direction, Level, Rank, Suit, Strain, Vulnerable
 import pybridge.games.bridge.call as Call
 
 from .config import config
