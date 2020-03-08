@@ -54,7 +54,7 @@ class Checker:
             return unauthorized("User account does not exist on server")
         elif userQuery[0].allowLogin is False:  # TODO: list index breaks on MySQL.
             return unauthorized("User account is disabled")
-        elif credentials.username in server.onlineUsers:
+        elif credentials.username.decode('utf-8') in server.onlineUsers:
             # TODO: delete old session and use this one instead?
             return unauthorized("User is already logged in")
 
