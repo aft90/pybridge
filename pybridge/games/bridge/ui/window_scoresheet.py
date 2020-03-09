@@ -93,7 +93,7 @@ class RubberScoreSheet(Gtk.TreeView):
         self.store.clear()
         self.store.append(['', '', True])  # The initial dividing line.
 
-        for game, pair in rubber.games:
+        for _ in rubber.games:
             #aboveiters, belowiters = [], []
             for result in rubber:
                 above, below = result.score

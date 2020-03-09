@@ -144,7 +144,7 @@ class WindowMain(GladeWrapper):
                   'users' : (self.userview.get_model(), self.user_icon, self.userview_iters)}
         try:
             model, icon, view_iters = lookup[name]
-            for id, info in list(roster.items()):
+            for id in roster:
                 iter = model.append([id, icon])
                 view_iters[id] = iter
             roster.attach(self.eventHandler)

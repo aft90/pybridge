@@ -185,7 +185,7 @@ class CardArea(CairoCanvas):
         surface, context = self.new_surface(width, height)
 
         # Draw cards to surface.
-        for i, card in enumerate(hand):
+        for card in hand:
             if card in visible:
                 pos_x, pos_y = coords[card]
                 self.draw_card(context, pos_x, pos_y, card)

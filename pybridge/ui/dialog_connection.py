@@ -99,7 +99,7 @@ class DialogConnection(GladeWrapper):
         # Port number must be an integer.
         if valid:
             try:
-                port = int(self.entry_portnum.get_text())
+                int(self.entry_portnum.get_text())
             except ValueError:
                 valid = False
 
