@@ -20,13 +20,9 @@ from gi.repository import Gtk
 
 from pybridge.games.bridge.symbols import Direction
 
-from pybridge.network.client import client
 from pybridge.network.error import GameError
 
 from pybridge.ui.cardarea import CardArea
-from pybridge.ui.config import config
-from pybridge.ui.eventhandler import SimpleEventHandler
-from pybridge.ui.manager import WindowManager
 from pybridge.ui.vocabulary import DIRECTION_NAMES, VULN_SYMBOLS, render_call, render_contract
 
 from pybridge.ui.window_gametable import WindowGameTable

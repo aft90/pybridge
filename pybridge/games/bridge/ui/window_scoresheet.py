@@ -18,7 +18,7 @@
 
 from gi.repository import Gtk
 
-from pybridge.games.bridge.result import DuplicateResult, RubberResult
+from pybridge.games.bridge.result import RubberResult
 from pybridge.games.bridge.symbols import Direction
 
 from pybridge.ui.eventhandler import SimpleEventHandler
