@@ -221,9 +221,9 @@ class CardArea(CairoCanvas):
         layout = Pango.Layout(self.create_pango_context())
         layout.set_font_description(self.font_description)
         if name is None:
-            layout.set_text(DIRECTION_NAMES[position])
+            layout.set_text(DIRECTION_NAMES[position], -1)
         else:
-            layout.set_text(DIRECTION_NAMES[position] + ': ' + name)
+            layout.set_text(DIRECTION_NAMES[position] + ': ' + name, -1)
 
         # Create an ImageSurface respective to dimensions of text.
         width, height = layout.get_pixel_size()
