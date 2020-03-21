@@ -28,8 +28,8 @@ setup(
     data_files = [('share/applications', ['bin/pybridge.desktop']),
                   ('share/doc/pybridge', ['AUTHORS', 'COPYING', 'INSTALL', 'NEWS', 'README']),
                   ('share/man/man6/', ['man/pybridge.6', 'man/pybridge-server.6']),
-                  ('share/pybridge/glade', glob.glob('glade/*.glade')),
-                  ('share/pybridge/pixmaps', glob.glob('pixmaps/*.{png,svg}')), ],
+                  ('share/pybridge/glade', glob.glob('glade/*.ui')),
+                  ('share/pybridge/pixmaps', glob.glob('pixmaps/*.png')+glob.glob('pixmaps/*.svg')), ],
     
     # py2exe
     console = ['bin/pybridge-server'],

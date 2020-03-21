@@ -1,7 +1,7 @@
 include MANIFEST.in
 include AUTHORS COPYING INSTALL NEWS README
 include bin/pybridge.desktop
-include glade/*.glade man/*
+include glade/*.ui man/*
 recursive-include locale */LC_MESSAGES/pybridge.mo
 recursive-include pixmaps *
 recursive-include tests *.py
