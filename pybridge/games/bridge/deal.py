@@ -52,6 +52,7 @@ class Deal(dict):
     __D = __Nmax * __Emax * __Smax
 
 
+
     def __init__(self, mapping):
         super().__init__(mapping)
         for hand in list(self.values()):
@@ -161,17 +162,34 @@ class Deal(dict):
         @return: a Deal object containing the corresponding deal.
         """
         # Reconstruct deal.
+        seenCards = set()
         first, hands = dealstr.split(":")
         firstindex = cls.__pbnDirection[first.strip()].value
         order = list(Direction)[firstindex:] + list(Direction)[:firstindex]
 
-        deal = dict((pos, []) for pos in Direction)
+        deal = { pos: [] for pos in Direction }
 
-        for position, hand in zip(order, hands.strip().split(' ')):
-            for suit, suitcards in zip(reversed(Suit), hand.split('.')):
+        hands = [hand1, hand2, hand3, hand4] = hands.strip().split()
+
+        for position, hand in zip(order, hands):
+            holding = [spades, hearts, diamonds, clubs] = hand.split('.')
+            for suit, suitcards in zip(reversed(Suit), holding):
                 for rank in suitcards:
                     card = Card(cls.__pbnRank[rank], suit)
+                    if card in seenCards:
+                        raise ValueError("Card already seen: " + repr(card))
+                    seenCards.add(card)
                     deal[position].append(card)
+
+        for r in Rank:
+            for s in Suit:
+                c = Card(r,s)
+                if c not in seenCards:
+                    raise ValueError("Card missing: {}".format(repr(c)))
+
+        for pos in deal:
+            if len(deal[pos]) != len(Rank):
+                raise ValueError("Incorrect number of cards ({}) in {} hand".format(len(deal[pos]), pos))
 
         return cls(deal)
 

@@ -61,16 +61,98 @@ class TestDeck(unittest.TestCase):
             self.fail(e, deal)
 
 
+    @unittest.skip("not used")
     def test_toIndex(self):
         """Testing toIndex method over a set of known deals"""
         for index, deal in list(self.samples.items()):
             self.assertEqual(deal.toIndex(), index)
 
 
+    @unittest.skip("not used")
     def test_fromIndex(self):
         """Testing Deal.fromIndex over a set of known indexes"""
         for index, deal in list(self.samples.items()):
             self.assertEqual(Deal.fromIndex(index), deal)
+
+    def test_fromString(self):
+        deal_str = "S:KJ985.K762.85.KT Q72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        deal = Deal.fromString(deal_str)
+
+        north_hand = [ Card(rnk, Suit.Club) for rnk in (Rank[r] for r in ('Two', 'Four', 'Eight', 'Nine', 'Ace')) ] + \
+                [ Card(Rank.Four, Suit.Diamond) ] + \
+                [ Card(rnk, Suit.Heart) for rnk in (Rank[r] for r in ('Five', 'Eight', 'Ten')) ] + \
+                [ Card(rnk, Suit.Spade) for rnk in (Rank[r] for r in ('Three', 'Six', 'Ten', 'Ace')) ]
+        east_hand = [ Card(rnk, Suit.Club) for rnk in (Rank[r] for r in ('Three', 'Five', 'Seven', 'Queen')) ] + \
+                [ Card(rnk, Suit.Diamond) for rnk in (Rank[r] for r in ('Three', 'Six', 'Seven', 'Jack', 'King')) ] + \
+                [ Card(rnk, Suit.Heart) for rnk in (Rank[r] for r in ('Four', 'Nine', 'Queen')) ] + \
+                [ Card(Rank.Four, Suit.Spade) ]
+        south_hand = [ Card(rnk, Suit.Club) for rnk in (Rank[r] for r in ('Ten', 'King')) ] + \
+                [ Card(rnk, Suit.Diamond) for rnk in (Rank[r] for r in ('Five', 'Eight')) ] + \
+                [ Card(rnk, Suit.Heart) for rnk in (Rank[r] for r in ('Two', 'Six', 'Seven', 'King')) ] + \
+                [ Card(rnk, Suit.Spade) for rnk in (Rank[r] for r in ('Five', 'Eight', 'Nine', 'Jack', 'King')) ]
+        west_hand = [ Card(rnk, Suit.Club) for rnk in (Rank[r] for r in ('Six', 'Jack')) ] + \
+                [ Card(rnk, Suit.Diamond) for rnk in (Rank[r] for r in ('Two', 'Nine', 'Ten', 'Queen', 'Ace')) ] + \
+                [ Card(rnk, Suit.Heart) for rnk in (Rank[r] for r in ('Three', 'Jack', 'Ace')) ] + \
+                [ Card(rnk, Suit.Spade) for rnk in (Rank[r] for r in ('Two', 'Seven', 'Queen')) ]
+
+        self.assertEqual( { Direction.North: north_hand, Direction.East: east_hand, Direction.South: south_hand, Direction.West: west_hand }, deal)
+
+    
+    def test_multi_space_ok(self):
+        deal_str = "S:KJ985.K762.85.KT     Q72.AJ3.AQT92.J6   AT63.T85.4.A9842                   4.Q94.KJ763.Q753"
+        Deal.fromString(deal_str)
+
+    def test_fromString_repeated_card(self):
+        deal_str = "S:KJ985.K762.85.KT KQ72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        with self.assertRaises(ValueError) as ctx:
+            Deal.fromString(deal_str)
+            self.assertEqual("Card already seen: Card(Rank.King, Suit.Spade)", ctx.exception.message)
+
+    def test_fromString_missing_card(self):
+        deal_str = "S:KJ985.K762.85.KT Q72.AJ3.AQT92.J6 AT63.T85.4.A942 4.Q94.KJ763.Q753"
+        with self.assertRaises(ValueError) as ctx:
+            Deal.fromString(deal_str)
+            self.assertEqual("Card missing: Card(Rank.Eight, Suit.Club)", ctx.exception.message)
+
+
+    def test_fromString_unbalanced_hand(self):
+        deal_str = "S:KQJ985.K762.85.KT 72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        with self.assertRaises(ValueError) as ctx:
+            Deal.fromString(deal_str)
+            self.assertEqual("Incorrect number of cards (14) in South hand", ctx.exception.message)
+
+    def test_fromString_missing_space(self):
+        deal_str = "S:KJ985.K762.85.KT Q72.AJ3.AQT92.J6 AT63.T85.4.A98424.Q94.KJ763.Q753"
+        with self.assertRaises(ValueError):
+            Deal.fromString(deal_str)
+
+    def test_fromString_missing_dot(self):
+        deal_str = "S:KJ985.K762.85KT Q72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        with self.assertRaises(ValueError):
+            Deal.fromString(deal_str)
+
+    def test_fromString_extra_hand(self):
+        deal_str = "S:KJ985.K762.85.KT Q72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753 AKQJT98765432..."
+        with self.assertRaises(ValueError):
+            Deal.fromString(deal_str)
+
+    def test_fromString_missing_hand(self):
+        deal_str = "S:KJ985.K762.85.KT AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        with self.assertRaises(ValueError):
+            Deal.fromString(deal_str)
+
+
+    def test_invalid_character_cards(self):
+        deal_str = "S:YJ985.K762.85.KT Q72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        with self.assertRaises(KeyError) as ctx:
+            Deal.fromString(deal_str)
+            self.assertEqual("KeyError: 'Y'", ctx.exception.message)
+
+    def test_invalid_character_direction(self):
+        deal_str = "F:KJ985.K762.85.KT Q72.AJ3.AQT92.J6 AT63.T85.4.A9842 4.Q94.KJ763.Q753"
+        with self.assertRaises(KeyError) as ctx:
+            Deal.fromString(deal_str)
+            self.assertEqual("KeyError: 'F'", ctx.exception.message)
 
 
 #    def test_toString(self):
