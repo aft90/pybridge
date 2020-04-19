@@ -28,20 +28,21 @@ import pybridge.ui.vocabulary as voc
 class ScoreSheet(Gtk.TreeView):
     """A score sheet widget, which presents GameResult information."""
 
-    # TODO: display total scores for N/S and E/W.
-
-
     def __init__(self):
         super().__init__()
         self.set_rules_hint(True)
 
-        self.store = Gtk.ListStore(int, str, str, str, str)
+        self.store = Gtk.ListStore(str, str, str, str, str)
         self.set_model(self.store)
 
         renderer = Gtk.CellRendererText()
         for index, title in enumerate([_('Board'), _('Contract'), _('Made'), _('N/S'), _('E/W')]):
             column = Gtk.TreeViewColumn(title, renderer, markup=index)
             self.append_column(column)
+
+        self.totalsRow = self.store.append(('Total','','','0','0'))
+        self.totalNS = 0
+        self.totalEW = 0
 
 
     def add_result(self, result):
@@ -52,22 +53,24 @@ class ScoreSheet(Gtk.TreeView):
             score = result.score
 
         if result.contract is None:  # Bidding passed out.
-            row = (result.board['num'], _('Passed out'), '-', '', '')
+            row = (str(result.board['num']), _('Passed out'), '-', '', '')
 
         else:
+            absScore = abs(score)
             if result.contract.declarer in (Direction.North, Direction.South) and score > 0 \
             or result.contract.declarer in (Direction.East, Direction.West) and score < 0:
-                scoreNS, scoreEW = str(abs(score)), ''
+                scoreNS, scoreEW = str(absScore), ''
+                self.totalNS += absScore
             else:
-                scoreNS, scoreEW = '', str(abs(score))
+                scoreNS, scoreEW = '', str(absScore)
+                self.totalEW += absScore
 
-            row = (result.board['num'], voc.render_contract(result.contract),
-                   #voc.DIRECTION_NAMES[result.contract.declarer],
+            row = (str(result.board['num']), voc.render_contract(result.contract),
                    str(result.tricksMade), scoreNS, scoreEW)
 
+        self.store.remove(self.totalsRow)
         self.store.append(row)
-
-
+        self.totalsRow = self.store.append(('Total','','',str(self.totalNS),str(self.totalEW)))
 
 
 class RubberScoreSheet(Gtk.TreeView):
