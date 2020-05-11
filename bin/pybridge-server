@@ -19,7 +19,6 @@
 
 
 import os, sys
-from optparse import OptionParser
 
 PORT = 5040  # Default port number.
 
@@ -42,10 +41,9 @@ def main():
         except ImportError:
             raise SystemExit("Fatal error: could not locate PyBridge installation.")
 
-    parser = OptionParser(version="PyBridge Server %s" % pybridge.__version__)
-    parser.add_option('-p', '--port', type=int, dest='port', default=PORT,
-                      help="listen for connections on specified port")
-    options, args = parser.parse_args()
+    from pybridge.server.args import server_argparser
+
+    options = server_argparser.parse_args()
 
     # Check dependency requirements.
     # Packagers may comment out the following two lines.
