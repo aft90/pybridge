@@ -59,8 +59,9 @@ class WindowBidbox:
             self.callButtons[call] = button
             return button
 
-        vbox = Gtk.VBox()
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
+        otherbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         bidtable = Gtk.Table(rows=7, columns=5, homogeneous=True)
         vbox.pack_start(bidtable, True, True, 0)
         # Build buttons for all bids.

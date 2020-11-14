@@ -58,14 +58,14 @@ class WindowGameTable:
         self.table = None  # Table currently displayed in window.
 
         # Set up widget layout.
-        vbox = Gtk.VBox()
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.toolbar = Gtk.Toolbar()
         self.toolbar.set_style(Gtk.ToolbarStyle.BOTH_HORIZ)
         vbox.pack_start(self.toolbar, False, True, 0)
-        hbox = Gtk.HBox()
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.gamearea = Gtk.Viewport()  # Use self.gamearea.add(...)
         hbox.pack_start(self.gamearea, True, True, 0)
-        self.sidebar = Gtk.VBox(spacing=6)  # Use self.sidebar.pack_start(..., True, True, 0)
+        self.sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)  # Use self.sidebar.pack_start(..., True, True, 0)
         self.sidebar.set_border_width(6)
         hbox.pack_start(self.sidebar, False, True, 0)
         vbox.pack_start(hbox, True, True, 0)

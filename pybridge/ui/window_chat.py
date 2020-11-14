@@ -24,14 +24,14 @@ from .manager import wm
 from .wrapper import ICON_PATH
 
 
-class PeopleBox(Gtk.VBox):
+class PeopleBox(Gtk.Box):
     """An embeddable list of people."""
 
     __gtype_name__ = 'PeopleBox'
 
 
     def __init__(self):
-        super().__init__()
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
 
         self.people_count_label = Gtk.Label()
         self.pack_start(self.people_count_label, False, True, 0)

@@ -82,18 +82,18 @@ class TrickArea(CardArea):
 
 
 
-class BridgeDashboard(Gtk.VBox): 
+class BridgeDashboard(Gtk.Box):
     """An at-a-glance display of the state of a bridge game."""
 
 
     def __init__(self):
-        super().__init__()
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.set_spacing(4)
 
         self.contract = Gtk.Label()
         self.pack_start(self.contract, True, True, 0)
 
-        hbox = Gtk.HBox()
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hbox.set_homogeneous(True)
         hbox.set_spacing(6)
         self.declarer_tricks = Gtk.Label()
@@ -110,7 +110,7 @@ class BridgeDashboard(Gtk.VBox):
         hbox.pack_start(frame, True, True, 0)
         self.pack_start(hbox, True, True, 0)
 
-        hbox = Gtk.HBox()
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hbox.set_homogeneous(True)
         hbox.set_spacing(6)
         # TODO: display board number?
