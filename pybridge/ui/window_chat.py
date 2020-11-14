@@ -78,7 +78,7 @@ class PeopleBox(Gtk.Box):
 
 
 
-class ChatBox(Gtk.VPaned):
+class ChatBox(Gtk.Paned):
     """An embeddable chat box widget, compatible with Chat objects.
     
     The design of this widget is modelled on Pidgin (http://pidgin.im/).
@@ -93,12 +93,12 @@ class ChatBox(Gtk.VPaned):
 
 
     def __init__(self):
-        super().__init__()
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
 
         self.chat = None  # A Chat object to monitor.
         self.eventHandler = SimpleEventHandler(self)
 
-        hpaned = Gtk.HPaned()
+        hpaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         # Conversation display.
         self.conversation = Gtk.TextView()
         self.conversation.set_editable(False)
