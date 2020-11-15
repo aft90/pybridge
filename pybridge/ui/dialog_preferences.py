@@ -111,12 +111,13 @@ class DialogPreferences(GladeWrapper):
         # Get symbol in Suit corresponding to button clicked.
 
         title = _("Select colour for %s symbol" % SUIT_NAMES[suit])
-        dialog = Gtk.ColorSelectionDialog(title)
-        dialog.get_color_selection().set_current_color(self.suit_colours[suit])
+        dialog = Gtk.ColorChooserDialog(title)
+        dialog.set_use_alpha(False)
+        dialog.set_rgba(Gdk.RGBA(*self.suit_colours[suit].to_floats(), 1))
 
         def dialog_response_cb(dialog, response_id):
             if response_id == Gtk.ResponseType.OK:
-                colour = dialog.get_color_selection().get_current_color()
+                colour = dialog.get_rgba().to_color()
                 self.suit_colours[suit] = colour
                 # Set button label to colour selected by user.
                 hexrep = colour.to_string()
