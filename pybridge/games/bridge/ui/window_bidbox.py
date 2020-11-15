@@ -62,14 +62,17 @@ class WindowBidbox:
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         otherbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        bidtable = Gtk.Table(rows=7, columns=5, homogeneous=True)
+        bidtable = Gtk.Grid()
+        bidtable.set_row_homogeneous(True)
+        bidtable.set_column_homogeneous(True)
+
         vbox.pack_start(bidtable, True, True, 0)
         # Build buttons for all bids.
         for y, level in enumerate(Call.Level):
             for x, strain in enumerate(Call.Strain):
                 bid = Call.Bid(level, strain)
                 markup = render_call(bid)
-                xy = (x, x+1, y, y+1)
+                xy = (x, y, 1, 1)
                 bidtable.attach(buildButtonFromCall(bid, markup), *xy)
 
         hsep = Gtk.Separator()
@@ -86,7 +89,6 @@ class WindowBidbox:
         for call, renderer, expand in othercalls:
             markup = renderer(call)
             otherbox.pack_start(buildButtonFromCall(call, markup), expand, True, 0)
-
         self.window.add(vbox)
         self.window.show_all()
 
