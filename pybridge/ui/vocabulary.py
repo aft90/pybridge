@@ -197,3 +197,7 @@ def render_contract(contract):
         return _('%(bid)s %(doubled)s by %(declarer)s') % fields
     return _('%(bid)s by %(declarer)s') % fields
 
+def rgba_hexrep(rgba):
+    base = 0xffff
+    components = (int(getattr(rgba, c) * base) for c in ('red', 'green', 'blue'))
+    return '#' + ''.join(f'{c:04x}' for c in components) 
