@@ -166,9 +166,6 @@ class WindowBridgeTable(WindowGameTable):
 
     gametype = _('Contract Bridge')
 
-    stockdirections = [Gtk.STOCK_GO_UP, Gtk.STOCK_GO_FORWARD,
-                       Gtk.STOCK_GO_DOWN, Gtk.STOCK_GO_BACK]
-
 
     def setUp(self):
         super().setUp()
@@ -176,9 +173,8 @@ class WindowBridgeTable(WindowGameTable):
         # Set up menu attached to 'Take Seat' toolbar button.
         self.takeseat_menuitems = {}
         menu = Gtk.Menu()
-        for position, stock in zip(Direction, self.stockdirections):
-            item = Gtk.ImageMenuItem(DIRECTION_NAMES[position], True)
-            item.set_image(Gtk.Image.new_from_stock(stock, Gtk.IconSize.MENU))
+        for position in Direction:
+            item = Gtk.MenuItem(DIRECTION_NAMES[position])
             item.connect('activate', self.on_takeseat_clicked, position)
             item.show()
             menu.append(item)
