@@ -20,8 +20,6 @@
 A repository for translatable symbols and names.
 """
 
-from gi.repository import Gdk
-
 from pybridge.games.bridge.symbols import Direction, Level, Rank, Suit, Strain, Vulnerable
 import pybridge.games.bridge.call as Call
 
@@ -154,8 +152,8 @@ def render_call(call):
     if isinstance(call, Call.Bid):
         if call.strain == Strain.NoTrump:  # No associated colour.
             return LEVEL_SYMBOLS[call.level] + STRAIN_SYMBOLS[Strain.NoTrump]
-        rgb = config['Appearance']['Colours'].get(call.strain.name, (0, 0, 0))
-        hexrep = Gdk.Color(*rgb).to_string()
+        rgb = config['Appearance']['Colours'].get(call.strain.name, '000')
+        hexrep = f'#{rgb}'
         return "%s<span color=\'%s\'>%s</span>" % \
                    (LEVEL_SYMBOLS[call.level], hexrep, STRAIN_SYMBOLS[call.strain])
     return CALLTYPE_SYMBOLS[call.__class__]
@@ -169,8 +167,8 @@ def render_call_name(call):
 
 
 def render_card(card):
-    rgb = config['Appearance']['Colours'].get(card.suit.name, (0, 0, 0))
-    hexrep = Gdk.Color(*rgb).to_string()
+    rgb = config['Appearance']['Colours'].get(card.suit.name, '000')
+    hexrep = f'#{rgb}'
     return "%s<span color=\'%s\'>%s</span>" % \
            (RANK_SYMBOLS[card.rank], hexrep, SUIT_SYMBOLS[card.suit])
 

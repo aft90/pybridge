@@ -41,10 +41,10 @@ spec = StringIO("""# PyBridge configuration file
     SuitSymbols = boolean(default=True)
 
     [[Colours]]
-        Club = int_list(3, 3)
-        Diamond = int_list(3, 3)
-        Heart = int_list(3, 3)
-        Spade = int_list(3, 3)
+        Club = string(min=12, max=12)
+        Diamond = string(min=12, max=12)
+        Heart = string(min=12, max=12)
+        Spade = string(min=12, max=12)
 
 """)
 

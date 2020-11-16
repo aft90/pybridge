@@ -23,7 +23,7 @@ from .wrapper import GladeWrapper
 import pybridge.environment as env
 from .config import config
 from .manager import wm
-from .vocabulary import SUIT_SYMBOLS, SUIT_NAMES
+from .vocabulary import SUIT_SYMBOLS, SUIT_NAMES, rgba_hexrep
 
 from pybridge.games.bridge.symbols import Suit
 
@@ -68,13 +68,14 @@ class DialogPreferences(GladeWrapper):
         # Retrieve suit colours.
         self.suit_colours = {}
         for suit in Suit:
-            rgb = config['Appearance']['Colours'].get(suit.name, (0, 0, 0))
-            colour = Gdk.Color(*rgb)
+            rgb = config['Appearance']['Colours'].get(suit.name, '000')
+            hash_rgb = f'#{rgb}'
+            colour = Gdk.RGBA()
+            colour.parse(hash_rgb)
             self.suit_colours[suit] = colour
             # Set button label colour from self.suit_colours.
-            hexrep = colour.to_string()
             label = getattr(self, 'label_%scolour' % suit.name.lower())
-            label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
+            label.set_markup(SUIT_LABEL_TEMPLATE % (hash_rgb, SUIT_SYMBOLS[suit]))
 
         use_suitsymbols = config['Appearance'].get('SuitSymbols')
         self.check_suitsymbols.set_active(use_suitsymbols)
@@ -113,14 +114,14 @@ class DialogPreferences(GladeWrapper):
         title = _("Select colour for %s symbol" % SUIT_NAMES[suit])
         dialog = Gtk.ColorChooserDialog(title)
         dialog.set_use_alpha(False)
-        dialog.set_rgba(Gdk.RGBA(*self.suit_colours[suit].to_floats(), 1))
+        dialog.set_rgba(self.suit_colours[suit])
 
         def dialog_response_cb(dialog, response_id):
             if response_id == Gtk.ResponseType.OK:
-                colour = dialog.get_rgba().to_color()
-                self.suit_colours[suit] = colour
+                rgba = dialog.get_rgba()
+                self.suit_colours[suit] = rgba
                 # Set button label to colour selected by user.
-                hexrep = colour.to_string()
+                hexrep = rgba_hexrep(rgba)
                 label = getattr(self, 'label_%scolour' % suit.name.lower())
                 label.set_markup(SUIT_LABEL_TEMPLATE % (hexrep, SUIT_SYMBOLS[suit]))
 
@@ -138,8 +139,7 @@ class DialogPreferences(GladeWrapper):
         # Save preferences to config file.
 
         for suit, colour in list(self.suit_colours.items()):
-            rgb = (colour.red, colour.green, colour.blue)
-            config['Appearance']['Colours'][suit.name] = rgb
+            config['Appearance']['Colours'][suit.name] = rgba_hexrep(colour)[1:]
 
         config['Appearance']['Background'] = self.background.get_filename()
 
