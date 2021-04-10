@@ -74,13 +74,13 @@ class WindowGameTable:
         self.window.add(vbox)
 
         # Set up toolbar buttons.
-        self.takeseat = Gtk.MenuToolButton(Gtk.STOCK_MEDIA_PLAY)
+        self.takeseat = Gtk.MenuToolButton(icon_widget=Gtk.Image.new_from_icon_name('media-playback-start', Gtk.IconSize.LARGE_TOOLBAR))
         self.takeseat.set_label(_('Take Seat'))
         self.takeseat.set_is_important(True)
         self.takeseat.connect('clicked', self.on_takeseat_clicked)
         self.toolbar.insert(self.takeseat, -1)
 
-        self.leaveseat = Gtk.ToolButton(Gtk.STOCK_MEDIA_STOP)
+        self.leaveseat = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('media-playback-stop', Gtk.IconSize.LARGE_TOOLBAR))
         self.leaveseat.set_label(_('Leave Seat'))
         self.leaveseat.connect('clicked', self.on_leaveseat_clicked)
         self.leaveseat.set_property('sensitive', False)
@@ -88,12 +88,12 @@ class WindowGameTable:
 
         self.toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
-        self.fullscreen = Gtk.ToggleToolButton(Gtk.STOCK_FULLSCREEN)
+        self.fullscreen = Gtk.ToggleToolButton(icon_widget=Gtk.Image.new_from_icon_name('view-fullscreen', Gtk.IconSize.LARGE_TOOLBAR))
         self.fullscreen.set_label(_('Full Screen'))
         self.fullscreen.connect('clicked', self.on_fullscreen_clicked)
         self.toolbar.insert(self.fullscreen, -1)
 
-        self.leavetable = Gtk.ToolButton(Gtk.STOCK_QUIT)
+        self.leavetable = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('application-exit', Gtk.IconSize.LARGE_TOOLBAR))
         self.leavetable.set_label(_('Leave Table'))
         self.leavetable.connect('clicked', self.on_leavetable_clicked)
         self.toolbar.insert(self.leavetable, -1)
