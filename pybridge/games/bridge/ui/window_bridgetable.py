@@ -339,7 +339,7 @@ class WindowBridgeTable(WindowGameTable):
         if self.player:
             dialog.add_button(_('Leave Seat'), Gtk.ResponseType.CANCEL)
             dialog.format_secondary_text(_('Click OK to start next game.'))
-        dialog.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        dialog.add_button('_OK', Gtk.ResponseType.OK)
         dialog.set_default_response(Gtk.ResponseType.OK)
         # If user leaves table (ie. closes window), close dialog as well.
         dialog.set_transient_for(self.window)
