@@ -190,7 +190,7 @@ class WindowBridgeTable(WindowGameTable):
         self.takeseat.set_menu(menu)
 
         # Set up bridge-specific toolbar buttons.
-        self.showscores = Gtk.ToggleToolButton(Gtk.STOCK_EDIT)
+        self.showscores = Gtk.ToggleToolButton(icon_widget=Gtk.Image.new_from_icon_name('accessories-text-editor', Gtk.IconSize.LARGE_TOOLBAR), label=None)
         self.showscores.set_label(_('Show Scoresheet'))
         self.showscores.connect('clicked', self.on_showscores_clicked)
         self.toolbar.insert(self.showscores, -1)
