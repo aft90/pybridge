@@ -189,7 +189,7 @@ class WindowGameTable:
                                        flags=Gtk.DialogFlags.MODAL,
                                        type=Gtk.MessageType.QUESTION)
             dialog.set_title(_('Leave table?'))
-            dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+            dialog.add_button('_Cancel', Gtk.ResponseType.CANCEL)
             dialog.add_button(_('Leave Table'), Gtk.ResponseType.OK)
             dialog.set_markup(_('Are you sure you wish to leave this table?'))
             dialog.format_secondary_text(_('You are currently playing a game. Leaving may forfeit the game, or incur penalties.'))

@@ -132,7 +132,7 @@ class WindowMain(GladeWrapper):
             if response_id == Gtk.ResponseType.OK:
                 wm.open(DialogConnection, parent=self)
 
-        dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        dialog.add_button('_Cancel', Gtk.ResponseType.CANCEL)
         dialog.add_button(Gtk.STOCK_CONNECT, Gtk.ResponseType.OK)
 
         dialog.connect('response', dialog_response_cb)
@@ -270,7 +270,7 @@ class WindowMain(GladeWrapper):
                                        flags=Gtk.DialogFlags.MODAL,
                                        type=Gtk.MessageType.QUESTION)
             dialog.set_title(_('Disconnect from server'))
-            dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+            dialog.add_button('_Cancel', Gtk.ResponseType.CANCEL)
             dialog.add_button(Gtk.STOCK_DISCONNECT, Gtk.ResponseType.OK)
             dialog.set_markup(_('Are you sure you wish to disconnect?'))
             dialog.format_secondary_text(_('You are playing at a table. Disconnecting may forfeit the game, or incur penalties.'))
