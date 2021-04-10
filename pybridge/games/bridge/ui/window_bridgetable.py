@@ -171,12 +171,20 @@ class WindowBridgeTable(WindowGameTable):
         super().setUp()
 
         # Set up menu attached to 'Take Seat' toolbar button.
+
         self.takeseat_menuitems = {}
         menu = Gtk.Menu()
+        icon_names = { Direction.North: 'go-up', Direction.South: 'go-down', Direction.West : 'go-previous', Direction.East: 'go-next' }
         for position in Direction:
-            item = Gtk.MenuItem(DIRECTION_NAMES[position])
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            box.set_homogeneous(False)
+            box.set_spacing(2)
+            box.add(Gtk.Image.new_from_icon_name(icon_names[position], Gtk.IconSize.SMALL_TOOLBAR))
+            box.add(Gtk.Label(DIRECTION_NAMES[position]))
+            item = Gtk.MenuItem()
+            item.add(box)
             item.connect('activate', self.on_takeseat_clicked, position)
-            item.show()
+            item.show_all()
             menu.append(item)
             self.takeseat_menuitems[position] = item
         self.takeseat.set_menu(menu)
