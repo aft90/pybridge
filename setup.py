@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import glob
-from distutils.core import setup
+from setuptools import setup
 from pybridge import __version__
 
 # To create a standalone Windows distribution, run "python setup.py py2exe"
