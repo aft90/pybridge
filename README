@@ -1,8 +1,18 @@
 PyBridge 0.4.0 - a free online bridge game
+
+This is the PyBridge game, migrated to python3 and GTK+3.
+
+It was originally maintained at:
+
 http://pybridge.sourceforge.net/
 http://sourceforge.net/projects/pybridge/
 https://launchpad.net/pybridge
 
+but has not seen much development since 2011, as far as I could tell.
+python2 is now EOL'd, while GTK+2 is deprecated.
+
+Since I made good use of this program personally, I decided to publish my
+fixes to make it run again.
 
 About PyBridge
 ==============
